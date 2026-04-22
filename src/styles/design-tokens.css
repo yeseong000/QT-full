@@ -58,17 +58,13 @@
   --font-serif: 'Noto Serif KR', 'Nanum Myeongjo', serif;
   --font-mono: 'JetBrains Mono', 'Inter', monospace;
 
-  --text-hero: 28px;
-  --text-h1: 22px;
-  --text-h2: 18px;
-  --text-subtitle: 17px;
-  --text-body: 16px;
-  --text-scripture: 17px;
-  --text-prayer: 16px;
-  --text-chip: 14px;
-  --text-button: 16px;
-  --text-small: 14px;
-  --text-caption: 12px;
+  --text-hero: 30px;       /* 페이지 타이틀, 큰 인사말 */
+  --text-h1: 24px;         /* 섹션/카드 큰 제목 */
+  --text-h2: 19px;         /* 카드 중간 제목, 서브타이틀 */
+  --text-scripture: 17px;  /* 성경 본문, 기도문 (읽기 전용) */
+  --text-body: 16px;       /* 본문, 버튼 */
+  --text-small: 14px;      /* 보조 설명, 칩 */
+  --text-caption: 12px;    /* 메타, 날짜 */
 
   /* ------------------------------------------------------------------
      7. 간격 - 미니멀 (넉넉하게)
@@ -130,15 +126,14 @@
 html[data-font-size="sm"] {
   --text-body: 14.4px;
   --text-scripture: 15.3px;
-  --text-prayer: 14.4px;
 }
 
 html[data-font-size="lg"] {
   --text-body: 18.4px;
   --text-scripture: 19.5px;
-  --text-prayer: 17.6px;
-  --text-hero: 32px;
-  --text-h1: 25px;
+  --text-hero: 34px;
+  --text-h1: 27px;
+  --text-h2: 21px;
 }
 
 /* ==========================================================================
