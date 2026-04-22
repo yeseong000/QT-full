@@ -94,7 +94,7 @@ const Common = {
 if (typeof window !== 'undefined') {
   window.Common = Common;
   document.addEventListener('DOMContentLoaded', () => {
-    ['.app-container', '.scripture-toggle__body'].forEach(sel => {
+    ['.app-scroll', '.scripture-toggle__body'].forEach(sel => {
       document.querySelectorAll(sel).forEach(el => Common.setupAutoHideScroll(el));
     });
   });

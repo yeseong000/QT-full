@@ -70,23 +70,33 @@ input, textarea {
 }
 
 /* ------------------------------------------------------------------
-   앱 컨테이너 (iPhone 세이프 에어리어 전면 대응)
+   앱 컨테이너 (앱 셸: flex column으로 스크롤 영역과 하단 네비 분리)
    ------------------------------------------------------------------ */
 .app-container {
   width: 100%;
   max-width: var(--app-max-width);
   margin: 0 auto;
-  /* 세이프 에어리어: 상단(다이나믹 아일랜드) + 하단(홈바) */
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  position: relative;        /* 내부 absolute(FAB) 기준점 */
+}
+
+/* 스크롤 영역: 세이프 에어리어 전면 대응 */
+.app-scroll {
+  flex: 1 1 auto;
+  min-height: 0;             /* flex + overflow 조합에 필요 */
+  overflow-y: auto;
+  overflow-x: hidden;
   padding:
     calc(var(--page-padding-top) + env(safe-area-inset-top, 0))
     var(--page-padding-x)
-    calc(var(--page-padding-bottom) + env(safe-area-inset-bottom, 0));
-  min-height: 100vh;
-  min-height: 100dvh;
+    var(--space-6);
 }
 
 /* 하단 네비가 없는 페이지 (완료 화면 등) */
-.app-container--no-nav {
+.app-container--no-nav .app-scroll {
   padding-bottom: calc(var(--space-8) + env(safe-area-inset-bottom, 0));
 }
 
@@ -112,17 +122,19 @@ input, textarea {
     max-height: 90vh;                  /* PC 화면 작을 때 대응 */
     border-radius: var(--iphone-frame-radius);
     background: var(--bg-paper);
-    overflow-y: auto;
-    overflow-x: hidden;
+    overflow: hidden;                  /* 내부 .app-scroll이 스크롤 담당 */
     box-shadow:
       0 0 0 12px #1a1a1a,              /* 검정 베젤 */
       0 20px 60px rgba(0, 0, 0, 0.25); /* 드롭 섀도우 */
-    position: relative;
-    /* 세이프 에어리어 시뮬레이션 */
+    padding: 0;                        /* 패딩은 .app-scroll로 이동 */
+  }
+
+  /* PC 프레임에서 스크롤 영역 padding 재정의 (다이나믹 아일랜드 영역 고려) */
+  .app-scroll {
     padding:
-      calc(var(--page-padding-top) + 54px)    /* 다이나믹 아일랜드 영역 */
+      calc(var(--page-padding-top) + 54px)
       var(--page-padding-x)
-      calc(var(--page-padding-bottom) + 34px); /* 홈바 영역 */
+      var(--space-6);
   }
 
   /* PC 프레임의 다이나믹 아일랜드 시뮬레이션 */
@@ -140,21 +152,15 @@ input, textarea {
     pointer-events: none;
   }
 
-  /* PC 프레임 안 하단 네비/FAB 재배치 */
+  /* PC 프레임 안 하단 네비: 홈바 영역 확보 + 프레임 하단 모서리 맞춤 */
   .bottom-nav {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    padding-bottom: calc(16px + 34px);   /* 홈바 영역 포함 */
-    max-width: 100%;
+    padding-bottom: calc(16px + 34px);
     border-radius: 0 0 var(--iphone-frame-radius) var(--iphone-frame-radius);
   }
 
+  /* FAB은 app-container 내부 absolute (bottom-nav 위) */
   .fab {
-    position: absolute;
-    bottom: 120px;
-    right: 20px;
+    bottom: calc(16px + 34px + 72px);  /* 홈바 + nav + 여유 */
   }
 
   .modal-backdrop {
@@ -169,32 +175,32 @@ input, textarea {
   }
 
   /* iOS overlay 느낌의 자동 숨김 스크롤바 (PC 프레임 전용) */
-  .app-container,
+  .app-scroll,
   .scripture-toggle__body {
     scrollbar-width: thin;
     scrollbar-color: transparent transparent;
     transition: scrollbar-color 400ms;
   }
-  .app-container.is-scrolling,
+  .app-scroll.is-scrolling,
   .scripture-toggle__body.is-scrolling {
     scrollbar-color: rgba(45, 58, 50, 0.28) transparent;
   }
-  .app-container::-webkit-scrollbar,
+  .app-scroll::-webkit-scrollbar,
   .scripture-toggle__body::-webkit-scrollbar {
     width: 4px;
   }
-  .app-container::-webkit-scrollbar-track,
+  .app-scroll::-webkit-scrollbar-track,
   .scripture-toggle__body::-webkit-scrollbar-track {
     background: transparent;
     margin: 16px 0;  /* 둥근 모서리와 부딪히지 않도록 */
   }
-  .app-container::-webkit-scrollbar-thumb,
+  .app-scroll::-webkit-scrollbar-thumb,
   .scripture-toggle__body::-webkit-scrollbar-thumb {
     background: transparent;
     border-radius: 2px;
     transition: background 400ms;
   }
-  .app-container.is-scrolling::-webkit-scrollbar-thumb,
+  .app-scroll.is-scrolling::-webkit-scrollbar-thumb,
   .scripture-toggle__body.is-scrolling::-webkit-scrollbar-thumb {
     background: rgba(45, 58, 50, 0.28);
   }
@@ -398,14 +404,24 @@ input, textarea {
 
 /* 하단 네비 등에서 쓰는 아이콘 전용 버튼 (예: 이전 ◀) */
 .btn-icon-only {
-  min-width: 52px;
-  width: 52px;
+  min-width: 88px;
+  width: 88px;
   padding: 15px 0;
   flex-shrink: 0;
 }
 .btn-icon-only svg {
   width: 20px;
   height: 20px;
+}
+
+/* 보조 액션(이전)은 ghost 스타일로 — iOS 느낌, 주요 버튼을 덜 방해 */
+.btn-secondary.btn-icon-only {
+  background: transparent;
+  color: var(--text-secondary);
+}
+.btn-secondary.btn-icon-only:active {
+  background: var(--accent-sage-soft);
+  color: var(--accent-sage-text);
 }
 
 .btn-text {
@@ -419,29 +435,22 @@ input, textarea {
    하단 네비게이션 바 (홈바 영역 대응)
    ------------------------------------------------------------------ */
 .bottom-nav {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  padding: 16px 20px calc(16px + env(safe-area-inset-bottom, 0));
-  background: rgba(247, 244, 237, 0.92);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  flex-shrink: 0;                    /* 콘텐츠 많아도 절대 줄어들지 않음 */
+  padding: 14px 20px calc(14px + env(safe-area-inset-bottom, 0));
+  background: var(--bg-paper);
+  box-shadow: inset 0 1px 0 rgba(45, 58, 50, 0.05);  /* iOS 느낌의 hairline 경계선 */
   display: flex;
   gap: var(--space-2);
-  max-width: var(--app-max-width);
-  margin: 0 auto;
-  z-index: 100;
 }
 .bottom-nav .btn-primary {
   flex: 1;
 }
 
 /* ------------------------------------------------------------------
-   플로팅 버튼 (FAB) - 하단 네비 위 위치
+   플로팅 버튼 (FAB) - 하단 네비 위 위치 (app-container 내 absolute)
    ------------------------------------------------------------------ */
 .fab {
-  position: fixed;
+  position: absolute;
   right: 20px;
   bottom: calc(120px + env(safe-area-inset-bottom, 0));
   width: 52px;
@@ -563,16 +572,16 @@ input, textarea {
   }
 }
 
-.app-container > * {
+.app-scroll > * {
   animation: fadeInUp var(--duration-slow) var(--ease-out);
   animation-fill-mode: both;
 }
 
-.app-container > *:nth-child(1) { animation-delay: 0ms; }
-.app-container > *:nth-child(2) { animation-delay: 60ms; }
-.app-container > *:nth-child(3) { animation-delay: 120ms; }
-.app-container > *:nth-child(4) { animation-delay: 180ms; }
-.app-container > *:nth-child(5) { animation-delay: 240ms; }
+.app-scroll > *:nth-child(1) { animation-delay: 0ms; }
+.app-scroll > *:nth-child(2) { animation-delay: 60ms; }
+.app-scroll > *:nth-child(3) { animation-delay: 120ms; }
+.app-scroll > *:nth-child(4) { animation-delay: 180ms; }
+.app-scroll > *:nth-child(5) { animation-delay: 240ms; }
 
 /* ------------------------------------------------------------------
    유틸리티

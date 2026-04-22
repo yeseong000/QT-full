@@ -78,17 +78,21 @@
     }
 
     .scripture-toggle__body {
+      /* absolute 오버레이: 열고 닫아도 주변 문서 흐름에 영향 주지 않음 */
+      position: absolute;
+      top: calc(100% + var(--space-2));
+      left: 0;
+      right: 0;
       max-height: 0;
       overflow: hidden;
-      margin-top: var(--space-2);
+      background: var(--bg-card);
+      border-radius: var(--radius-lg);
       transition: max-height var(--duration-slow) var(--ease-out),
                   box-shadow var(--duration-slow);
     }
     .scripture-toggle.is-open .scripture-toggle__body {
       max-height: 60vh;
       overflow-y: auto;
-      background: var(--bg-card);
-      border-radius: var(--radius-lg);
       box-shadow: var(--shadow-soft);
     }
     .scripture-toggle__inner {
@@ -257,6 +261,7 @@
 </head>
 <body>
   <div class="app-container">
+   <main class="app-scroll">
 
     <!-- 진행 단계 (4단계 중 2단계) - 최상단 -->
     <div class="progress-dots" aria-label="진행 단계 2/4">
@@ -306,11 +311,20 @@
       </div>
     </div>
 
+    <!-- 책 맥락 카드 (큰 그림 먼저) -->
+    <section class="meditation-card" id="bookContextCard" style="display:none;">
+      <h2 class="meditation-card__title">
+        <span class="meditation-card__icon">📚</span>
+        <span><span id="bookContextTitle">책</span>의 흐름</span>
+      </h2>
+      <div class="prose" id="bookContext"></div>
+    </section>
+
     <!-- 핵심 요약 카드 -->
     <section class="meditation-card" id="summaryCard">
       <h2 class="meditation-card__title">
         <span class="meditation-card__icon">✨</span>
-        오늘 말씀 한눈에
+        말씀 속 장면
       </h2>
       <ul class="summary-list" id="summaryList">
         <li class="loading" style="padding:0;">묵상을 준비하고 있어요...</li>
@@ -321,18 +335,9 @@
     <section class="meditation-card" id="charactersCard" style="display:none;">
       <h2 class="meditation-card__title">
         <span class="meditation-card__icon">👥</span>
-        이야기 속 사람들
+        말씀 속 인물들
       </h2>
       <div id="charactersList"></div>
-    </section>
-
-    <!-- 책 맥락 카드 -->
-    <section class="meditation-card" id="bookContextCard" style="display:none;">
-      <h2 class="meditation-card__title">
-        <span class="meditation-card__icon">📚</span>
-        책 전체의 흐름
-      </h2>
-      <div class="prose" id="bookContext"></div>
     </section>
 
     <!-- 구절 해설 카드 -->
@@ -344,17 +349,19 @@
       <div class="prose" id="verseCommentary"></div>
     </section>
 
-  </div>
+   </main>
 
-  <!-- 하단 네비 -->
-  <nav class="bottom-nav">
-    <button class="btn btn-secondary btn-icon-only" id="prevBtn" aria-label="이전">
-      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
-        <polyline points="15 18 9 12 15 6"/>
-      </svg>
-    </button>
-    <button class="btn btn-primary" id="nextBtn">다음</button>
-  </nav>
+   <!-- 하단 네비 (app-container 내부) -->
+   <nav class="bottom-nav">
+     <button class="btn btn-secondary btn-icon-only" id="prevBtn" aria-label="이전">
+       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+         <polyline points="15 18 9 12 15 6"/>
+       </svg>
+     </button>
+     <button class="btn btn-primary" id="nextBtn">다음</button>
+   </nav>
+
+  </div>
 
   <!-- Scripts -->
   <script src="scripts/storage.js"></script>
@@ -446,6 +453,13 @@
 
       qtData = qt;
       labelEl.textContent = qt.scripture_ref || '말씀 다시 보기';
+
+      // 책 맥락 카드 제목에 책 이름 주입 (예: "룻기의 흐름")
+      const bookTitleEl = document.getElementById('bookContextTitle');
+      if (bookTitleEl) {
+        bookTitleEl.textContent = qt.book_name || '책';
+      }
+
       renderScripture();
     }
 
