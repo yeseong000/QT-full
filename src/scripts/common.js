@@ -71,8 +71,31 @@ const Common = {
       return null;
     }
   },
+
+  /**
+   * iOS overlay 느낌의 자동 숨김 스크롤바.
+   * 스크롤 중에만 is-scrolling 클래스를 붙이고, 멈춘 뒤 timeout ms 후 제거.
+   * CSS에서 .is-scrolling 클래스에 스크롤바 색을 넣어두면 자동으로 보임/숨김 처리됨.
+   */
+  setupAutoHideScroll(element, timeout = 1500) {
+    if (!element) return;
+    let t;
+    element.addEventListener('scroll', () => {
+      element.classList.add('is-scrolling');
+      clearTimeout(t);
+      t = setTimeout(() => {
+        element.classList.remove('is-scrolling');
+      }, timeout);
+    }, { passive: true });
+  },
 };
 
+// 자동 연결: 스크롤 가능한 주요 컨테이너들에 auto-hide 적용
 if (typeof window !== 'undefined') {
   window.Common = Common;
+  document.addEventListener('DOMContentLoaded', () => {
+    ['.app-container', '.scripture-toggle__body'].forEach(sel => {
+      document.querySelectorAll(sel).forEach(el => Common.setupAutoHideScroll(el));
+    });
+  });
 }
