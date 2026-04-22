@@ -266,6 +266,10 @@ def parse_qt(html: str) -> dict:
         "verses_end": ref_parsed["end"],
         "verses": verses,
         "oryun_questions": questions,
+        # full_chapter_verses: 해당 장(chapter) 전체 구절.
+        # 오륜교회 페이지는 집중 구절만 제공하므로, 별도 성경 소스에서 채워야 함.
+        # TODO(Phase 2): 개역개정 전체 장 데이터 소스 연동 (공개 성경 API 또는 정적 JSON)
+        "full_chapter_verses": [],
         "source_url": URL,
         "fetched_at": datetime.now(KST).isoformat(),
     }

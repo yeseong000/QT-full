@@ -216,13 +216,57 @@
       white-space: pre-wrap;
     }
 
-    /* 로딩/에러 */
+    /* 말씀 탭 (오늘 범위 / 전체 장) */
+    .scripture-tabs {
+      display: flex;
+      gap: 2px;
+      padding: 3px;
+      background: var(--bg-soft);
+      border-radius: var(--radius-md);
+      margin-bottom: var(--space-4);
+    }
+    .scripture-tab {
+      flex: 1;
+      padding: 8px 12px;
+      font-size: var(--text-small);
+      font-weight: 600;
+      color: var(--text-secondary);
+      border-radius: calc(var(--radius-md) - 3px);
+      background: transparent;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      transition: all var(--duration-base);
+    }
+    .scripture-tab.is-active {
+      background: var(--bg-card);
+      color: var(--text-primary);
+      box-shadow: 0 1px 3px rgba(45, 58, 50, 0.08);
+    }
+
+    /* 전체 장 모드에서 오늘 범위 구절 강조 */
+    .scripture-toggle .verse-line.is-focus {
+      position: relative;
+    }
+    .scripture-toggle .verse-line.is-focus::before {
+      content: '';
+      position: absolute;
+      left: -12px;
+      top: 10px;
+      bottom: 10px;
+      width: 3px;
+      background: var(--accent-sage);
+      border-radius: 2px;
+    }
+
+    /* 로딩/에러/빈 상태 */
     .loading,
-    .error {
+    .error,
+    .scripture-empty {
       padding: var(--space-8) var(--space-4);
       text-align: center;
       color: var(--text-secondary);
       font-size: var(--text-small);
+      line-height: 1.7;
     }
     .error {
       color: #B84A4A;
@@ -269,7 +313,10 @@
       </div>
       <div class="scripture-toggle__body">
         <div class="scripture-toggle__inner">
-          <div class="scripture-toggle__ref" id="scriptureRef">—</div>
+          <div class="scripture-tabs" id="scriptureTabs" role="tablist">
+            <button class="scripture-tab is-active" data-mode="focus" role="tab" aria-selected="true">오늘 범위</button>
+            <button class="scripture-tab" data-mode="full" role="tab" aria-selected="false">전체 장</button>
+          </div>
           <div id="versesContainer">
             <div class="loading">말씀을 불러오고 있어요...</div>
           </div>
@@ -330,9 +377,13 @@
     const TODAY = Common.todayISO();
     const FALLBACK_DATE = '2026-04-22';
 
+    let qtData = null;
+    let scriptureMode = 'focus';  // 'focus' | 'full'
+
     document.addEventListener('DOMContentLoaded', async () => {
       await Promise.all([loadAI(), loadScripture()]);
       setupEventListeners();
+      setupScriptureTabs();
       applyFontSize();
       Storage.setDailyRecord(TODAY, { progressStep: 2 });
     });
@@ -401,21 +452,71 @@
 
       const container = document.getElementById('versesContainer');
       const labelEl = document.getElementById('scriptureLabel');
-      const refEl = document.getElementById('scriptureRef');
 
       if (!qt) {
         container.innerHTML = '<div class="error">말씀을 불러올 수 없어요.</div>';
         return;
       }
 
+      qtData = qt;
       labelEl.textContent = qt.scripture_ref || '말씀 다시 보기';
-      refEl.textContent = qt.scripture_ref || '';
+      renderScripture();
+    }
 
-      container.innerHTML = (qt.verses || []).map(v => `
-        <div class="verse-line" data-verse="${v.number}">
+    function renderScripture() {
+      if (!qtData) return;
+      const container = document.getElementById('versesContainer');
+
+      if (scriptureMode === 'focus') {
+        const verses = qtData.verses || [];
+        container.innerHTML = verses.map(v => renderVerseLine(v, false)).join('');
+        return;
+      }
+
+      // full chapter mode
+      const full = qtData.full_chapter_verses || [];
+      if (full.length === 0) {
+        container.innerHTML = `
+          <div class="scripture-empty">
+            📦 전체 장 데이터가 아직 준비되지 않았어요.<br>
+            <span style="opacity:0.7;">크롤러 재실행 후 자동으로 채워집니다.</span>
+          </div>
+        `;
+        return;
+      }
+      const focusStart = qtData.verses_start;
+      const focusEnd = qtData.verses_end;
+      container.innerHTML = full.map(v => {
+        const isFocus = v.number >= focusStart && v.number <= focusEnd;
+        return renderVerseLine(v, isFocus);
+      }).join('');
+    }
+
+    function renderVerseLine(v, isFocus) {
+      const cls = isFocus ? 'verse-line is-focus' : 'verse-line';
+      return `
+        <div class="${cls}" data-verse="${v.number}">
           <span class="verse-number">${v.number}</span>${escapeHTML(v.text)}
         </div>
-      `).join('');
+      `;
+    }
+
+    function setupScriptureTabs() {
+      const tabs = document.querySelectorAll('.scripture-tab');
+      tabs.forEach(tab => {
+        tab.addEventListener('click', (e) => {
+          e.stopPropagation();  // 토글 열림/닫힘 방지
+          const mode = tab.dataset.mode;
+          if (mode === scriptureMode) return;
+          scriptureMode = mode;
+          tabs.forEach(t => {
+            const active = t.dataset.mode === mode;
+            t.classList.toggle('is-active', active);
+            t.setAttribute('aria-selected', String(active));
+          });
+          renderScripture();
+        });
+      });
     }
 
     // ========== 이벤트 ==========
