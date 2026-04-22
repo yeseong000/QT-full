@@ -39,22 +39,13 @@
     }
 
     /* ------------------------------------------------------------------
-       말씀 토글 (sticky 상단 고정)
+       말씀 토글 (sticky 떠있는 캡슐)
        ------------------------------------------------------------------ */
     .scripture-toggle {
       position: sticky;
-      top: 0;
+      top: var(--space-2);      /* 상단에서 8px 띄워서 "떠있는" 느낌 */
       z-index: 20;
-      margin: 0 calc(var(--page-padding-x) * -1) var(--space-6);
-      padding: 12px var(--page-padding-x);
-      background: rgba(247, 244, 237, 0.92);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      border-bottom: 1px solid var(--border-subtle);
-      transition: box-shadow var(--duration-base);
-    }
-    .scripture-toggle.is-open {
-      box-shadow: var(--shadow-soft);
+      margin-bottom: var(--space-6);
     }
 
     .scripture-toggle__header {
@@ -62,29 +53,43 @@
       align-items: center;
       justify-content: space-between;
       gap: var(--space-3);
+      padding: 10px 16px 10px 14px;
+      background: rgba(255, 255, 255, 0.88);
+      backdrop-filter: blur(20px) saturate(1.4);
+      -webkit-backdrop-filter: blur(20px) saturate(1.4);
+      border-radius: var(--radius-pill);
+      box-shadow: 0 2px 10px rgba(45, 58, 50, 0.08);
       cursor: pointer;
       -webkit-tap-highlight-color: transparent;
       user-select: none;
-      padding: 6px 4px;
+      transition: box-shadow var(--duration-base), transform var(--duration-fast);
     }
+    .scripture-toggle__header:active {
+      transform: scale(0.98);
+    }
+    .scripture-toggle.is-open .scripture-toggle__header {
+      box-shadow: 0 3px 14px rgba(45, 58, 50, 0.10);
+    }
+
     .scripture-toggle__label {
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      font-size: var(--text-h2);
+      font-size: var(--text-body);
       font-weight: 600;
       color: var(--text-primary);
       letter-spacing: -0.01em;
     }
     .scripture-toggle__label::before {
       content: '📖';
-      font-size: 16px;
+      font-size: 15px;
     }
     .scripture-toggle__chevron {
-      width: 20px;
-      height: 20px;
+      width: 18px;
+      height: 18px;
       color: var(--text-secondary);
       transition: transform var(--duration-base) var(--ease-out);
+      flex-shrink: 0;
     }
     .scripture-toggle.is-open .scripture-toggle__chevron {
       transform: rotate(180deg);
@@ -93,19 +98,19 @@
     .scripture-toggle__body {
       max-height: 0;
       overflow: hidden;
-      transition: max-height var(--duration-slow) var(--ease-out);
+      margin-top: var(--space-2);
+      transition: max-height var(--duration-slow) var(--ease-out),
+                  box-shadow var(--duration-slow);
     }
     .scripture-toggle.is-open .scripture-toggle__body {
       max-height: 60vh;
       overflow-y: auto;
+      background: var(--bg-card);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-soft);
     }
     .scripture-toggle__inner {
       padding: var(--space-3) 4px var(--space-4);
-    }
-    .scripture-toggle__ref {
-      font-size: var(--text-small);
-      color: var(--text-secondary);
-      margin-bottom: var(--space-3);
     }
     .scripture-toggle .verse-line {
       font-size: var(--text-scripture);
