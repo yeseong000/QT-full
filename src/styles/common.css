@@ -167,6 +167,26 @@ input, textarea {
     max-width: 100%;
     border-radius: var(--radius-xl) var(--radius-xl) 0 0;
   }
+
+  /* PC 프레임 안쪽에 깔끔히 담긴 세로 스크롤바 */
+  .app-container {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(45, 58, 50, 0.20) transparent;
+  }
+  .app-container::-webkit-scrollbar {
+    width: 6px;
+  }
+  .app-container::-webkit-scrollbar-track {
+    background: transparent;
+    margin: 16px 0;  /* 둥근 모서리와 부딪히지 않도록 상·하 여유 */
+  }
+  .app-container::-webkit-scrollbar-thumb {
+    background: rgba(45, 58, 50, 0.18);
+    border-radius: 3px;
+  }
+  .app-container::-webkit-scrollbar-thumb:hover {
+    background: rgba(45, 58, 50, 0.32);
+  }
 }
 
 /* 모바일 환경 (480px 이하) - 프레임 없이 풀스크린 */
@@ -175,6 +195,26 @@ input, textarea {
     /* 모바일에선 기본 배경 */
     background: var(--bg-paper);
   }
+}
+
+/* ------------------------------------------------------------------
+   진행 단계 바 (다단계 플로우 상단 고정)
+   ------------------------------------------------------------------ */
+.progress-dots {
+  display: flex;
+  justify-content: center;
+  gap: 5px;
+  margin-bottom: var(--space-4);    /* 16px - 상단바와 붙지 않도록 */
+}
+.progress-dot {
+  width: 28px;
+  height: 6px;                      /* 4px → 6px 두껍게 */
+  border-radius: 3px;
+  background: var(--border-subtle);
+  transition: background var(--duration-base);
+}
+.progress-dot.active {
+  background: var(--accent-sage);
 }
 
 /* ------------------------------------------------------------------
@@ -343,6 +383,18 @@ input, textarea {
   border-radius: var(--radius-pill);
   font-weight: 500;
   width: 100%;
+}
+
+/* 하단 네비 등에서 쓰는 아이콘 전용 버튼 (예: 이전 ◀) */
+.btn-icon-only {
+  min-width: 52px;
+  width: 52px;
+  padding: 15px 0;
+  flex-shrink: 0;
+}
+.btn-icon-only svg {
+  width: 20px;
+  height: 20px;
 }
 
 .btn-text {

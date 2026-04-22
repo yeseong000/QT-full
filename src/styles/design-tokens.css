@@ -84,7 +84,7 @@
   --card-gap: var(--space-6);            /* 24px 카드 사이 */
   --section-gap: var(--space-12);        /* 48px 섹션 사이 */
   --page-padding-x: var(--space-5);      /* 20px */
-  --page-padding-top: var(--space-8);    /* 32px */
+  --page-padding-top: var(--space-3);    /* 12px - 안전영역 바로 아래 자연스런 여백 */
   --page-padding-bottom: 120px;
 
   /* ------------------------------------------------------------------

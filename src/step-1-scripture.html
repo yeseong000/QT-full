@@ -20,24 +20,6 @@
   <style>
     /* ========== 1단계 전용 ========== */
 
-    /* 진행 단계 표시 */
-    .progress-dots {
-      display: flex;
-      justify-content: center;
-      gap: 6px;
-      margin-bottom: var(--space-6);
-    }
-    .progress-dot {
-      width: 24px;
-      height: 4px;
-      border-radius: 2px;
-      background: var(--border-subtle);
-      transition: background var(--duration-base);
-    }
-    .progress-dot.active {
-      background: var(--accent-sage);
-    }
-
     /* 성경 본문 */
     .scripture-ref {
       font-size: var(--text-small);
@@ -120,6 +102,14 @@
 <body>
   <div class="app-container">
 
+    <!-- 진행 단계 (4단계 중 1단계) - 최상단 -->
+    <div class="progress-dots" aria-label="진행 단계 1/4">
+      <div class="progress-dot active"></div>
+      <div class="progress-dot"></div>
+      <div class="progress-dot"></div>
+      <div class="progress-dot"></div>
+    </div>
+
     <!-- 상단바 -->
     <header class="top-bar">
       <div class="top-bar__left">
@@ -135,14 +125,6 @@
         </button>
       </div>
     </header>
-
-    <!-- 진행 단계 (4단계 중 1단계) -->
-    <div class="progress-dots" aria-label="진행 단계 1/4">
-      <div class="progress-dot active"></div>
-      <div class="progress-dot"></div>
-      <div class="progress-dot"></div>
-      <div class="progress-dot"></div>
-    </div>
 
     <!-- 페이지 제목 -->
     <h1 class="page-title">말씀을 깊이 새겨보세요</h1>
@@ -175,7 +157,11 @@
 
   <!-- 하단 네비 -->
   <nav class="bottom-nav">
-    <button class="btn btn-secondary" id="prevBtn">이전</button>
+    <button class="btn btn-secondary btn-icon-only" id="prevBtn" aria-label="이전">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="15 18 9 12 15 6"/>
+      </svg>
+    </button>
     <button class="btn btn-primary" id="nextBtn">다음</button>
   </nav>
 
