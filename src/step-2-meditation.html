@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="ko" data-font-size="md">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no, maximum-scale=1">
+  <meta name="theme-color" content="#F7F4ED">
+
+  <!-- iOS PWA -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="주만나 AI">
+  <meta name="format-detection" content="telephone=no">
+
+  <title>묵상 · 주만나 AI 큐티</title>
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.css">
+  <link rel="stylesheet" href="styles/design-tokens.css">
+  <link rel="stylesheet" href="styles/common.css">
+
+  <style>
+    /* ========== 2단계 전용 ========== */
+
+    /* 진행 단계 표시 */
+    .progress-dots {
+      display: flex;
+      justify-content: center;
+      gap: 6px;
+      margin-bottom: var(--space-6);
+    }
+    .progress-dot {
+      width: 24px;
+      height: 4px;
+      border-radius: 2px;
+      background: var(--border-subtle);
+      transition: background var(--duration-base);
+    }
+    .progress-dot.active {
+      background: var(--accent-sage);
+    }
+
+    /* ------------------------------------------------------------------
+       말씀 토글 (sticky 상단 고정)
+       ------------------------------------------------------------------ */
+    .scripture-toggle {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      margin: 0 calc(var(--page-padding-x) * -1) var(--space-6);
+      padding: 12px var(--page-padding-x);
+      background: rgba(247, 244, 237, 0.92);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border-subtle);
+      transition: box-shadow var(--duration-base);
+    }
+    .scripture-toggle.is-open {
+      box-shadow: var(--shadow-soft);
+    }
+
+    .scripture-toggle__header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-3);
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      padding: 6px 4px;
+    }
+    .scripture-toggle__label {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: var(--text-subtitle);
+      font-weight: 600;
+      color: var(--text-primary);
+      letter-spacing: -0.01em;
+    }
+    .scripture-toggle__label::before {
+      content: '📖';
+      font-size: 16px;
+    }
+    .scripture-toggle__chevron {
+      width: 20px;
+      height: 20px;
+      color: var(--text-secondary);
+      transition: transform var(--duration-base) var(--ease-out);
+    }
+    .scripture-toggle.is-open .scripture-toggle__chevron {
+      transform: rotate(180deg);
+    }
+
+    .scripture-toggle__body {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height var(--duration-slow) var(--ease-out);
+    }
+    .scripture-toggle.is-open .scripture-toggle__body {
+      max-height: 60vh;
+      overflow-y: auto;
+    }
+    .scripture-toggle__inner {
+      padding: var(--space-3) 4px var(--space-4);
+    }
+    .scripture-toggle__ref {
+      font-size: var(--text-small);
+      color: var(--text-secondary);
+      margin-bottom: var(--space-3);
+    }
+    .scripture-toggle .verse-line {
+      font-size: var(--text-scripture);
+      line-height: 1.85;
+      color: var(--text-body);
+      padding: 10px 0;
+    }
+    .scripture-toggle .verse-line + .verse-line {
+      border-top: 1px solid var(--border-subtle);
+    }
+    .scripture-toggle .verse-number {
+      font-weight: 700;
+      color: var(--accent-sage);
+      margin-right: 6px;
+      font-size: 14px;
+    }
+
+    /* ------------------------------------------------------------------
+       묵상 카드 공통
+       ------------------------------------------------------------------ */
+    .meditation-card {
+      background: var(--bg-card);
+      border-radius: var(--radius-lg);
+      padding: var(--card-padding);
+      margin-bottom: var(--card-gap);
+    }
+    .meditation-card__title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: var(--text-h2);
+      font-weight: 700;
+      color: var(--text-primary);
+      letter-spacing: -0.01em;
+      margin-bottom: var(--space-5);
+    }
+    .meditation-card__icon {
+      width: 28px;
+      height: 28px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: var(--accent-sage-soft);
+      font-size: 15px;
+    }
+
+    /* 핵심 요약 불릿 */
+    .summary-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .summary-list li {
+      position: relative;
+      padding: 10px 0 10px 20px;
+      font-size: var(--text-body);
+      line-height: 1.7;
+      color: var(--text-body);
+    }
+    .summary-list li::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 20px;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent-sage);
+    }
+    .summary-list li + li {
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    /* 등장인물 */
+    .character {
+      padding: var(--space-4) 0;
+    }
+    .character + .character {
+      border-top: 1px solid var(--border-subtle);
+      margin-top: var(--space-2);
+    }
+    .character__name {
+      display: inline-block;
+      font-size: var(--text-subtitle);
+      font-weight: 700;
+      color: var(--accent-sage-text);
+      margin-bottom: var(--space-2);
+      padding: 3px 12px;
+      background: var(--accent-sage-soft);
+      border-radius: var(--radius-pill);
+    }
+    .character__desc {
+      font-size: var(--text-body);
+      line-height: 1.75;
+      color: var(--text-body);
+    }
+
+    /* 책 맥락 / 구절 해설 본문 */
+    .prose {
+      font-size: var(--text-body);
+      line-height: 1.85;
+      color: var(--text-body);
+      white-space: pre-wrap;
+    }
+
+    /* 로딩/에러 */
+    .loading,
+    .error {
+      padding: var(--space-8) var(--space-4);
+      text-align: center;
+      color: var(--text-secondary);
+      font-size: var(--text-small);
+    }
+    .error {
+      color: #B84A4A;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+
+    <!-- 상단바 -->
+    <header class="top-bar">
+      <div class="top-bar__left">
+        <button class="icon-btn" id="closeBtn" aria-label="닫기">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path d="M18 6L6 18M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+      <div class="top-bar__right">
+        <button class="icon-btn icon-btn--font" id="fontSizeBtn" aria-label="폰트 크기">
+          가가
+        </button>
+      </div>
+    </header>
+
+    <!-- 진행 단계 (4단계 중 2단계) -->
+    <div class="progress-dots" aria-label="진행 단계 2/4">
+      <div class="progress-dot active"></div>
+      <div class="progress-dot active"></div>
+      <div class="progress-dot"></div>
+      <div class="progress-dot"></div>
+    </div>
+
+    <!-- 페이지 제목 -->
+    <h1 class="page-title">말씀을 깊이 묵상해보세요</h1>
+
+    <!-- 말씀 토글 (sticky) -->
+    <div class="scripture-toggle" id="scriptureToggle" aria-expanded="false">
+      <div class="scripture-toggle__header" id="scriptureToggleHeader" role="button" tabindex="0">
+        <span class="scripture-toggle__label" id="scriptureLabel">말씀 다시 보기</span>
+        <svg class="scripture-toggle__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="6 9 12 15 18 9"/>
+        </svg>
+      </div>
+      <div class="scripture-toggle__body">
+        <div class="scripture-toggle__inner">
+          <div class="scripture-toggle__ref" id="scriptureRef">—</div>
+          <div id="versesContainer">
+            <div class="loading">말씀을 불러오고 있어요...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 핵심 요약 카드 -->
+    <section class="meditation-card" id="summaryCard">
+      <h2 class="meditation-card__title">
+        <span class="meditation-card__icon">✨</span>
+        오늘 말씀 한눈에
+      </h2>
+      <ul class="summary-list" id="summaryList">
+        <li class="loading" style="padding:0;">묵상을 준비하고 있어요...</li>
+      </ul>
+    </section>
+
+    <!-- 등장인물 카드 -->
+    <section class="meditation-card" id="charactersCard" style="display:none;">
+      <h2 class="meditation-card__title">
+        <span class="meditation-card__icon">👥</span>
+        이야기 속 사람들
+      </h2>
+      <div id="charactersList"></div>
+    </section>
+
+    <!-- 책 맥락 카드 -->
+    <section class="meditation-card" id="bookContextCard" style="display:none;">
+      <h2 class="meditation-card__title">
+        <span class="meditation-card__icon">📚</span>
+        책 전체의 흐름
+      </h2>
+      <div class="prose" id="bookContext"></div>
+    </section>
+
+    <!-- 구절 해설 카드 -->
+    <section class="meditation-card" id="commentaryCard" style="display:none;">
+      <h2 class="meditation-card__title">
+        <span class="meditation-card__icon">💡</span>
+        구절 깊이 들여다보기
+      </h2>
+      <div class="prose" id="verseCommentary"></div>
+    </section>
+
+  </div>
+
+  <!-- 하단 네비 -->
+  <nav class="bottom-nav">
+    <button class="btn btn-secondary" id="prevBtn">이전</button>
+    <button class="btn btn-primary" id="nextBtn">다음</button>
+  </nav>
+
+  <!-- Scripts -->
+  <script src="scripts/storage.js"></script>
+  <script src="scripts/common.js"></script>
+  <script>
+    const TODAY = Common.todayISO();
+    const FALLBACK_DATE = '2026-04-22';
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      await Promise.all([loadAI(), loadScripture()]);
+      setupEventListeners();
+      applyFontSize();
+      Storage.setDailyRecord(TODAY, { progressStep: 2 });
+    });
+
+    // ========== AI 묵상 로드 ==========
+    async function loadAI() {
+      let ai = await Common.loadJSON(`../data/ai/${TODAY}.json`);
+      if (!ai) {
+        ai = await Common.loadJSON(`../data/ai/${FALLBACK_DATE}.json`);
+      }
+
+      if (!ai) {
+        document.getElementById('summaryList').innerHTML =
+          '<li class="error" style="padding:0;">묵상을 불러올 수 없어요.</li>';
+        return;
+      }
+
+      renderSummary(ai.core_summary);
+      renderCharacters(ai.characters);
+      renderBookContext(ai.book_context);
+      renderCommentary(ai.verse_commentary);
+    }
+
+    function renderSummary(summary) {
+      const list = document.getElementById('summaryList');
+      if (!Array.isArray(summary) || summary.length === 0) {
+        list.innerHTML = '<li class="text-secondary" style="padding:0;">요약이 준비되지 않았어요.</li>';
+        return;
+      }
+      list.innerHTML = summary
+        .map(line => `<li>${escapeHTML(line)}</li>`)
+        .join('');
+    }
+
+    function renderCharacters(characters) {
+      if (!Array.isArray(characters) || characters.length === 0) return;
+      document.getElementById('charactersCard').style.display = '';
+      document.getElementById('charactersList').innerHTML = characters
+        .map(c => `
+          <div class="character">
+            <span class="character__name">${escapeHTML(c.name)}</span>
+            <div class="character__desc">${escapeHTML(c.description)}</div>
+          </div>
+        `)
+        .join('');
+    }
+
+    function renderBookContext(text) {
+      if (!text) return;
+      document.getElementById('bookContextCard').style.display = '';
+      document.getElementById('bookContext').textContent = text;
+    }
+
+    function renderCommentary(text) {
+      if (!text) return;
+      document.getElementById('commentaryCard').style.display = '';
+      document.getElementById('verseCommentary').textContent = text;
+    }
+
+    // ========== 말씀 로드 (토글용) ==========
+    async function loadScripture() {
+      let qt = await Common.loadJSON(`../data/qt/${TODAY}.json`);
+      if (!qt) {
+        qt = await Common.loadJSON(`../data/qt/${FALLBACK_DATE}.json`);
+      }
+
+      const container = document.getElementById('versesContainer');
+      const labelEl = document.getElementById('scriptureLabel');
+      const refEl = document.getElementById('scriptureRef');
+
+      if (!qt) {
+        container.innerHTML = '<div class="error">말씀을 불러올 수 없어요.</div>';
+        return;
+      }
+
+      labelEl.textContent = qt.scripture_ref || '말씀 다시 보기';
+      refEl.textContent = qt.scripture_ref || '';
+
+      container.innerHTML = (qt.verses || []).map(v => `
+        <div class="verse-line" data-verse="${v.number}">
+          <span class="verse-number">${v.number}</span>${escapeHTML(v.text)}
+        </div>
+      `).join('');
+    }
+
+    // ========== 이벤트 ==========
+    function setupEventListeners() {
+      // 닫기 → 홈
+      document.getElementById('closeBtn').addEventListener('click', () => {
+        window.location.href = 'index.html';
+      });
+
+      // 이전 → 1단계
+      document.getElementById('prevBtn').addEventListener('click', () => {
+        window.location.href = 'step-1-scripture.html';
+      });
+
+      // 다음 → 3단계 (아직 없음)
+      document.getElementById('nextBtn').addEventListener('click', () => {
+        // Storage.setDailyRecord(TODAY, { progressStep: 3 });
+        // window.location.href = 'step-3-prayer.html';
+        alert('3단계 적용+기도 화면은 곧 만들어질 예정이에요! 🙏');
+      });
+
+      // 폰트 크기 토글
+      document.getElementById('fontSizeBtn').addEventListener('click', toggleFontSize);
+
+      // 말씀 토글 (클릭/엔터/스페이스)
+      const toggle = document.getElementById('scriptureToggle');
+      const header = document.getElementById('scriptureToggleHeader');
+      const doToggle = () => {
+        const isOpen = toggle.classList.toggle('is-open');
+        toggle.setAttribute('aria-expanded', String(isOpen));
+      };
+      header.addEventListener('click', doToggle);
+      header.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          doToggle();
+        }
+      });
+    }
+
+    // ========== 폰트 크기 ==========
+    function toggleFontSize() {
+      const sizes = ['sm', 'md', 'lg'];
+      const settings = Storage.getSettings();
+      const currentIdx = sizes.indexOf(settings.fontSize);
+      const nextIdx = (currentIdx + 1) % sizes.length;
+      Storage.setSetting('fontSize', sizes[nextIdx]);
+      applyFontSize();
+    }
+
+    function applyFontSize() {
+      const size = Storage.getSettings().fontSize;
+      document.documentElement.setAttribute('data-font-size', size);
+    }
+
+    // ========== 유틸 ==========
+    function escapeHTML(str) {
+      if (str == null) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+  </script>
+</body>
+</html>
