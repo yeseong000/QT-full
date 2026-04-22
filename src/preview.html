@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="ko" data-font-size="md">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>주만나 AI 큐티 - 디자인 시스템 프리뷰</title>
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.css">
+  <link rel="stylesheet" href="styles/design-tokens.css">
+
+  <style>
+    /* ==========================================================================
+       Reset + Base
+       ========================================================================== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { font-size: 16px; -webkit-text-size-adjust: 100%; }
+
+    body {
+      font-family: var(--font-sans);
+      color: var(--text-body);
+      background-color: var(--bg-paper);
+      min-height: 100vh;
+      min-height: 100dvh;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      font-weight: 400;
+    }
+
+    .app-container {
+      width: 100%;
+      max-width: var(--app-max-width);
+      margin: 0 auto;
+      padding: var(--page-padding-top) var(--page-padding-x) var(--page-padding-bottom);
+    }
+
+    button { font-family: inherit; }
+
+    /* ==========================================================================
+       프리뷰 헤더
+       ========================================================================== */
+    .preview-header {
+      margin-bottom: var(--space-16);
+      text-align: center;
+      padding: var(--space-8) 0;
+    }
+    .preview-header .emoji {
+      font-size: 48px;
+      margin-bottom: var(--space-3);
+    }
+    .preview-header h1 {
+      font-size: var(--text-hero);
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: var(--space-2);
+      letter-spacing: -0.02em;
+    }
+    .preview-header .theme-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      background: var(--accent-sage-soft);
+      color: var(--accent-sage-text);
+      border-radius: var(--radius-pill);
+      font-size: var(--text-caption);
+      font-weight: 600;
+      margin-top: var(--space-3);
+    }
+
+    /* ==========================================================================
+       섹션
+       ========================================================================== */
+    .section {
+      margin-bottom: var(--section-gap);  /* 48px */
+    }
+    .section-label {
+      font-size: var(--text-caption);
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: var(--space-3);
+    }
+    .section-title {
+      font-size: var(--text-h2);
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: var(--space-6);
+      letter-spacing: -0.01em;
+    }
+    .section-note {
+      font-size: var(--text-small);
+      color: var(--text-secondary);
+      margin-bottom: var(--space-5);
+    }
+
+    /* ==========================================================================
+       카드
+       ========================================================================== */
+    .card {
+      background: var(--bg-card);
+      border-radius: var(--radius-lg);
+      padding: var(--card-padding);
+      margin-bottom: var(--card-gap);
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: var(--space-4);
+      margin-bottom: var(--space-5);
+    }
+    .card-title {
+      font-size: var(--text-h1);
+      font-weight: 700;
+      color: var(--text-primary);
+      line-height: 1.4;
+      letter-spacing: -0.01em;
+    }
+
+    .card-check {
+      flex-shrink: 0;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border: 1.5px solid var(--check-inactive);
+      display: grid;
+      place-items: center;
+      background: transparent;
+      transition: all var(--duration-base) var(--ease-out);
+      cursor: pointer;
+    }
+    .card-check[aria-checked="true"] {
+      border-color: var(--check-active);
+      background: var(--check-active);
+    }
+    .card-check svg {
+      width: 14px;
+      height: 14px;
+      stroke: var(--check-inactive);
+      transition: stroke var(--duration-base) var(--ease-out);
+    }
+    .card-check[aria-checked="true"] svg { stroke: white; }
+
+    /* ==========================================================================
+       성경 본문
+       ========================================================================== */
+    .scripture-ref {
+      font-size: var(--text-small);
+      color: var(--text-secondary);
+      padding-bottom: var(--space-4);
+      border-bottom: 1px solid var(--border-subtle);
+      margin-bottom: var(--space-4);
+    }
+    .verse-line {
+      font-size: var(--text-scripture);
+      line-height: 1.85;
+      color: var(--text-body);
+      padding: var(--space-3) 0;
+    }
+    .verse-line + .verse-line {
+      border-top: 1px solid var(--border-subtle);
+    }
+    .verse-number {
+      font-weight: 700;
+      color: var(--accent-sage);
+      margin-right: 6px;
+      font-size: 15px;
+    }
+
+    /* ==========================================================================
+       기도문 (시적 줄바꿈)
+       ========================================================================== */
+    .prayer-title {
+      font-size: var(--text-h1);
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: var(--space-5);
+      letter-spacing: -0.01em;
+    }
+    .prayer-line {
+      font-size: var(--text-prayer);
+      line-height: 2.0;
+      color: var(--text-body);
+      padding: var(--space-2) 0;
+    }
+    .prayer-line + .prayer-line {
+      border-top: 1px solid var(--border-subtle);
+    }
+    .prayer-line.empty {
+      padding: 0;
+      border-top: none !important;
+      height: var(--space-4);
+    }
+
+    /* ==========================================================================
+       버튼
+       ========================================================================== */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-2);
+      font-size: var(--text-button);
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      transition: transform var(--duration-fast) var(--ease-out),
+                  background var(--duration-base) var(--ease-out);
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      letter-spacing: -0.01em;
+    }
+    .btn:active { transform: scale(0.97); }
+
+    .btn-primary {
+      background: var(--accent-sage);
+      color: var(--text-on-accent);
+      padding: 15px 32px;
+      border-radius: var(--radius-pill);
+      box-shadow: var(--shadow-button);
+    }
+    .btn-primary:hover { background: var(--accent-sage-dark); }
+
+    .btn-secondary {
+      background: var(--accent-sage-soft);
+      color: var(--accent-sage-text);
+      padding: 15px 24px;
+      border-radius: var(--radius-pill);
+      font-weight: 500;
+      min-width: 88px;
+    }
+
+    .btn-soft {
+      background: var(--bg-soft);
+      color: var(--accent-sage-text);
+      padding: 18px 24px;
+      border-radius: var(--radius-pill);
+      font-weight: 500;
+      width: 100%;
+    }
+
+    /* ==========================================================================
+       감정 칩
+       ========================================================================== */
+    .chips-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-2);
+    }
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 11px 16px;
+      border: 1px solid var(--border-chip);
+      border-radius: var(--radius-pill);
+      background: transparent;
+      font-size: var(--text-chip);
+      color: var(--text-body);
+      cursor: pointer;
+      transition: all var(--duration-base) var(--ease-out);
+      font-weight: 500;
+    }
+    .chip::before {
+      content: '';
+      display: inline-block;
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--chip-color, var(--chip-calm));
+    }
+    .chip[data-category="calm"] { --chip-color: var(--chip-calm); }
+    .chip[data-category="insight"] { --chip-color: var(--chip-insight); }
+    .chip[data-category="reflect"] { --chip-color: var(--chip-reflect); }
+
+    .chip:hover {
+      background: color-mix(in srgb, var(--chip-color) 6%, transparent);
+    }
+    .chip[aria-selected="true"] {
+      background: color-mix(in srgb, var(--chip-color) 12%, transparent);
+      border-color: var(--chip-color);
+      color: var(--text-primary);
+    }
+
+    /* ==========================================================================
+       입력창
+       ========================================================================== */
+    .textarea-field {
+      width: 100%;
+      min-height: 88px;
+      background: transparent;
+      border: none;
+      border-bottom: 1px solid var(--border-input);
+      padding: var(--space-3) 0;
+      font-family: var(--font-sans);
+      font-size: var(--text-body);
+      color: var(--text-body);
+      outline: none;
+      resize: none;
+      line-height: 1.7;
+      transition: border-color var(--duration-base);
+    }
+    .textarea-field:focus { border-bottom-color: var(--accent-sage); }
+    .textarea-field::placeholder { color: var(--text-placeholder); }
+
+    /* ==========================================================================
+       하단 네비게이션 바
+       ========================================================================== */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      padding: 16px 20px calc(16px + env(safe-area-inset-bottom, 0));
+      background: rgba(247, 244, 237, 0.92);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      display: flex;
+      gap: var(--space-2);
+      max-width: var(--app-max-width);
+      margin: 0 auto;
+      z-index: 100;
+    }
+    .bottom-nav .btn-primary { flex: 1; }
+
+    /* ==========================================================================
+       플로팅 버튼
+       ========================================================================== */
+    .fab {
+      position: fixed;
+      right: 20px;
+      bottom: 120px;
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      background: var(--bg-card);
+      box-shadow: var(--shadow-float);
+      border: none;
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      color: var(--accent-sage);
+      z-index: 50;
+    }
+
+    /* ==========================================================================
+       컬러 스와치
+       ========================================================================== */
+    .color-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: var(--space-3);
+    }
+    .color-swatch {
+      background: var(--bg-card);
+      border-radius: var(--radius-md);
+      padding: var(--space-3);
+    }
+    .color-box {
+      width: 100%;
+      height: 56px;
+      border-radius: var(--radius-sm);
+      margin-bottom: var(--space-2);
+      border: 1px solid var(--border-subtle);
+    }
+    .color-name {
+      font-size: var(--text-caption);
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 2px;
+    }
+    .color-hex {
+      font-size: 11px;
+      color: var(--text-secondary);
+      font-family: var(--font-mono);
+      letter-spacing: 0.02em;
+    }
+
+    /* ==========================================================================
+       타이포 샘플
+       ========================================================================== */
+    .type-sample {
+      padding: var(--space-3) 0;
+    }
+    .type-sample + .type-sample {
+      border-top: 1px solid var(--border-subtle);
+    }
+    .type-label {
+      font-size: 11px;
+      color: var(--text-secondary);
+      font-family: var(--font-mono);
+      margin-top: var(--space-2);
+      letter-spacing: 0.03em;
+    }
+
+    /* ==========================================================================
+       날짜 뱃지 (홈 화면에서 쓸 스타일)
+       ========================================================================== */
+    .date-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      background: var(--accent-sage-soft);
+      color: var(--accent-sage-text);
+      border-radius: var(--radius-pill);
+      font-size: var(--text-small);
+      font-weight: 600;
+      letter-spacing: -0.01em;
+    }
+
+    /* ==========================================================================
+       스트릭 카드 (연속일)
+       ========================================================================== */
+    .streak-card {
+      background: linear-gradient(135deg, var(--accent-sage) 0%, var(--accent-sage-dark) 100%);
+      color: white;
+      border-radius: var(--radius-lg);
+      padding: var(--space-5) var(--space-6);
+      display: flex;
+      align-items: center;
+      gap: var(--space-4);
+      margin-bottom: var(--card-gap);
+      box-shadow: var(--shadow-button);
+    }
+    .streak-emoji { font-size: 32px; }
+    .streak-info { flex: 1; }
+    .streak-number {
+      font-size: 24px;
+      font-weight: 700;
+      line-height: 1;
+      letter-spacing: -0.02em;
+    }
+    .streak-label {
+      font-size: var(--text-small);
+      opacity: 0.9;
+      margin-top: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+
+    <!-- 프리뷰 헤더 -->
+    <header class="preview-header">
+      <div class="emoji">🌿</div>
+      <h1>주만나 AI 큐티</h1>
+      <div class="theme-badge">
+        <span>🅲️</span>
+        잔디밭 오후 · 미니멀
+      </div>
+    </header>
+
+    <!-- ========== 1. 컬러 ========== -->
+    <section class="section">
+      <div class="section-label">SECTION 01</div>
+      <h2 class="section-title">컬러 팔레트</h2>
+
+      <p class="section-note">배경 & 텍스트</p>
+      <div class="color-grid" style="margin-bottom: var(--space-6);">
+        <div class="color-swatch">
+          <div class="color-box" style="background: #F7F4ED"></div>
+          <div class="color-name">bg-paper</div>
+          <div class="color-hex">#F7F4ED</div>
+        </div>
+        <div class="color-swatch">
+          <div class="color-box" style="background: #FFFFFF"></div>
+          <div class="color-name">bg-card</div>
+          <div class="color-hex">#FFFFFF</div>
+        </div>
+        <div class="color-swatch">
+          <div class="color-box" style="background: #E8F0EA"></div>
+          <div class="color-name">bg-soft</div>
+          <div class="color-hex">#E8F0EA</div>
+        </div>
+        <div class="color-swatch">
+          <div class="color-box" style="background: #2D3A32"></div>
+          <div class="color-name">text-primary</div>
+          <div class="color-hex">#2D3A32</div>
+        </div>
+      </div>
+
+      <p class="section-note">액센트 (세이지 그린)</p>
+      <div class="color-grid" style="margin-bottom: var(--space-6);">
+        <div class="color-swatch">
+          <div class="color-box" style="background: #5BA892"></div>
+          <div class="color-name">accent-sage</div>
+          <div class="color-hex">#5BA892</div>
+        </div>
+        <div class="color-swatch">
+          <div class="color-box" style="background: #4A8F7C"></div>
+          <div class="color-name">sage-dark</div>
+          <div class="color-hex">#4A8F7C</div>
+        </div>
+      </div>
+
+      <p class="section-note">감정 칩</p>
+      <div class="color-grid">
+        <div class="color-swatch">
+          <div class="color-box" style="background: #F5B942"></div>
+          <div class="color-name">calm 🟡</div>
+          <div class="color-hex">#F5B942</div>
+        </div>
+        <div class="color-swatch">
+          <div class="color-box" style="background: #5BA892"></div>
+          <div class="color-name">insight 🟢</div>
+          <div class="color-hex">#5BA892</div>
+        </div>
+        <div class="color-swatch">
+          <div class="color-box" style="background: #8B9DB8"></div>
+          <div class="color-name">reflect 🔵</div>
+          <div class="color-hex">#8B9DB8</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== 2. 타이포그래피 ========== -->
+    <section class="section">
+      <div class="section-label">SECTION 02</div>
+      <h2 class="section-title">타이포그래피</h2>
+      <div class="card">
+        <div class="type-sample">
+          <div style="font-size: 28px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.02em;">말씀을 깊이 새겨보세요</div>
+          <div class="type-label">hero · 28px · 700</div>
+        </div>
+        <div class="type-sample">
+          <div style="font-size: 22px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.01em;">오늘의 말씀</div>
+          <div class="type-label">h1 · 22px · 700</div>
+        </div>
+        <div class="type-sample">
+          <div style="font-size: 17px; line-height: 1.85; color: var(--text-body);">
+            <span style="font-weight: 700; color: var(--accent-sage);">15</span>
+            나오미가 또 이르되 보라 네 동서는 그의 백성과 그의 신들에게로 돌아가나니
+          </div>
+          <div class="type-label">scripture · 17px · 1.85 line-height</div>
+        </div>
+        <div class="type-sample">
+          <div style="font-size: 16px; line-height: 2.0; color: var(--text-body);">주님,<br>비어 돌아온 나오미에게<br>보리 추수의 때를 허락하신 주님.</div>
+          <div class="type-label">prayer · 16px · 2.0 line-height</div>
+        </div>
+        <div class="type-sample">
+          <div style="font-size: 14px; color: var(--text-secondary);">2026년 4월 22일 수요일</div>
+          <div class="type-label">small · 14px</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== 3. 홈 화면 요소 ========== -->
+    <section class="section">
+      <div class="section-label">SECTION 03</div>
+      <h2 class="section-title">홈 화면 요소</h2>
+      <p class="section-note">날짜 뱃지와 연속일 카드</p>
+
+      <div style="margin-bottom: var(--space-5);">
+        <span class="date-badge">
+          <span>📅</span>
+          2026년 4월 22일 수요일
+        </span>
+      </div>
+
+      <div class="streak-card">
+        <div class="streak-emoji">🌱</div>
+        <div class="streak-info">
+          <div class="streak-number">14일 연속</div>
+          <div class="streak-label">총 47회 묵상 완료</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== 4. 성경 본문 카드 ========== -->
+    <section class="section">
+      <div class="section-label">SECTION 04</div>
+      <h2 class="section-title">성경 본문 카드</h2>
+
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title">오늘의 말씀</h3>
+          <button class="card-check" aria-checked="false" aria-label="완료 체크">
+            <svg viewBox="0 0 16 16" fill="none">
+              <path d="M3 8l3.5 3.5L13 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+        </div>
+        <div class="scripture-ref">룻기 1:15-22 · 개역개정</div>
+        <div class="verse-line">
+          <span class="verse-number">15</span>
+          나오미가 또 이르되 보라 네 동서는 그의 백성과 그의 신들에게로 돌아가나니 너도 너의 동서를 따라 돌아가라 하니
+        </div>
+        <div class="verse-line">
+          <span class="verse-number">16</span>
+          룻이 이르되 내게 어머니를 떠나며 어머니를 따르지 말고 돌아가라 강권하지 마옵소서
+        </div>
+        <div class="verse-line">
+          <span class="verse-number">17</span>
+          어머니께서 죽으시는 곳에서 나도 죽어 거기 묻힐 것이라
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== 5. 기도문 카드 ========== -->
+    <section class="section">
+      <div class="section-label">SECTION 05</div>
+      <h2 class="section-title">기도문</h2>
+      <p class="section-note">초원 앱 스타일의 시적 줄바꿈</p>
+
+      <div class="card">
+        <h3 class="prayer-title">기도하기</h3>
+        <div class="prayer-line">주님,</div>
+        <div class="prayer-line">비어 돌아온 나오미에게</div>
+        <div class="prayer-line">보리 추수의 때를 허락하신 주님.</div>
+        <div class="prayer-line empty"></div>
+        <div class="prayer-line">저의 쓰라린 자리에도</div>
+        <div class="prayer-line">회복의 계절을 보내주옵소서.</div>
+        <div class="prayer-line empty"></div>
+        <div class="prayer-line">예수님의 이름으로 기도합니다. 아멘.</div>
+      </div>
+    </section>
+
+    <!-- ========== 6. 버튼 ========== -->
+    <section class="section">
+      <div class="section-label">SECTION 06</div>
+      <h2 class="section-title">버튼</h2>
+
+      <div class="card">
+        <p class="section-note" style="margin-bottom: var(--space-3);">Primary · Secondary</p>
+        <div style="display: flex; gap: 8px; margin-bottom: var(--space-5);">
+          <button class="btn btn-secondary">이전</button>
+          <button class="btn btn-primary" style="flex: 1;">다음</button>
+        </div>
+        <div style="display: flex; gap: 8px; margin-bottom: var(--space-5);">
+          <button class="btn btn-secondary">이전</button>
+          <button class="btn btn-primary" style="flex: 1;">완료하기</button>
+        </div>
+        <p class="section-note" style="margin: var(--space-5) 0 var(--space-3);">Soft · 기도했어요</p>
+        <button class="btn btn-soft">
+          <span>🙌</span>
+          기도했어요
+        </button>
+      </div>
+    </section>
+
+    <!-- ========== 7. 감정 칩 ========== -->
+    <section class="section">
+      <div class="section-label">SECTION 07</div>
+      <h2 class="section-title">감정 칩</h2>
+      <p class="section-note">탭해서 선택/해제</p>
+
+      <div class="card">
+        <h3 class="card-title" style="margin-bottom: var(--space-5); font-size: var(--text-subtitle);">
+          오늘 묵상을 통해<br>어떤 감정을 느꼈나요?
+        </h3>
+        <div class="chips-grid">
+          <button class="chip" data-category="calm" aria-selected="false">마음이 편안해졌어요</button>
+          <button class="chip" data-category="calm" aria-selected="false">감사함을 느껴요</button>
+          <button class="chip" data-category="calm" aria-selected="true">위로를 받았어요</button>
+          <button class="chip" data-category="insight" aria-selected="false">깨달음을 얻었어요</button>
+          <button class="chip" data-category="insight" aria-selected="true">결심이 생겼어요</button>
+          <button class="chip" data-category="insight" aria-selected="false">의지가 커졌어요</button>
+          <button class="chip" data-category="reflect" aria-selected="false">나를 돌아보게 돼요</button>
+          <button class="chip" data-category="reflect" aria-selected="false">궁금증이 생겨요</button>
+          <button class="chip" data-category="reflect" aria-selected="false">마음이 흔들려요</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== 8. 입력창 ========== -->
+    <section class="section">
+      <div class="section-label">SECTION 08</div>
+      <h2 class="section-title">메모 입력</h2>
+
+      <div class="card">
+        <h3 class="card-title" style="margin-bottom: var(--space-5); font-size: var(--text-subtitle);">
+          떠오른 생각을<br>기록해보세요
+        </h3>
+        <textarea class="textarea-field" placeholder="내용을 입력해주세요..."></textarea>
+      </div>
+    </section>
+
+    <!-- ========== 하단 여백 ========== -->
+    <div style="height: 120px;"></div>
+
+  </div>
+
+  <!-- 플로팅 버튼 -->
+  <button class="fab" aria-label="밑줄 긋기">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 20h9"/>
+      <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+    </svg>
+  </button>
+
+  <!-- 하단 네비 -->
+  <nav class="bottom-nav">
+    <button class="btn btn-secondary">이전</button>
+    <button class="btn btn-primary">다음</button>
+  </nav>
+
+  <!-- 인터랙션 -->
+  <script>
+    document.querySelectorAll('.chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        const current = chip.getAttribute('aria-selected') === 'true';
+        chip.setAttribute('aria-selected', !current);
+      });
+    });
+
+    document.querySelectorAll('.card-check').forEach(check => {
+      check.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const current = check.getAttribute('aria-checked') === 'true';
+        check.setAttribute('aria-checked', !current);
+      });
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,522 @@
+/* ==========================================================================
+   주만나 AI 큐티 - 공통 컴포넌트 CSS
+   iPhone 14/15 Pro 최적화 · 모든 페이지에서 공유
+   ========================================================================== */
+
+/* ------------------------------------------------------------------
+   Reset & Base
+   ------------------------------------------------------------------ */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
+  /* iOS 스크롤 바운스 제어 (pull-to-refresh 방지) */
+  overscroll-behavior-y: contain;
+  /* 가로 스크롤 완전 차단 */
+  overflow-x: hidden;
+}
+
+body {
+  font-family: var(--font-sans);
+  color: var(--text-body);
+  background-color: var(--bg-paper);
+  min-height: 100vh;
+  min-height: 100dvh;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-weight: 400;
+  overscroll-behavior-y: contain;
+  /* 터치 딜레이 제거 */
+  touch-action: manipulation;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+  color: inherit;
+  -webkit-tap-highlight-color: transparent;
+  /* iOS 기본 스타일 제거 */
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+input, textarea {
+  font-family: inherit;
+  -webkit-appearance: none;
+  appearance: none;
+  /* iOS에서 자동 확대 방지 (16px 이상 필수) */
+  font-size: 16px;
+}
+
+/* iOS input 포커스 시 자동 확대 완전 방지 */
+@supports (-webkit-touch-callout: none) {
+  input, textarea, select {
+    font-size: 16px !important;
+  }
+}
+
+/* ------------------------------------------------------------------
+   앱 컨테이너 (iPhone 세이프 에어리어 전면 대응)
+   ------------------------------------------------------------------ */
+.app-container {
+  width: 100%;
+  max-width: var(--app-max-width);
+  margin: 0 auto;
+  /* 세이프 에어리어: 상단(다이나믹 아일랜드) + 하단(홈바) */
+  padding:
+    calc(var(--page-padding-top) + env(safe-area-inset-top, 0))
+    var(--page-padding-x)
+    calc(var(--page-padding-bottom) + env(safe-area-inset-bottom, 0));
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+/* 하단 네비가 없는 페이지 (완료 화면 등) */
+.app-container--no-nav {
+  padding-bottom: calc(var(--space-8) + env(safe-area-inset-bottom, 0));
+}
+
+/* ------------------------------------------------------------------
+   💻 PC에서 iPhone 프레임처럼 렌더링
+   (481px 이상 = PC/태블릿 환경)
+   ------------------------------------------------------------------ */
+@media (min-width: 481px) {
+  body {
+    background: #E8E3D8;   /* 프레임 바깥 배경 (살짝 어두운 베이지) */
+    min-height: 100vh;
+    padding: 40px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .app-container {
+    width: 393px;                      /* iPhone 14/15 Pro 실제 폭 */
+    max-width: 393px;
+    height: 852px;                     /* iPhone 14/15 Pro 실제 높이 */
+    min-height: 852px;
+    max-height: 90vh;                  /* PC 화면 작을 때 대응 */
+    border-radius: var(--iphone-frame-radius);
+    background: var(--bg-paper);
+    overflow-y: auto;
+    overflow-x: hidden;
+    box-shadow:
+      0 0 0 12px #1a1a1a,              /* 검정 베젤 */
+      0 20px 60px rgba(0, 0, 0, 0.25); /* 드롭 섀도우 */
+    position: relative;
+    /* 세이프 에어리어 시뮬레이션 */
+    padding:
+      calc(var(--page-padding-top) + 54px)    /* 다이나믹 아일랜드 영역 */
+      var(--page-padding-x)
+      calc(var(--page-padding-bottom) + 34px); /* 홈바 영역 */
+  }
+
+  /* PC 프레임의 다이나믹 아일랜드 시뮬레이션 */
+  .app-container::before {
+    content: '';
+    position: absolute;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 120px;
+    height: 36px;
+    background: #1a1a1a;
+    border-radius: 20px;
+    z-index: 1000;
+    pointer-events: none;
+  }
+
+  /* PC 프레임 안 하단 네비/FAB 재배치 */
+  .bottom-nav {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding-bottom: calc(16px + 34px);   /* 홈바 영역 포함 */
+    max-width: 100%;
+    border-radius: 0 0 var(--iphone-frame-radius) var(--iphone-frame-radius);
+  }
+
+  .fab {
+    position: absolute;
+    bottom: 120px;
+    right: 20px;
+  }
+
+  .modal-backdrop {
+    position: absolute;
+    border-radius: var(--iphone-frame-radius);
+    overflow: hidden;
+  }
+
+  .modal-sheet {
+    max-width: 100%;
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  }
+}
+
+/* 모바일 환경 (480px 이하) - 프레임 없이 풀스크린 */
+@media (max-width: 480px) {
+  body {
+    /* 모바일에선 기본 배경 */
+    background: var(--bg-paper);
+  }
+}
+
+/* ------------------------------------------------------------------
+   상단 바 (X, 가가, 🎵)
+   ------------------------------------------------------------------ */
+.top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-8);
+  min-height: 32px;
+}
+
+.top-bar__left,
+.top-bar__right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.icon-btn {
+  width: 44px;       /* iOS HIG 최소 터치 영역 */
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: var(--text-primary);
+  transition: background var(--duration-base);
+  /* iOS 기본 하이라이트 제거 */
+  -webkit-tap-highlight-color: transparent;
+}
+.icon-btn:hover,
+.icon-btn:active {
+  background: var(--accent-sage-soft);
+}
+.icon-btn svg {
+  width: 22px;
+  height: 22px;
+}
+
+.icon-btn--font {
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: -1px;
+}
+
+/* ------------------------------------------------------------------
+   페이지 타이틀
+   ------------------------------------------------------------------ */
+.page-title {
+  font-size: var(--text-hero);
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+  margin-bottom: var(--space-8);
+  line-height: 1.3;
+}
+
+/* ------------------------------------------------------------------
+   카드
+   ------------------------------------------------------------------ */
+.card {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  padding: var(--card-padding);
+  margin-bottom: var(--card-gap);
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
+}
+
+.card-title {
+  font-size: var(--text-h1);
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.4;
+  letter-spacing: -0.01em;
+}
+
+.card-subtitle {
+  font-size: var(--text-subtitle);
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.5;
+  margin-bottom: var(--space-4);
+}
+
+/* ------------------------------------------------------------------
+   체크 동그라미
+   ------------------------------------------------------------------ */
+.check-circle {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1.5px solid var(--check-inactive);
+  display: grid;
+  place-items: center;
+  background: transparent;
+  transition: all var(--duration-base) var(--ease-out);
+}
+.check-circle[aria-checked="true"] {
+  border-color: var(--check-active);
+  background: var(--check-active);
+}
+.check-circle svg {
+  width: 14px;
+  height: 14px;
+  stroke: var(--check-inactive);
+  transition: stroke var(--duration-base);
+}
+.check-circle[aria-checked="true"] svg {
+  stroke: white;
+}
+
+/* ------------------------------------------------------------------
+   버튼 (iOS 터치 최적화)
+   ------------------------------------------------------------------ */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  font-size: var(--text-button);
+  font-weight: 600;
+  transition: transform var(--duration-fast) var(--ease-out),
+              background var(--duration-base) var(--ease-out);
+  user-select: none;
+  letter-spacing: -0.01em;
+  min-height: 44px;   /* iOS 최소 터치 영역 */
+  -webkit-tap-highlight-color: transparent;
+}
+.btn:active {
+  transform: scale(0.97);
+}
+
+.btn-primary {
+  background: var(--accent-sage);
+  color: var(--text-on-accent);
+  padding: 15px 32px;
+  border-radius: var(--radius-pill);
+  box-shadow: var(--shadow-button);
+}
+.btn-primary:hover {
+  background: var(--accent-sage-dark);
+}
+
+.btn-secondary {
+  background: var(--accent-sage-soft);
+  color: var(--accent-sage-text);
+  padding: 15px 24px;
+  border-radius: var(--radius-pill);
+  font-weight: 500;
+  min-width: 88px;
+}
+
+.btn-soft {
+  background: var(--bg-soft);
+  color: var(--accent-sage-text);
+  padding: 18px 24px;
+  border-radius: var(--radius-pill);
+  font-weight: 500;
+  width: 100%;
+}
+
+.btn-text {
+  color: var(--accent-sage-text);
+  font-weight: 500;
+  font-size: var(--text-small);
+  padding: var(--space-2) 0;
+}
+
+/* ------------------------------------------------------------------
+   하단 네비게이션 바 (홈바 영역 대응)
+   ------------------------------------------------------------------ */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 16px 20px calc(16px + env(safe-area-inset-bottom, 0));
+  background: rgba(247, 244, 237, 0.92);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  display: flex;
+  gap: var(--space-2);
+  max-width: var(--app-max-width);
+  margin: 0 auto;
+  z-index: 100;
+}
+.bottom-nav .btn-primary {
+  flex: 1;
+}
+
+/* ------------------------------------------------------------------
+   플로팅 버튼 (FAB) - 하단 네비 위 위치
+   ------------------------------------------------------------------ */
+.fab {
+  position: fixed;
+  right: 20px;
+  bottom: calc(120px + env(safe-area-inset-bottom, 0));
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--bg-card);
+  box-shadow: var(--shadow-float);
+  display: grid;
+  place-items: center;
+  color: var(--accent-sage);
+  z-index: 50;
+  transition: transform var(--duration-fast);
+}
+.fab:active {
+  transform: scale(0.95);
+}
+
+/* ------------------------------------------------------------------
+   모달 / 바텀시트
+   ------------------------------------------------------------------ */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(45, 58, 50, 0.4);
+  backdrop-filter: blur(4px);
+  z-index: 200;
+  display: none;
+  align-items: flex-end;
+  justify-content: center;
+}
+.modal-backdrop.is-open {
+  display: flex;
+}
+
+.modal-sheet {
+  background: var(--bg-card);
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  padding: var(--space-6);
+  width: 100%;
+  max-width: var(--app-max-width);
+  padding-bottom: calc(var(--space-6) + env(safe-area-inset-bottom, 0));
+  animation: slideUp var(--duration-slow) var(--ease-out);
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+.modal-title {
+  font-size: var(--text-h2);
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: var(--space-2);
+}
+
+.modal-desc {
+  font-size: var(--text-small);
+  color: var(--text-secondary);
+  margin-bottom: var(--space-5);
+  line-height: 1.6;
+}
+
+/* ------------------------------------------------------------------
+   입력창 (iOS 자동 확대 방지 포함)
+   ------------------------------------------------------------------ */
+.input-field {
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-bottom: 1.5px solid var(--border-input);
+  padding: var(--space-3) 0;
+  font-size: 16px;   /* iOS 자동 확대 방지 */
+  color: var(--text-body);
+  outline: none;
+  transition: border-color var(--duration-base);
+  border-radius: 0;
+}
+.input-field:focus {
+  border-bottom-color: var(--accent-sage);
+}
+.input-field::placeholder {
+  color: var(--text-placeholder);
+}
+
+.textarea-field {
+  width: 100%;
+  min-height: 88px;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--border-input);
+  padding: var(--space-3) 0;
+  font-size: 16px;
+  color: var(--text-body);
+  outline: none;
+  resize: none;
+  line-height: 1.7;
+  transition: border-color var(--duration-base);
+  border-radius: 0;
+}
+.textarea-field:focus {
+  border-bottom-color: var(--accent-sage);
+}
+.textarea-field::placeholder {
+  color: var(--text-placeholder);
+}
+
+/* ------------------------------------------------------------------
+   페이지 전환 애니메이션
+   ------------------------------------------------------------------ */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.app-container > * {
+  animation: fadeInUp var(--duration-slow) var(--ease-out);
+  animation-fill-mode: both;
+}
+
+.app-container > *:nth-child(1) { animation-delay: 0ms; }
+.app-container > *:nth-child(2) { animation-delay: 60ms; }
+.app-container > *:nth-child(3) { animation-delay: 120ms; }
+.app-container > *:nth-child(4) { animation-delay: 180ms; }
+.app-container > *:nth-child(5) { animation-delay: 240ms; }
+
+/* ------------------------------------------------------------------
+   유틸리티
+   ------------------------------------------------------------------ */
+.text-secondary { color: var(--text-secondary); }
+.text-small { font-size: var(--text-small); }
+.text-center { text-align: center; }
+.mt-4 { margin-top: var(--space-4); }
+.mb-4 { margin-bottom: var(--space-4); }
+.mb-6 { margin-bottom: var(--space-6); }
