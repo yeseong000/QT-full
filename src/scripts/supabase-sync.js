@@ -2,8 +2,8 @@
 // Supabase 설정 — supabase.com에서 프로젝트 생성 후 아래 두 값을 채워주세요.
 // anon key는 클라이언트 공개용 키입니다 (GitHub 업로드 허용).
 // =============================================================
-const SUPABASE_URL  = 'https://YOUR_PROJECT.supabase.co';
-const SUPABASE_ANON = 'YOUR_ANON_KEY';
+const SUPABASE_URL  = 'https://bftuoumpjeamdnfawagx.supabase.co';
+const SUPABASE_ANON = 'sb_publishable_slRhiMby48sElbv-e_7uyA_SZvwZ237';
 
 function _headers(extra) {
   return Object.assign({
