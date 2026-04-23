@@ -39,7 +39,7 @@ MODEL = "gpt-4o-mini"
 # 가격 (2026년 기준, 백만 토큰당)
 PRICE_INPUT_PER_1M = 0.15  # USD
 PRICE_OUTPUT_PER_1M = 0.60  # USD
-USD_TO_KRW = 1350  # 대략적인 환율
+USD_TO_KRW = 1500  # 대략적인 환율
 
 # 금지어 (AI_PROMPT.md 기준)
 FORBIDDEN_WORDS = ["여러분", "~해야만", "반드시 해야"]
@@ -63,7 +63,7 @@ SYSTEM_PROMPT = """당신은 따뜻한 목사님이면서 동시에 지혜로운
 [말투 원칙]
 - 존댓말 사용 (~합니다, ~입니다)
 - 딱딱하지 않고 따뜻하게
-- 한 문장을 짧게 끊어서 쓰기 (초원 앱 스타일)
+- 한 문장을 짧게 끊어서 쓰기 
 - 신학 용어는 최소화, 썼을 때는 반드시 풀어서 설명
 - 훈계하지 않고 함께 생각하는 톤
 
@@ -100,7 +100,34 @@ def build_user_prompt(qt_data: dict) -> str:
 2. characters: 본문에 등장하는 주요 인물 1~3명. 각 인물당 2~3문장 설명.
 3. book_context: 이 책({qt_data['book_name']})의 전체 흐름과 이 구절의 위치. 3~4문장.
 4. verse_commentary: 본문에서 주목할 만한 단어, 배경, 의미. 3~5문장.
-5. application: 내 삶에 적용할 문장 3개. 각각 "나는 오늘, ~하겠습니다. [보조설명]" 형식.
+5. application: "말씀 적용하기" 3개.
+
+   [작성 원칙]
+   - 본문에 직접 연결, 본문에 없는 내용 금지
+   - 보편 문구 금지 (예: "작은 것에도 감사", "말씀에 귀 기울이기" 같이 아무 본문에나 적용되는 문구)
+   - 위계적·시혜적 표현 금지 (독자를 '베푸는 자'로 세우는 표현)
+     ❌ "주변 사람에게 은혜를 베풀겠습니다", "이웃을 가르치겠습니다"
+     ✅ "사랑을 실천하겠습니다", "감사를 표현하겠습니다" 같은 자연스러운 결단은 허용
+
+   [자기 낮춤 — 저/제만 사용]
+   ✅ "저는 / 제 / 저의 / 저에게"
+   ❌ "나는 / 내 / 나의 / 나에게"
+
+   [시작 구조 — 다양성을 위해 매우 중요]
+   세 항목은 반드시 서로 다른 단어로 시작해야 합니다.
+   같은 말씀을 여러 각도에서 적용하는 다양성을 확보하기 위함입니다.
+   - 1번: "저는 오늘, ~"   (반드시 이 형태)
+   - 2번: "오늘부터, ~" / "이 말씀 앞에서, ~" / "주님, 제가 ~" 중 하나
+   - 3번: 1번·2번과 겹치지 않는 또 다른 시작
+     예: "지금 제가 ~", "이 본문이 보여주는 ~", "말씀을 따라 ~",
+         "하루를 열며, ~", "주님의 마음으로, ~"
+   ※ 세 항목이 모두 "저는 오늘,"로 시작하면 규칙 위반입니다.
+
+   [문장 규칙]
+   - 각 항목 정확히 2문장
+   - statement = 첫 문장: 결단형 적용 (짧고 단정)
+   - detail = 두 번째 문장: 본문과 연결된 보완 문장 (짧고 단정)
+
 6. prayer: 기도문. 8~14줄. 초원 앱처럼 짧게 줄바꿈된 시적인 형태 (빈 줄 포함 가능).
 
 [스타일]
@@ -118,9 +145,87 @@ JSON 형식으로만 응답하고, 다음 구조를 따르세요:
   "book_context": "책 전체 맥락 설명",
   "verse_commentary": "구절 해설",
   "application": [
-    {{"statement": "나는 오늘, ~하겠습니다.", "detail": "보조 설명"}}
+    {{"statement": "저는 오늘, ~.", "detail": "본문과 연결된 짧은 보완 문장 (저/제 사용)."}},
+    {{"statement": "(변주형 시작) ~.", "detail": "본문과 연결된 짧은 보완 문장 (저/제 사용)."}},
+    {{"statement": "(또 다른 변주형 시작) ~.", "detail": "본문과 연결된 짧은 보완 문장 (저/제 사용)."}}
   ],
   "prayer": ["주님,", "", "첫 번째 문장.", "두 번째 문장.", "", "..."]
+}}"""
+
+
+# ===== 2차 정제 프롬프트 (application만 검사/수정) =====
+REFINE_SYSTEM_PROMPT = """당신은 한국 개신교 QT 묵상의 엄격한 편집자입니다.
+신학적으로 균형 잡혀 있으며, 한국어 기독교 경건 표현에 정통합니다.
+문제가 있는 부분만 최소한으로 수정하고, 문제가 없으면 원문을 그대로 유지합니다.
+좋은 표현을 괜히 더 낫게 바꾸려 하지 않습니다."""
+
+
+def build_refine_prompt(application: list, qt_data: dict) -> str:
+    """2차 정제 프롬프트 — application 3개를 검사/수정"""
+    verses_text = "\n".join(
+        f"{v['number']} {v['text']}" for v in qt_data["verses"]
+    )
+    application_json = json.dumps(application, ensure_ascii=False, indent=2)
+
+    return f"""아래 QT 묵상의 "말씀 적용" 3개를 검토하고, 규칙 위반만 수정해주세요.
+
+[본문 참고용]
+제목: {qt_data['title']}
+구절: {qt_data['scripture_ref']}
+본문:
+{verses_text}
+
+[원본 application]
+{application_json}
+
+[검사 규칙 — 위반 시에만 수정]
+
+1. 위계적·시혜적 표현 금지 (가장 중요)
+   독자를 '베푸는 자' 위치에 세우는 표현은 피합니다.
+   ❌ "주변 사람에게 은혜를 베풀겠습니다" (시혜적)
+   ❌ "~에게 전하/나누겠습니다" (시혜적)
+   ❌ "이웃을 가르치겠습니다" (위계적)
+   ✅ 허용 예: "사랑을 실천하겠습니다", "감사를 표현하겠습니다"
+   → 시혜·위계 표현만 내면화 동사로 교체:
+     "기억하겠습니다 / 알아차리겠습니다 / 붙들겠습니다 /
+      놓치지 않겠습니다 / 머물겠습니다 / 응답하겠습니다"
+
+2. 자기 낮춤 위반
+   "나 / 내 / 나의 / 나를 / 나에게" → "저 / 제 / 저의 / 저를 / 저에게"
+
+3. 보편 문구 위반
+   아무 본문에나 들어갈 수 있는 문구는 본문 고유의 단어·장면으로 교체.
+   (예: "작은 것에도 감사" → 본문 속 구체 표현으로)
+
+4. 시작 구조 (다양성 — 반드시 확인)
+   세 항목의 시작 단어가 서로 달라야 합니다.
+   - 1번이 "저는 오늘,"으로 시작하지 않으면 → "저는 오늘, ~" 형태로 교체
+   - 2·3번이 "저는 오늘,"으로 시작한다면 → 반드시 다른 시작으로 교체
+     변주형 예시: "오늘부터, ~" / "이 말씀 앞에서, ~" / "주님, 제가 ~" /
+                  "지금 제가 ~" / "이 본문이 보여주는 ~" / "말씀을 따라 ~" /
+                  "하루를 열며, ~" / "주님의 마음으로, ~"
+   - 2번과 3번의 시작도 서로 달라야 합니다.
+   ※ 이 규칙이 지켜지지 않으면 세 적용이 평행 구조로 단조로워집니다.
+
+[수정 원칙]
+- 문제 없는 항목은 **그대로 유지**. 괜히 더 낫게 바꾸지 않습니다.
+- 수정하더라도 원문의 따뜻한 톤과 본문 연결은 보존.
+- 각 항목은 정확히 2문장 (statement + detail) 유지.
+
+[좋은 예]
+❌ 수정 전: "주변의 이웃에게 은혜를 나누겠습니다."
+✅ 수정 후: "오늘 받은 은혜를 하루 내내 잊지 않겠습니다."
+
+❌ 수정 전: "보아스의 마음을 배우겠습니다."
+✅ 수정 후: "작은 이삭 하나에도 하나님의 손길이 스며 있음을 오늘 놓치지 않겠습니다."
+
+JSON 형식으로 수정된 application 3개만 반환하세요:
+{{
+  "application": [
+    {{"statement": "...", "detail": "..."}},
+    {{"statement": "...", "detail": "..."}},
+    {{"statement": "...", "detail": "..."}}
+  ]
 }}"""
 
 
@@ -162,16 +267,16 @@ def _mock_ruth_1(qt_data: dict) -> dict:
         "verse_commentary": "'마라'는 히브리어로 '쓴맛'을 뜻합니다. 나오미는 자신의 고통을 숨기지 않고 솔직히 토로합니다. 그런데 본문 마지막에 '보리 추수가 시작될 때'라는 표현이 덧붙여집니다. 이는 단순한 시간 정보가 아닙니다. 비어 돌아온 그녀에게 다시 채우심이 시작될 것을 알리는 복선입니다.",
         "application": [
             {
-                "statement": "나는 오늘, 상실 앞에서 솔직해지겠습니다.",
-                "detail": "감정을 숨기지 않고 하나님께 내어놓겠습니다."
+                "statement": "저는 오늘, 쓰라린 감정을 숨기지 않겠습니다.",
+                "detail": "'나를 마라라 부르라'는 본문의 솔직함을 제 기도에도 허락하겠습니다."
             },
             {
-                "statement": "나는 오늘, 떠나지 않는 사람이 되겠습니다.",
-                "detail": "어려움 속에서도 관계를 붙들겠습니다."
+                "statement": "이 관계의 자리에서, 먼저 떠나지 않는 쪽이 되겠습니다.",
+                "detail": "'어머니의 하나님이 나의 하나님'이라는 고백을 오늘 제 마음에 붙들겠습니다."
             },
             {
-                "statement": "나는 오늘, 보리 추수를 기대하겠습니다.",
-                "detail": "비어 있는 자리에 채우실 하나님을 신뢰하겠습니다."
+                "statement": "주님, 비어 돌아온 제 손에도 보리 추수의 때를 기다리게 하옵소서.",
+                "detail": "본문 끝의 '보리 추수가 시작될 때'라는 작은 약속을 놓치지 않겠습니다."
             }
         ],
         "prayer": [
@@ -216,16 +321,16 @@ def _mock_generic(qt_data: dict) -> dict:
         "verse_commentary": "오늘 본문에서 주목할 만한 표현들이 있습니다. 성경 원어의 뉘앙스와 당시 역사적 배경을 함께 살펴보면 본문이 더 깊이 이해됩니다. 하나님은 말씀을 통해 오늘도 우리에게 말씀하십니다.",
         "application": [
             {
-                "statement": "나는 오늘, 말씀에 귀 기울이겠습니다.",
-                "detail": "바쁜 일상 속에서도 잠시 멈춰 주님의 음성을 듣겠습니다."
+                "statement": "저는 오늘, 이 본문이 가리키는 길을 한 걸음 따르겠습니다.",
+                "detail": "본문의 핵심을 제 일상의 구체적 자리에 옮겨 담겠습니다."
             },
             {
-                "statement": "나는 오늘, 믿음으로 한 걸음 나아가겠습니다.",
-                "detail": "두려움이 아닌 믿음으로 선택하겠습니다."
+                "statement": "이 말씀 앞에서, 숨겨왔던 제 태도 하나를 꺼내 놓겠습니다.",
+                "detail": "본문의 한 장면을 제 오늘의 결정과 비교하겠습니다."
             },
             {
-                "statement": "나는 오늘, 감사하는 마음을 잃지 않겠습니다.",
-                "detail": "작은 것에도 감사함을 발견하겠습니다."
+                "statement": "주님, 이 말씀이 저의 언어가 되게 하옵소서.",
+                "detail": "본문 속 순종의 자세로 오늘 하루를 걷게 하소서."
             }
         ],
         "prayer": [
@@ -245,9 +350,77 @@ def _mock_generic(qt_data: dict) -> dict:
     }
 
 
-# ===== 실제 API 호출 =====
+# ===== 실제 API 호출 (2-pass) =====
+def _calc_cost(usage) -> dict:
+    """OpenAI usage 객체에서 비용 정보 계산"""
+    cost_usd = (
+        usage.prompt_tokens / 1_000_000 * PRICE_INPUT_PER_1M
+        + usage.completion_tokens / 1_000_000 * PRICE_OUTPUT_PER_1M
+    )
+    return {
+        "input_tokens": usage.prompt_tokens,
+        "output_tokens": usage.completion_tokens,
+        "total_tokens": usage.total_tokens,
+        "cost_usd": round(cost_usd, 6),
+        "cost_krw": round(cost_usd * USD_TO_KRW, 2),
+    }
+
+
+def _call_pass1(client, qt_data: dict) -> tuple:
+    """1차: 전체 JSON 생성 (창의적 톤)"""
+    user_prompt = build_user_prompt(qt_data)
+    response = client.chat.completions.create(
+        model=MODEL,
+        messages=[
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content": user_prompt}
+        ],
+        response_format={"type": "json_object"},
+        temperature=0.7,
+    )
+    ai_data = json.loads(response.choices[0].message.content)
+    cost = _calc_cost(response.usage)
+    log(
+        f"1차 토큰: {cost['total_tokens']} "
+        f"(입력 {cost['input_tokens']} / 출력 {cost['output_tokens']}) "
+        f"/ 비용: {cost['cost_krw']:.2f}원",
+        "OK"
+    )
+    return ai_data, cost
+
+
+def _call_pass2(client, application: list, qt_data: dict) -> tuple:
+    """2차: application 3개만 검사/수정 (엄격한 편집자 톤)"""
+    user_prompt = build_refine_prompt(application, qt_data)
+    response = client.chat.completions.create(
+        model=MODEL,
+        messages=[
+            {"role": "system", "content": REFINE_SYSTEM_PROMPT},
+            {"role": "user", "content": user_prompt}
+        ],
+        response_format={"type": "json_object"},
+        temperature=0.3,
+    )
+    result = json.loads(response.choices[0].message.content)
+    refined = result.get("application")
+    if not isinstance(refined, list) or len(refined) != 3:
+        raise ValueError("2차 정제 결과 구조 오류: application이 3개 리스트가 아님")
+    cost = _calc_cost(response.usage)
+    log(
+        f"2차 토큰: {cost['total_tokens']} "
+        f"(입력 {cost['input_tokens']} / 출력 {cost['output_tokens']}) "
+        f"/ 비용: {cost['cost_krw']:.2f}원",
+        "OK"
+    )
+    return refined, cost
+
+
 def generate_real(qt_data: dict) -> tuple:
-    """OpenAI API로 실제 생성. (ai_data, cost_info) 튜플 반환"""
+    """OpenAI API로 2-pass 생성. (ai_data, cost_info) 튜플 반환.
+
+    1차: 전체 콘텐츠 생성 (temperature=0.7, 창의적)
+    2차: application 3개만 검사·수정 (temperature=0.3, 엄격)
+    """
     try:
         from openai import OpenAI
     except ImportError:
@@ -255,7 +428,6 @@ def generate_real(qt_data: dict) -> tuple:
         log("설치: pip install openai python-dotenv")
         raise
 
-    # .env 로드
     try:
         from dotenv import load_dotenv
         load_dotenv(PROJECT_ROOT / ".env")
@@ -269,43 +441,37 @@ def generate_real(qt_data: dict) -> tuple:
         )
 
     client = OpenAI(api_key=api_key)
-    user_prompt = build_user_prompt(qt_data)
 
-    log(f"OpenAI API 호출 중 (모델: {MODEL})...")
-    response = client.chat.completions.create(
-        model=MODEL,
-        messages=[
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": user_prompt}
-        ],
-        response_format={"type": "json_object"},
-        temperature=0.7,
-    )
+    # ===== Pass 1: 전체 생성 =====
+    log(f"1차 생성 중 (모델: {MODEL}, temperature=0.7)...")
+    ai_data, cost_1 = _call_pass1(client, qt_data)
 
-    content = response.choices[0].message.content
-    ai_data = json.loads(content)
+    # ===== Pass 2: application 정제 =====
+    log("2차 application 정제 중 (temperature=0.3)...")
+    zero_cost = {
+        "input_tokens": 0, "output_tokens": 0, "total_tokens": 0,
+        "cost_usd": 0, "cost_krw": 0,
+    }
+    try:
+        refined_app, cost_2 = _call_pass2(client, ai_data["application"], qt_data)
+        ai_data["application"] = refined_app
+    except Exception as e:
+        log(f"2차 정제 실패, 1차 결과 그대로 사용: {e}", "WARN")
+        cost_2 = zero_cost
 
-    # 비용 계산
-    usage = response.usage
-    cost_usd = (
-        usage.prompt_tokens / 1_000_000 * PRICE_INPUT_PER_1M
-        + usage.completion_tokens / 1_000_000 * PRICE_OUTPUT_PER_1M
-    )
+    # ===== 비용 합산 =====
     cost_info = {
-        "input_tokens": usage.prompt_tokens,
-        "output_tokens": usage.completion_tokens,
-        "total_tokens": usage.total_tokens,
-        "cost_usd": round(cost_usd, 6),
-        "cost_krw": round(cost_usd * USD_TO_KRW, 2),
+        "input_tokens": cost_1["input_tokens"] + cost_2["input_tokens"],
+        "output_tokens": cost_1["output_tokens"] + cost_2["output_tokens"],
+        "total_tokens": cost_1["total_tokens"] + cost_2["total_tokens"],
+        "cost_usd": round(cost_1["cost_usd"] + cost_2["cost_usd"], 6),
+        "cost_krw": round(cost_1["cost_krw"] + cost_2["cost_krw"], 2),
+        "breakdown": {"pass1": cost_1, "pass2": cost_2},
     }
 
     log(
-        f"토큰: {usage.prompt_tokens}(입력) + {usage.completion_tokens}(출력) "
-        f"= {usage.total_tokens}",
-        "OK"
-    )
-    log(
-        f"비용: ${cost_info['cost_usd']:.6f} (약 {cost_info['cost_krw']:.2f}원)",
+        f"합계 토큰: {cost_info['total_tokens']} "
+        f"/ 비용: ${cost_info['cost_usd']:.6f} (약 {cost_info['cost_krw']:.2f}원)",
         "OK"
     )
 
