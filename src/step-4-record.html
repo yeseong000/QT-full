@@ -130,28 +130,88 @@
     .memo-textarea::placeholder {
       color: var(--text-placeholder);
     }
-    .memo-footer {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-top: 8px;
+
+    /* ------------------------------------------------------------------
+       감정 카드 안 "느낀 점" 입력
+       ------------------------------------------------------------------ */
+    .reflection-block {
+      margin-top: var(--space-5);
+      padding-top: var(--space-5);
+      border-top: 1px solid var(--border-subtle);
     }
-    .memo-autosave {
+    .reflection-label {
+      display: block;
+      font-size: var(--text-small);
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: var(--space-3);
+      letter-spacing: -0.01em;
+      word-break: keep-all;
+      line-height: 1.5;
+    }
+
+    /* ------------------------------------------------------------------
+       오늘의 질문 (Q1 / Q2)
+       ------------------------------------------------------------------ */
+    .question-item {
+      margin-bottom: var(--space-6);
+    }
+    .question-item:last-child {
+      margin-bottom: 0;
+    }
+    .question-prompt {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      margin-bottom: var(--space-3);
+    }
+    .question-num {
+      flex-shrink: 0;
+      width: 28px;
+      height: 28px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: var(--accent-sage-soft);
+      color: var(--accent-sage-text);
+      font-size: var(--text-caption);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+    .question-text {
+      flex: 1;
+      font-size: var(--text-body);
+      line-height: 1.6;
+      color: var(--text-body);
+      word-break: keep-all;
+      padding-top: 4px;
+    }
+    .question-answer {
+      min-height: 90px;
+    }
+
+    /* 페이지 공통 자동저장 인디케이터 (메모/느낀 점/질문 답변 통합) */
+    .autosave-indicator {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: var(--space-2);
       font-size: var(--text-caption);
       color: var(--text-secondary);
       opacity: 0;
       transition: opacity var(--duration-slow);
+      min-height: 18px;
     }
-    .memo-autosave.is-visible {
+    .autosave-indicator.is-visible {
       opacity: 1;
     }
-    .memo-counter {
-      font-size: var(--text-caption);
+
+    /* 질문 로딩/없음 상태 */
+    .questions-empty {
+      font-size: var(--text-small);
       color: var(--text-secondary);
-    }
-    .memo-counter.is-warning {
-      color: #B84A4A;
-      font-weight: 600;
+      text-align: center;
+      padding: var(--space-6) 0;
+      line-height: 1.6;
     }
   </style>
 </head>
@@ -184,7 +244,7 @@
     <!-- 페이지 제목 -->
     <h1 class="page-title">오늘의 마음을 남겨보세요</h1>
 
-    <!-- 감정 칩 카드 -->
+    <!-- 감정 카드 (감정 칩 + 느낀 점) -->
     <section class="meditation-card">
       <h2 class="meditation-card__title">
         <span class="meditation-card__icon">🌿</span>
@@ -194,27 +254,32 @@
         말씀을 묵상하며 든 마음을 선택해주세요. (여러 개 선택 가능)
       </p>
       <div class="chip-grid" id="emotionChips"></div>
+
+      <div class="reflection-block">
+        <label class="reflection-label" for="reflectionInput">
+          오늘의 말씀이 나에게 어떤 의미로 다가왔나요?
+        </label>
+        <textarea
+          class="memo-textarea"
+          id="reflectionInput"
+          placeholder="떠오른 생각이나 느낀 점을 자유롭게 적어보세요"
+        ></textarea>
+      </div>
     </section>
 
-    <!-- 메모 카드 -->
+    <!-- 오늘의 질문 카드 (주만나 크롤링: oryun_questions) -->
     <section class="meditation-card">
       <h2 class="meditation-card__title">
-        <span class="meditation-card__icon">📝</span>
-        오늘의 메모
+        <span class="meditation-card__icon">💭</span>
+        오늘의 질문
       </h2>
       <p class="meditation-card__hint">
-        깨달은 것, 마음에 남은 말씀을 자유롭게 적어보세요. (선택)
+        주만나에서 오늘의 말씀과 함께 올라온 묵상 질문이에요. 가볍게 답을 적어보세요.
       </p>
-      <textarea
-        class="memo-textarea"
-        id="memoInput"
-        placeholder="오늘의 말씀이 나에게 어떤 의미로 다가왔나요?"
-        maxlength="500"
-      ></textarea>
-      <div class="memo-footer">
-        <span class="memo-autosave" id="memoAutosave">✓ 저장됨</span>
-        <span class="memo-counter" id="memoCounter">0 / 500</span>
+      <div id="questionsContainer">
+        <div class="questions-empty">질문을 불러오고 있어요...</div>
       </div>
+      <div class="autosave-indicator" id="autosaveIndicator">✓ 저장됨</div>
     </section>
 
    </main>
@@ -253,11 +318,45 @@
     document.addEventListener('DOMContentLoaded', () => {
       renderEmotionChips();
       hydrateSelectedEmotions();
-      setupMemo();
+      setupReflection();
+      setupQuestions();
       setupEventListeners();
       applyFontSize();
       Storage.setDailyRecord(TODAY, { progressStep: 4 });
     });
+
+    // 모든 textarea가 공유하는 자동저장 인디케이터
+    let _saveIndicatorTimer;
+    function flashSaveIndicator() {
+      const el = document.getElementById('autosaveIndicator');
+      if (!el) return;
+      el.classList.add('is-visible');
+      clearTimeout(_saveIndicatorTimer);
+      _saveIndicatorTimer = setTimeout(() => {
+        el.classList.remove('is-visible');
+      }, 1500);
+    }
+
+    // textarea 자동 높이 조절 + debounced 저장
+    function setupAutoSaveTextarea(textarea, opts) {
+      const { onSave, maxHeight = 320 } = opts;
+      autoResize();
+
+      let saveTimer;
+      textarea.addEventListener('input', () => {
+        autoResize();
+        clearTimeout(saveTimer);
+        saveTimer = setTimeout(() => {
+          onSave(textarea.value);
+          flashSaveIndicator();
+        }, 800);
+      });
+
+      function autoResize() {
+        textarea.style.height = 'auto';
+        textarea.style.height = Math.min(textarea.scrollHeight, maxHeight) + 'px';
+      }
+    }
 
     // ========== 감정 칩 ==========
     function renderEmotionChips() {
@@ -308,45 +407,57 @@
       Storage.setDailyRecord(TODAY, { emotions });
     }
 
-    // ========== 메모 ==========
-    function setupMemo() {
-      const textarea = document.getElementById('memoInput');
-      const counter = document.getElementById('memoCounter');
-      const saveIndicator = document.getElementById('memoAutosave');
-      const MAX = 500;
-
-      // 기존 값 로드
+    // ========== 느낀 점 (감정 카드 안 textarea) ==========
+    function setupReflection() {
+      const textarea = document.getElementById('reflectionInput');
       const record = Storage.getDailyRecord(TODAY);
-      textarea.value = record.memo || '';
-      updateCounter();
-      autoResize();
-
-      let saveTimer, indicatorTimer;
-      textarea.addEventListener('input', () => {
-        updateCounter();
-        autoResize();
-        clearTimeout(saveTimer);
-        saveTimer = setTimeout(() => {
-          Storage.setDailyRecord(TODAY, { memo: textarea.value });
-          // "저장됨" 표시 잠깐 띄움
-          saveIndicator.classList.add('is-visible');
-          clearTimeout(indicatorTimer);
-          indicatorTimer = setTimeout(() => {
-            saveIndicator.classList.remove('is-visible');
-          }, 1500);
-        }, 800);
+      // 기존 사용자 데이터 호환: 새 reflection이 없으면 옛 memo 값을 한 번 로드
+      textarea.value = record.reflection || record.memo || '';
+      setupAutoSaveTextarea(textarea, {
+        onSave: (val) => Storage.setDailyRecord(TODAY, { reflection: val }),
       });
+    }
 
-      function updateCounter() {
-        const len = textarea.value.length;
-        counter.textContent = `${len} / ${MAX}`;
-        counter.classList.toggle('is-warning', len >= MAX);
+    // ========== 오늘의 질문 (주만나 크롤링) ==========
+    async function setupQuestions() {
+      const container = document.getElementById('questionsContainer');
+      const data = await Common.loadJSON(`../data/qt/${TODAY}.json`);
+      const questions = (data && Array.isArray(data.oryun_questions)) ? data.oryun_questions : [];
+
+      if (questions.length === 0) {
+        container.innerHTML = '<div class="questions-empty">오늘의 질문이 아직 준비되지 않았어요.</div>';
+        return;
       }
 
-      function autoResize() {
-        textarea.style.height = 'auto';
-        textarea.style.height = Math.min(textarea.scrollHeight, 320) + 'px';
-      }
+      const record = Storage.getDailyRecord(TODAY);
+      const savedAnswers = Array.isArray(record.questionAnswers) ? record.questionAnswers : [];
+
+      container.innerHTML = questions.map((q, i) => `
+        <div class="question-item">
+          <div class="question-prompt">
+            <span class="question-num">Q${i + 1}</span>
+            <p class="question-text">${escapeHTML(q)}</p>
+          </div>
+          <textarea
+            class="memo-textarea question-answer"
+            data-q-idx="${i}"
+            placeholder="답변을 적어보세요"
+          >${escapeHTML(savedAnswers[i] || '')}</textarea>
+        </div>
+      `).join('');
+
+      container.querySelectorAll('.question-answer').forEach(textarea => {
+        const idx = Number(textarea.dataset.qIdx);
+        setupAutoSaveTextarea(textarea, {
+          maxHeight: 240,
+          onSave: (val) => {
+            const cur = Storage.getDailyRecord(TODAY);
+            const arr = Array.isArray(cur.questionAnswers) ? [...cur.questionAnswers] : [];
+            arr[idx] = val;
+            Storage.setDailyRecord(TODAY, { questionAnswers: arr });
+          },
+        });
+      });
     }
 
     // ========== 이벤트 ==========
