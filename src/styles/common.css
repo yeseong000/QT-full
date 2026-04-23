@@ -76,8 +76,11 @@ input, textarea {
   width: 100%;
   max-width: var(--app-max-width);
   margin: 0 auto;
-  min-height: 100vh;
-  min-height: 100dvh;
+  /* 정확히 한 화면 높이로 고정 → bottom-nav가 항상 화면 하단,
+     scripture-toggle의 position: sticky가 .app-scroll 기준으로 정상 작동 */
+  height: 100vh;             /* fallback */
+  height: 100dvh;            /* iOS 15.4+/Chrome 108+: 주소창 변동 자동 대응 */
+  overflow: hidden;          /* 컨테이너 자체는 스크롤 X — 스크롤은 .app-scroll에서만 */
   display: flex;
   flex-direction: column;
   position: relative;        /* 내부 absolute(FAB) 기준점 */
