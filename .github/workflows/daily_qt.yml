@@ -1,0 +1,65 @@
+name: Daily QT (주만나 자동 크롤링 + AI 묵상 생성)
+
+on:
+  schedule:
+    # 매일 새벽 5시 KST = UTC 20:00 (전날)
+    - cron: '0 20 * * *'
+  workflow_dispatch:   # GitHub Actions 탭에서 수동 실행 버튼
+
+concurrency:
+  group: daily-qt
+  cancel-in-progress: false
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write    # 커밋/푸시 권한
+    env:
+      PYTHONIOENCODING: utf-8
+      PYTHONUTF8: "1"
+      TZ: Asia/Seoul
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install requests beautifulsoup4 lxml openai python-dotenv
+
+      - name: Fetch QT (오륜교회 주만나 크롤링)
+        run: python scripts/fetch_qt.py
+
+      - name: Generate AI meditation
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          if [ -z "${OPENAI_API_KEY}" ]; then
+            echo "::warning::OPENAI_API_KEY 미설정 → mock 모드로 실행 (샘플 묵상)"
+            python scripts/generate_ai.py --mock
+          else
+            echo "실제 OpenAI API 호출로 묵상 생성"
+            python scripts/generate_ai.py
+          fi
+
+      - name: Commit and push changes
+        run: |
+          git config user.name "QT Bot"
+          git config user.email "bot@hainaqt.app"
+          git add data/
+          if git diff --cached --quiet; then
+            echo "변경 사항 없음 — 커밋 건너뜀"
+          else
+            DATE=$(date '+%Y-%m-%d')
+            git commit -m "chore(data): 자동 크롤링 · ${DATE} QT + AI 묵상"
+            git push
+            echo "✅ ${DATE} 데이터 커밋 & 푸시 완료"
+          fi

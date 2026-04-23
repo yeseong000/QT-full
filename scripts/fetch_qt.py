@@ -199,7 +199,11 @@ def extract_questions(soup: BeautifulSoup) -> list:
 
 def parse_qt(html: str) -> dict:
     """HTML → QT 데이터 dict"""
-    soup = BeautifulSoup(html, "lxml")
+    # lxml 우선, 없으면 내장 html.parser로 fallback (Python 3.14 호환성)
+    try:
+        soup = BeautifulSoup(html, "lxml")
+    except Exception:
+        soup = BeautifulSoup(html, "html.parser")
 
     # 날짜 레이블
     date_label = None
@@ -210,7 +214,10 @@ def parse_qt(html: str) -> dict:
             date_label = text
             dd = dt.find_next_sibling("dd")
             if dd:
-                title_line = dd.get_text(strip=True)
+                # " " separator로 HTML <br>/블록 경계에 공백 보존
+                title_line = dd.get_text(" ", strip=True)
+                # 연속 공백 하나로 압축
+                title_line = re.sub(r"\s+", " ", title_line).strip()
             break
 
     if not date_label:

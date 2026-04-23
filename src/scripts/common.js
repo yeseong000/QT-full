@@ -2,6 +2,19 @@
  * 주만나 AI 큐티 - 공통 유틸
  */
 
+// 테마 즉시 적용 (DOMContentLoaded 전에 실행 → 플래시 최소화)
+(function applyStoredTheme() {
+  try {
+    const raw = localStorage.getItem('settings.background');
+    if (raw) {
+      const theme = JSON.parse(raw);
+      if (theme && theme !== 'default') {
+        document.documentElement.setAttribute('data-theme', theme);
+      }
+    }
+  } catch (e) { /* ignore */ }
+})();
+
 const Common = {
   /**
    * 시간대별 인사말 가져오기
