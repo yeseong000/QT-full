@@ -48,6 +48,12 @@ button {
   appearance: none;
 }
 
+/* 텍스트 드래그 선택 색 — 테마 accent로 통일 (기본 파랑 selection 제거) */
+::selection {
+  background: var(--accent-sage);
+  color: var(--text-on-accent);
+}
+
 a {
   color: inherit;
   text-decoration: none;

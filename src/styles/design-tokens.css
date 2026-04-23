@@ -5,6 +5,9 @@
    ========================================================================== */
 
 :root {
+  /* 브라우저에 라이트 테마임을 명시 → 폼 컨트롤/스크롤바/자동완성 배경이 라이트로 렌더 */
+  color-scheme: light;
+
   /* ------------------------------------------------------------------
      1. 컬러 - 배경
      ------------------------------------------------------------------ */
@@ -178,6 +181,9 @@ html[data-theme="rose"] {
 
 /* ─── 🌙 DARK — Midnight (숲 밤 + 달빛 세이지 액센트) ─────────────────── */
 html[data-theme="dark"] {
+  /* 브라우저에 다크 테마임을 명시 → 폼 컨트롤/스크롤바/자동완성 배경이 다크로 렌더 */
+  color-scheme: dark;
+
   --bg-paper: #1A231D;
   --bg-card: #2A342D;
   --bg-soft: #2A3F35;              /* accent-soft = 어두운 딥 sage */
@@ -185,7 +191,7 @@ html[data-theme="dark"] {
 
   --text-primary: #E8EDE8;
   --text-body: #CBD2CB;
-  --text-secondary: #8A948D;
+  --text-secondary: #9BA59E;       /* 4.5:1 대비 확보 — 보조 안내문 가독성 */
   --text-placeholder: #5D6560;
   --text-on-accent: #1A231D;       /* 밝은 accent 위 어두운 텍스트 */
 
@@ -202,9 +208,14 @@ html[data-theme="dark"] {
   --check-active: #8FD4B8;
   --highlight-underline: #3D4838;
 
-  --shadow-soft: 0 1px 3px rgba(0, 0, 0, 0.3);
-  --shadow-float: 0 4px 12px rgba(0, 0, 0, 0.4);
-  --shadow-button: 0 2px 6px rgba(143, 212, 184, 0.3);
+  /* 다크 그림자 전략:
+     - 검정 그림자는 어두운 배경에서 안 보임 → 옅은 accent-tinted 테두리로 elevation 표현
+     - 떠있는 요소(modal·FAB)만 진한 black drop으로 깊이감 추가 */
+  --shadow-soft:   inset 0 0 0 1px rgba(143, 212, 184, 0.06);
+  --shadow-float:  inset 0 0 0 1px rgba(143, 212, 184, 0.10),
+                   0 12px 32px rgba(0, 0, 0, 0.55);
+  --shadow-button: 0 0 18px rgba(143, 212, 184, 0.22),
+                   0 2px 6px rgba(0, 0, 0, 0.35);
 }
 
 /* PC 프레임 바깥 배경 — 테마 온도에 맞춤 */
