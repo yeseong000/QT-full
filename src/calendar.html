@@ -571,8 +571,10 @@
       emotionsEl.innerHTML = chips.join('');
 
       const memoEl = document.getElementById('previewMemo');
-      if (record.memo && record.memo.trim()) {
-        memoEl.textContent = record.memo;
+      // 신규 reflection 우선, 없으면 옛 memo 폴백 (Q1/Q2 답변은 미리보기엔 생략)
+      const previewText = (record.reflection || record.memo || '').trim();
+      if (previewText) {
+        memoEl.textContent = previewText;
         memoEl.style.display = '';
       } else {
         memoEl.style.display = 'none';

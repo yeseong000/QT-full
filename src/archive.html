@@ -193,7 +193,7 @@
       background: var(--accent-sage);
     }
 
-    /* 메모 박스 */
+    /* 메모/느낀 점 박스 */
     .detail-memo {
       font-size: var(--text-body);
       line-height: 1.75;
@@ -203,6 +203,36 @@
       padding: var(--space-4) var(--space-5);
       background: var(--bg-soft);
       border-radius: var(--radius-md);
+    }
+
+    /* 오늘의 질문 답변 (Q1/Q2) */
+    .detail-questions {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-3);
+    }
+    .detail-question-item {
+      padding: var(--space-4) var(--space-5);
+      background: var(--bg-soft);
+      border-radius: var(--radius-md);
+    }
+    .detail-question-num {
+      display: inline-block;
+      padding: 2px 10px;
+      border-radius: var(--radius-pill);
+      background: var(--accent-sage-soft);
+      color: var(--accent-sage-text);
+      font-size: var(--text-caption);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: var(--space-2);
+    }
+    .detail-question-text {
+      font-size: var(--text-body);
+      line-height: 1.75;
+      color: var(--text-body);
+      white-space: pre-wrap;
+      word-break: keep-all;
     }
 
     /* 감정 칩 (펼친 뷰용) */
@@ -329,12 +359,17 @@
         return { date, record, qt, ai };
       }));
 
-      // 의미 있는 기록만 (완료 OR 감정 OR 메모)
-      const meaningful = entries.filter(e =>
-        e.record.completed ||
-        (e.record.emotions && e.record.emotions.length > 0) ||
-        (e.record.memo && e.record.memo.trim())
-      );
+      // 의미 있는 기록만 (완료 OR 감정 OR 느낀 점 OR 옛 메모 OR 질문 답변)
+      const meaningful = entries.filter(e => {
+        const r = e.record;
+        const hasAnyAnswer = Array.isArray(r.questionAnswers) &&
+                             r.questionAnswers.some(a => a && a.trim());
+        return r.completed ||
+               (r.emotions && r.emotions.length > 0) ||
+               (r.reflection && r.reflection.trim()) ||
+               (r.memo && r.memo.trim()) ||
+               hasAnyAnswer;
+      });
 
       if (meaningful.length === 0) {
         container.innerHTML = renderEmptyState();
@@ -419,11 +454,35 @@
         `);
       }
 
-      if (record.memo && record.memo.trim()) {
+      // 느낀 점 (신규 reflection 우선, 없으면 옛 memo 폴백)
+      const reflectionText = (record.reflection || record.memo || '').trim();
+      if (reflectionText) {
         sections.push(`
           <div class="record-detail__section">
-            <div class="record-detail__label">내 메모</div>
-            <div class="detail-memo">${escapeHTML(record.memo)}</div>
+            <div class="record-detail__label">느낀 점</div>
+            <div class="detail-memo">${escapeHTML(reflectionText)}</div>
+          </div>
+        `);
+      }
+
+      // 오늘의 질문 답변 (Q1/Q2)
+      const answers = Array.isArray(record.questionAnswers) ? record.questionAnswers : [];
+      const hasAnswers = answers.some(a => a && a.trim());
+      if (hasAnswers) {
+        sections.push(`
+          <div class="record-detail__section">
+            <div class="record-detail__label">오늘의 질문 답변</div>
+            <div class="detail-questions">
+              ${answers.map((a, i) => {
+                if (!a || !a.trim()) return '';
+                return `
+                  <div class="detail-question-item">
+                    <div class="detail-question-num">Q${i + 1}</div>
+                    <div class="detail-question-text">${escapeHTML(a)}</div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
           </div>
         `);
       }
