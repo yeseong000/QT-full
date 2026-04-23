@@ -89,7 +89,6 @@ input, textarea {
   min-height: 0;             /* flex + overflow 조합에 필요 */
   overflow-y: auto;
   overflow-x: hidden;
-  scrollbar-gutter: stable both-edges;  /* 양쪽 대칭 거터 → 콘텐츠 정중앙 유지 */
   padding:
     calc(var(--page-padding-top) + env(safe-area-inset-top, 0))
     var(--page-padding-x)
@@ -178,7 +177,7 @@ input, textarea {
   /* iOS overlay 느낌의 자동 숨김 스크롤바 (PC 프레임 전용) */
   .app-scroll,
   .scripture-toggle__body {
-    scrollbar-width: thin;
+    scrollbar-width: none;   /* Firefox/신형 Chrome: 네이티브 숨김 (webkit 커스텀만 표시) */
     scrollbar-color: transparent transparent;
     transition: scrollbar-color 400ms;
   }
