@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="ko" data-font-size="md">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no, maximum-scale=1">
+  <meta name="theme-color" content="#F7F4ED">
+
+  <!-- iOS PWA -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="주만나 AI">
+  <meta name="format-detection" content="telephone=no">
+
+  <title>기록 · 주만나 AI 큐티</title>
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.css">
+  <link rel="stylesheet" href="styles/design-tokens.css">
+  <link rel="stylesheet" href="styles/common.css">
+
+  <style>
+    /* ========== 4단계 전용 ========== */
+
+    /* 묵상 카드 공통 (step-2/3과 동일) */
+    .meditation-card {
+      background: var(--bg-card);
+      border-radius: var(--radius-lg);
+      padding: var(--card-padding);
+      margin-bottom: var(--card-gap);
+    }
+    .meditation-card__title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: var(--text-h2);
+      font-weight: 700;
+      color: var(--text-primary);
+      letter-spacing: -0.01em;
+      margin-bottom: var(--space-4);
+    }
+    .meditation-card__icon {
+      width: 28px;
+      height: 28px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: var(--accent-sage-soft);
+      font-size: 15px;
+    }
+    .meditation-card__hint {
+      font-size: var(--text-small);
+      color: var(--text-secondary);
+      line-height: 1.6;
+      margin-bottom: var(--space-4);
+      word-break: keep-all;
+    }
+
+    /* ------------------------------------------------------------------
+       감정 칩
+       ------------------------------------------------------------------ */
+    .chip-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .emotion-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 9px 14px;
+      border: 1.5px solid var(--border-chip);
+      border-radius: var(--radius-pill);
+      background: transparent;
+      color: var(--text-body);
+      font-size: var(--text-small);
+      font-weight: 500;
+      cursor: pointer;
+      transition: all var(--duration-base);
+      -webkit-tap-highlight-color: transparent;
+      letter-spacing: -0.01em;
+    }
+    .emotion-chip__emoji {
+      font-size: 15px;
+      line-height: 1;
+    }
+    .emotion-chip:active {
+      transform: scale(0.96);
+    }
+    /* 선택 상태 — 색상별 톤 */
+    .emotion-chip[data-color="calm"].is-selected {
+      background: #FDF2D9;
+      border-color: var(--chip-calm);
+      color: #8B6F2A;
+    }
+    .emotion-chip[data-color="insight"].is-selected {
+      background: var(--accent-sage-soft);
+      border-color: var(--chip-insight);
+      color: var(--accent-sage-text);
+    }
+    .emotion-chip[data-color="reflect"].is-selected {
+      background: #E9EEF5;
+      border-color: var(--chip-reflect);
+      color: #5C6B80;
+    }
+
+    /* ------------------------------------------------------------------
+       메모 입력
+       ------------------------------------------------------------------ */
+    .memo-textarea {
+      width: 100%;
+      min-height: 120px;
+      max-height: 320px;
+      border: 1px solid var(--border-input);
+      border-radius: var(--radius-md);
+      padding: 14px 16px;
+      font-size: 16px;
+      color: var(--text-body);
+      background: var(--bg-input);
+      resize: none;
+      outline: none;
+      line-height: 1.75;
+      transition: border-color var(--duration-base);
+      word-break: keep-all;
+      overflow-wrap: break-word;
+      font-family: inherit;
+      box-sizing: border-box;
+    }
+    .memo-textarea:focus {
+      border-color: var(--accent-sage);
+    }
+    .memo-textarea::placeholder {
+      color: var(--text-placeholder);
+    }
+    .memo-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 8px;
+    }
+    .memo-autosave {
+      font-size: var(--text-caption);
+      color: var(--text-secondary);
+      opacity: 0;
+      transition: opacity var(--duration-slow);
+    }
+    .memo-autosave.is-visible {
+      opacity: 1;
+    }
+    .memo-counter {
+      font-size: var(--text-caption);
+      color: var(--text-secondary);
+    }
+    .memo-counter.is-warning {
+      color: #B84A4A;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+   <main class="app-scroll">
+
+    <!-- 진행 단계 (4단계 중 4단계) -->
+    <div class="progress-dots" aria-label="진행 단계 4/4">
+      <div class="progress-dot active"></div>
+      <div class="progress-dot active"></div>
+      <div class="progress-dot active"></div>
+      <div class="progress-dot active"></div>
+    </div>
+
+    <!-- 상단바 -->
+    <header class="top-bar">
+      <div class="top-bar__left">
+        <button class="icon-btn" id="closeBtn" aria-label="닫기">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path d="M18 6L6 18M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+      <div class="top-bar__right">
+        <button class="icon-btn icon-btn--font" id="fontSizeBtn" aria-label="폰트 크기">
+          가가
+        </button>
+      </div>
+    </header>
+
+    <!-- 페이지 제목 -->
+    <h1 class="page-title">오늘의 마음을 남겨보세요</h1>
+
+    <!-- 감정 칩 카드 -->
+    <section class="meditation-card">
+      <h2 class="meditation-card__title">
+        <span class="meditation-card__icon">🌿</span>
+        오늘의 마음
+      </h2>
+      <p class="meditation-card__hint">
+        말씀을 묵상하며 든 마음을 선택해주세요. (여러 개 선택 가능)
+      </p>
+      <div class="chip-grid" id="emotionChips"></div>
+    </section>
+
+    <!-- 메모 카드 -->
+    <section class="meditation-card">
+      <h2 class="meditation-card__title">
+        <span class="meditation-card__icon">📝</span>
+        오늘의 메모
+      </h2>
+      <p class="meditation-card__hint">
+        깨달은 것, 마음에 남은 말씀을 자유롭게 적어보세요. (선택)
+      </p>
+      <textarea
+        class="memo-textarea"
+        id="memoInput"
+        placeholder="오늘의 말씀이 나에게 어떤 의미로 다가왔나요?"
+        maxlength="500"
+      ></textarea>
+      <div class="memo-footer">
+        <span class="memo-autosave" id="memoAutosave">✓ 저장됨</span>
+        <span class="memo-counter" id="memoCounter">0 / 500</span>
+      </div>
+    </section>
+
+   </main>
+
+   <!-- 하단 네비 (app-container 내부) -->
+   <nav class="bottom-nav">
+     <button class="btn btn-secondary btn-icon-only" id="prevBtn" aria-label="이전">
+       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+         <polyline points="15 18 9 12 15 6"/>
+       </svg>
+     </button>
+     <button class="btn btn-primary" id="completeBtn">묵상 완료하기</button>
+   </nav>
+
+  </div>
+
+  <!-- Scripts -->
+  <script src="scripts/storage.js"></script>
+  <script src="scripts/common.js"></script>
+  <script>
+    const TODAY = Common.todayISO();
+
+    // 감정 칩 정의 (3가지 색상 × 3개 = 9개)
+    const EMOTIONS = [
+      { id: 'gratitude', label: '감사',   emoji: '🙏', color: 'calm' },
+      { id: 'peace',     label: '평안',   emoji: '🕊️', color: 'calm' },
+      { id: 'joy',       label: '기쁨',   emoji: '😊', color: 'calm' },
+      { id: 'insight',   label: '깨달음', emoji: '💡', color: 'insight' },
+      { id: 'grace',     label: '은혜',   emoji: '✨', color: 'insight' },
+      { id: 'hope',      label: '희망',   emoji: '🌱', color: 'insight' },
+      { id: 'repent',    label: '회개',   emoji: '😔', color: 'reflect' },
+      { id: 'sadness',   label: '슬픔',   emoji: '💧', color: 'reflect' },
+      { id: 'fear',      label: '두려움', emoji: '😟', color: 'reflect' },
+    ];
+
+    document.addEventListener('DOMContentLoaded', () => {
+      renderEmotionChips();
+      hydrateSelectedEmotions();
+      setupMemo();
+      setupEventListeners();
+      applyFontSize();
+      Storage.setDailyRecord(TODAY, { progressStep: 4 });
+    });
+
+    // ========== 감정 칩 ==========
+    function renderEmotionChips() {
+      const container = document.getElementById('emotionChips');
+      container.innerHTML = EMOTIONS.map(e => `
+        <button
+          class="emotion-chip"
+          type="button"
+          data-id="${e.id}"
+          data-color="${e.color}"
+          aria-pressed="false"
+        >
+          <span class="emotion-chip__emoji">${e.emoji}</span>
+          <span>${escapeHTML(e.label)}</span>
+        </button>
+      `).join('');
+
+      container.querySelectorAll('.emotion-chip').forEach(btn => {
+        btn.addEventListener('click', () => toggleEmotion(btn));
+      });
+    }
+
+    function hydrateSelectedEmotions() {
+      const record = Storage.getDailyRecord(TODAY);
+      const selected = new Set(record.emotions || []);
+      document.querySelectorAll('.emotion-chip').forEach(btn => {
+        if (selected.has(btn.dataset.id)) {
+          btn.classList.add('is-selected');
+          btn.setAttribute('aria-pressed', 'true');
+        }
+      });
+    }
+
+    function toggleEmotion(btn) {
+      const record = Storage.getDailyRecord(TODAY);
+      const emotions = Array.isArray(record.emotions) ? [...record.emotions] : [];
+      const id = btn.dataset.id;
+      const idx = emotions.indexOf(id);
+      if (idx >= 0) {
+        emotions.splice(idx, 1);
+        btn.classList.remove('is-selected');
+        btn.setAttribute('aria-pressed', 'false');
+      } else {
+        emotions.push(id);
+        btn.classList.add('is-selected');
+        btn.setAttribute('aria-pressed', 'true');
+      }
+      Storage.setDailyRecord(TODAY, { emotions });
+    }
+
+    // ========== 메모 ==========
+    function setupMemo() {
+      const textarea = document.getElementById('memoInput');
+      const counter = document.getElementById('memoCounter');
+      const saveIndicator = document.getElementById('memoAutosave');
+      const MAX = 500;
+
+      // 기존 값 로드
+      const record = Storage.getDailyRecord(TODAY);
+      textarea.value = record.memo || '';
+      updateCounter();
+      autoResize();
+
+      let saveTimer, indicatorTimer;
+      textarea.addEventListener('input', () => {
+        updateCounter();
+        autoResize();
+        clearTimeout(saveTimer);
+        saveTimer = setTimeout(() => {
+          Storage.setDailyRecord(TODAY, { memo: textarea.value });
+          // "저장됨" 표시 잠깐 띄움
+          saveIndicator.classList.add('is-visible');
+          clearTimeout(indicatorTimer);
+          indicatorTimer = setTimeout(() => {
+            saveIndicator.classList.remove('is-visible');
+          }, 1500);
+        }, 800);
+      });
+
+      function updateCounter() {
+        const len = textarea.value.length;
+        counter.textContent = `${len} / ${MAX}`;
+        counter.classList.toggle('is-warning', len >= MAX);
+      }
+
+      function autoResize() {
+        textarea.style.height = 'auto';
+        textarea.style.height = Math.min(textarea.scrollHeight, 320) + 'px';
+      }
+    }
+
+    // ========== 이벤트 ==========
+    function setupEventListeners() {
+      // 닫기 → 홈
+      document.getElementById('closeBtn').addEventListener('click', () => {
+        window.location.href = 'index.html';
+      });
+
+      // 이전 → 3단계
+      document.getElementById('prevBtn').addEventListener('click', () => {
+        window.location.href = 'step-3-prayer.html';
+      });
+
+      // 묵상 완료하기 → 5단계
+      document.getElementById('completeBtn').addEventListener('click', () => {
+        const record = Storage.getDailyRecord(TODAY);
+        if (!record.completed) {
+          Storage.setDailyRecord(TODAY, { completed: true });
+          Storage.markCompleted();   // 스트릭 +1
+        }
+        // Storage.setDailyRecord(TODAY, { progressStep: 5 });
+        // window.location.href = 'step-5-done.html';
+        const streak = Storage.getStreak();
+        alert(`🌿 오늘 묵상 완료!\n\n연속 ${streak.current}일 · 총 ${streak.totalCompleted}회\n\n(5단계 완료 화면은 곧 만들어집니다.)`);
+      });
+
+      // 폰트 크기 토글
+      document.getElementById('fontSizeBtn').addEventListener('click', toggleFontSize);
+    }
+
+    // ========== 폰트 크기 ==========
+    function toggleFontSize() {
+      const sizes = ['sm', 'md', 'lg'];
+      const settings = Storage.getSettings();
+      const currentIdx = sizes.indexOf(settings.fontSize);
+      const nextIdx = (currentIdx + 1) % sizes.length;
+      Storage.setSetting('fontSize', sizes[nextIdx]);
+      applyFontSize();
+    }
+
+    function applyFontSize() {
+      const size = Storage.getSettings().fontSize;
+      document.documentElement.setAttribute('data-font-size', size);
+    }
+
+    // ========== 유틸 ==========
+    function escapeHTML(str) {
+      if (str == null) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+  </script>
+</body>
+</html>

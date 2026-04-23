@@ -133,6 +133,7 @@
       background: transparent;
       border: 1.5px solid var(--accent-sage);
       color: var(--accent-sage-text);
+      font-size: 17px;                 /* 16 → 17 살짝 키움 */
       transition: background var(--duration-base),
                   color var(--duration-base),
                   border-color var(--duration-base);
@@ -212,7 +213,7 @@
         <div class="loading" style="padding:0;">기도문을 준비하고 있어요...</div>
       </div>
       <button class="btn prayed-btn" id="prayedBtn">
-        🙏 기도했어요
+        기도했어요
       </button>
     </section>
 
@@ -318,11 +319,10 @@
         window.location.href = 'step-2-meditation.html';
       });
 
-      // 다음 → 4단계 (아직 없음)
+      // 다음 → 4단계
       document.getElementById('nextBtn').addEventListener('click', () => {
-        // Storage.setDailyRecord(TODAY, { progressStep: 4 });
-        // window.location.href = 'step-4-record.html';
-        alert('4단계 감정+메모 화면은 곧 만들어질 예정이에요! 🌿');
+        Storage.setDailyRecord(TODAY, { progressStep: 4 });
+        window.location.href = 'step-4-record.html';
       });
 
       // 폰트 크기 토글

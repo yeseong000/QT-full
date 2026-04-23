@@ -188,7 +188,7 @@ input, textarea {
   }
   .app-scroll::-webkit-scrollbar,
   .scripture-toggle__body::-webkit-scrollbar {
-    width: 4px;
+    width: 2px;  /* 4px → 2px : 일반 앱 수준으로 얇게 */
   }
   .app-scroll::-webkit-scrollbar-track,
   .scripture-toggle__body::-webkit-scrollbar-track {
@@ -198,7 +198,7 @@ input, textarea {
   .app-scroll::-webkit-scrollbar-thumb,
   .scripture-toggle__body::-webkit-scrollbar-thumb {
     background: transparent;
-    border-radius: 2px;
+    border-radius: 1px;
     transition: background 400ms;
   }
   .app-scroll.is-scrolling::-webkit-scrollbar-thumb,
