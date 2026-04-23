@@ -2,20 +2,57 @@
  * 주만나 AI 큐티 - 공통 유틸
  */
 
+// 테마별 모바일 브라우저 chrome 색 (--bg-paper와 일치)
+const THEME_CHROME_COLORS = {
+  default: '#F7F4ED',
+  rose:    '#FCF3EE',
+  dark:    '#1A231D',
+};
+
+/**
+ * 테마 적용: data-theme 속성 + 모바일 브라우저 주소창 색 + iOS 상태바 스타일을 한 번에 동기화.
+ * 페이지 초기 로드 시(IIFE)와 사용자가 테마 모달에서 변경 시 동일하게 호출.
+ */
+function applyTheme(theme) {
+  const t = (theme && THEME_CHROME_COLORS[theme]) ? theme : 'default';
+
+  // 1) data-theme 속성
+  if (t === 'default') {
+    document.documentElement.removeAttribute('data-theme');
+  } else {
+    document.documentElement.setAttribute('data-theme', t);
+  }
+
+  // 2) 모바일 브라우저 주소창 색
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.setAttribute('content', THEME_CHROME_COLORS[t]);
+
+  // 3) iOS PWA 상태바 스타일 (다크일 때 노치 영역도 어둡게)
+  const iosBar = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
+  if (iosBar) iosBar.setAttribute('content', t === 'dark' ? 'black-translucent' : 'default');
+}
+
 // 테마 즉시 적용 (DOMContentLoaded 전에 실행 → 플래시 최소화)
 (function applyStoredTheme() {
+  let stored = null;
   try {
     const raw = localStorage.getItem('settings.background');
-    if (raw) {
-      const theme = JSON.parse(raw);
-      if (theme && theme !== 'default') {
-        document.documentElement.setAttribute('data-theme', theme);
-      }
-    }
-  } catch (e) { /* ignore */ }
+    if (raw) stored = JSON.parse(raw);
+  } catch (e) { /* localStorage 차단/private 모드: 무시 */ }
+
+  // 사용자가 명시적으로 고른 값이 있으면 우선,
+  // 없으면 OS의 prefers-color-scheme를 따라감
+  if (!stored && window.matchMedia &&
+      window.matchMedia('(prefers-color-scheme: dark)').matches) {
+    stored = 'dark';
+  }
+
+  applyTheme(stored);
 })();
 
 const Common = {
+  applyTheme,
+
   /**
    * 시간대별 인사말 가져오기
    * @param {string} name - 사용자 이름

@@ -520,19 +520,11 @@
         opt.addEventListener('click', () => {
           const theme = opt.dataset.theme;
           Storage.setSetting('background', theme);
-          applyTheme(theme);
+          Common.applyTheme(theme);   // data-theme + 주소창 + iOS 상태바 동시 갱신
           options.forEach(o => o.classList.remove('is-selected'));
           opt.classList.add('is-selected');
         });
       });
-    }
-
-    function applyTheme(theme) {
-      if (!theme || theme === 'default') {
-        document.documentElement.removeAttribute('data-theme');
-      } else {
-        document.documentElement.setAttribute('data-theme', theme);
-      }
     }
   </script>
 </body>
