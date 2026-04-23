@@ -94,11 +94,15 @@
       color: var(--text-primary);
       line-height: 1.55;
       margin-bottom: var(--space-2);
+      word-break: keep-all;        /* 한글 단어 중간에서 안 끊어짐 */
+      overflow-wrap: break-word;
     }
     .application-item__detail {
       font-size: var(--text-small);
       color: var(--text-secondary);
       line-height: 1.7;
+      word-break: keep-all;
+      overflow-wrap: break-word;
     }
 
     /* ------------------------------------------------------------------
@@ -106,29 +110,41 @@
        ------------------------------------------------------------------ */
     .prayer-content {
       font-size: var(--text-scripture);
-      line-height: 2.0;
+      line-height: 1.75;               /* 2.0 → 1.75 로 살짝 타이트하게 */
       color: var(--text-body);
       padding: var(--space-2) 0 var(--space-4);
+      word-break: keep-all;
+      overflow-wrap: break-word;
     }
     .prayer-line {
       padding: 2px 0;
     }
     .prayer-line--empty {
-      height: var(--space-4);
+      height: var(--space-3);          /* 빈 줄 간격도 16→12px 로 살짝 좁힘 */
       padding: 0;
     }
 
-    /* "기도했어요" 버튼 */
+    /* "기도했어요" 버튼 — 아웃라인 스타일 (다음 버튼과 시각 분리) */
     .prayed-btn {
       width: 100%;
       margin-top: var(--space-4);
+      padding: 14px 24px;
+      border-radius: var(--radius-pill);
+      background: transparent;
+      border: 1.5px solid var(--accent-sage);
+      color: var(--accent-sage-text);
       transition: background var(--duration-base),
-                  color var(--duration-base);
+                  color var(--duration-base),
+                  border-color var(--duration-base);
+    }
+    .prayed-btn:active {
+      background: var(--accent-sage-soft);
     }
     .prayed-btn.is-prayed {
       background: var(--accent-sage-soft);
+      border-color: var(--accent-sage-soft);
       color: var(--accent-sage-text);
-      box-shadow: none;
+      cursor: default;
     }
 
     /* 로딩/에러 */
@@ -195,7 +211,7 @@
       <div class="prayer-content" id="prayerContent">
         <div class="loading" style="padding:0;">기도문을 준비하고 있어요...</div>
       </div>
-      <button class="btn btn-primary prayed-btn" id="prayedBtn">
+      <button class="btn prayed-btn" id="prayedBtn">
         🙏 기도했어요
       </button>
     </section>
