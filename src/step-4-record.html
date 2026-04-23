@@ -145,6 +145,7 @@
       font-weight: 600;
       color: var(--text-primary);
       margin-bottom: var(--space-3);
+      padding-left: 16px;   /* textarea 안쪽 padding과 동일 → 첫 글자 X좌표 일치 */
       letter-spacing: -0.01em;
       word-break: keep-all;
       line-height: 1.5;
@@ -168,6 +169,7 @@
       font-size: var(--text-caption);
       font-weight: 700;
       letter-spacing: -0.02em;
+      margin-left: 16px;    /* textarea 안쪽 padding과 정렬 */
       margin-bottom: var(--space-2);
     }
     .question-text {
@@ -175,6 +177,7 @@
       line-height: 1.6;
       color: var(--text-body);
       word-break: keep-all;
+      padding-left: 16px;   /* textarea 안쪽 padding과 정렬 */
       margin-bottom: var(--space-3);
     }
     .question-answer {
@@ -264,9 +267,6 @@
         <span class="meditation-card__icon">💭</span>
         오늘의 질문
       </h2>
-      <p class="meditation-card__hint">
-        주만나에서 오늘의 말씀과 함께 올라온 묵상 질문이에요. 가볍게 답을 적어보세요.
-      </p>
       <div id="questionsContainer">
         <div class="questions-empty">질문을 불러오고 있어요...</div>
       </div>
@@ -430,7 +430,7 @@
           <textarea
             class="memo-textarea question-answer"
             data-q-idx="${i}"
-            placeholder="답변을 적어보세요"
+            placeholder="가볍게 답변을 적어보세요"
           >${escapeHTML(savedAnswers[i] || '')}</textarea>
         </div>
       `).join('');
