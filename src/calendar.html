@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="ko" data-font-size="md">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no, maximum-scale=1">
+  <meta name="theme-color" content="#F7F4ED">
+
+  <!-- iOS PWA -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="주만나 AI">
+  <meta name="format-detection" content="telephone=no">
+
+  <title>묵상 달력 · 주만나 AI 큐티</title>
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.css">
+  <link rel="stylesheet" href="styles/design-tokens.css">
+  <link rel="stylesheet" href="styles/common.css">
+
+  <style>
+    /* ========== 달력 전용 ========== */
+
+    /* 미리보기 카드 등장 시 스크롤바로 인한 폭 변화 방지 */
+    .app-scroll {
+      scrollbar-gutter: stable;
+    }
+
+    .archive-header {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      margin-bottom: var(--space-5);
+    }
+    .back-btn {
+      width: 44px;
+      height: 44px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      color: var(--text-primary);
+      background: transparent;
+      border: 0;
+      -webkit-tap-highlight-color: transparent;
+      margin-left: -10px;
+      cursor: pointer;
+    }
+    .back-btn svg { width: 22px; height: 22px; }
+    .back-btn:active { background: var(--accent-sage-soft); }
+    .archive-title {
+      font-size: var(--text-h1);
+      font-weight: 700;
+      color: var(--text-primary);
+      letter-spacing: -0.02em;
+    }
+
+    /* 스트릭 히어로 카드 (70% 메인 · 30% 사이드) */
+    .streak-hero {
+      background: var(--bg-card);
+      border-radius: var(--radius-lg);
+      padding: var(--space-5);
+      margin-bottom: var(--space-5);
+      display: grid;
+      grid-template-columns: 7fr 3fr;
+      gap: var(--space-4);
+      align-items: center;
+    }
+    .streak-hero__main {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      padding-right: var(--space-4);
+      border-right: 1px solid var(--border-subtle);
+    }
+    .streak-hero__label,
+    .streak-hero__side-label {
+      font-size: var(--text-small);
+      color: var(--text-secondary);
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+    .streak-hero__main-stat,
+    .streak-hero__side-stat {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+    }
+    .streak-hero__emoji,
+    .streak-hero__side-emoji {
+      font-size: 21px;
+      line-height: 1;
+    }
+    .streak-hero__value,
+    .streak-hero__side-value {
+      font-size: 26px;
+      font-weight: 700;
+      color: var(--text-primary);
+      letter-spacing: -0.02em;
+      line-height: 1;
+    }
+    .streak-hero__side {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* 월 이동 */
+    .month-nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 var(--space-2);
+      margin-bottom: var(--space-3);
+    }
+    .month-nav__btn {
+      width: 40px;
+      height: 40px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: transparent;
+      border: 0;
+      color: var(--accent-sage);
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .month-nav__btn:disabled {
+      color: var(--border-chip);
+      cursor: not-allowed;
+    }
+    .month-nav__btn:not(:disabled):active {
+      background: var(--accent-sage-soft);
+    }
+    .month-nav__btn svg { width: 20px; height: 20px; }
+    .month-nav__label {
+      font-size: var(--text-h2);
+      font-weight: 600;
+      color: var(--text-primary);
+      letter-spacing: -0.01em;
+    }
+
+    /* 달력 카드 */
+    .calendar {
+      background: var(--bg-card);
+      border-radius: var(--radius-lg);
+      padding: var(--space-4) var(--space-3) var(--space-3);
+      margin-bottom: var(--space-5);
+    }
+    .calendar-weekdays {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      text-align: center;
+      font-size: var(--text-caption);
+      color: var(--text-secondary);
+      font-weight: 600;
+      margin-bottom: var(--space-2);
+    }
+    .calendar-weekdays__day { padding: 4px 0; }
+    .calendar-weekdays__day--sun { color: #C27C65; }
+
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 4px;
+    }
+    .calendar-cell {
+      aspect-ratio: 1;
+      display: grid;
+      place-items: center;
+      position: relative;
+      font-size: var(--text-body);
+      color: var(--text-body);
+      border-radius: 50%;
+      background: transparent;
+      border: 0;
+      padding: 0;
+      font-family: inherit;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .calendar-cell--empty { visibility: hidden; }
+    .calendar-cell--future { color: var(--text-placeholder); }
+    .calendar-cell--today {
+      outline: 2px solid var(--accent-sage);
+      outline-offset: -2px;
+      font-weight: 700;
+    }
+    .calendar-cell--completed {
+      background: var(--accent-sage);
+      color: var(--text-on-accent);
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .calendar-cell--completed.calendar-cell--today {
+      outline-color: var(--accent-sage-dark);
+    }
+
+    /* 연속 완료일 연결 — 행 경계 넘어도 flat edge 유지, 브리지는 같은 행일 때만 */
+    .calendar-cell--streak-left {
+      border-top-left-radius: 0;
+      border-bottom-left-radius: 0;
+    }
+    .calendar-cell--streak-right {
+      border-top-right-radius: 0;
+      border-bottom-right-radius: 0;
+    }
+    /* 오른쪽 브리지 (gap 메꿈) — 토요일은 제외 */
+    .calendar-cell--streak-bridge-right::after {
+      content: '';
+      position: absolute;
+      right: -5px;
+      top: 0;
+      bottom: 0;
+      width: 5px;
+      background: var(--accent-sage);
+      pointer-events: none;
+    }
+    .calendar-cell--selected {
+      box-shadow: 0 0 0 3px var(--accent-sage-soft);
+    }
+    .calendar-cell--completed:active { background: var(--accent-sage-dark); }
+
+    /* 빈 월 안내 */
+    .calendar-empty {
+      text-align: center;
+      padding: var(--space-4) 0 var(--space-2);
+      color: var(--text-secondary);
+      font-size: var(--text-small);
+    }
+
+    /* 인라인 미리보기 */
+    .preview-card {
+      background: var(--bg-card);
+      border-radius: var(--radius-lg);
+      padding: var(--space-5);
+      margin-bottom: var(--space-5);
+      display: none;
+    }
+    .preview-card.is-visible { display: block; }
+    .preview-card__date {
+      font-size: var(--text-caption);
+      font-weight: 600;
+      color: var(--accent-sage);
+      letter-spacing: 0.06em;
+      margin-bottom: var(--space-2);
+    }
+    .preview-card__title {
+      font-size: var(--text-h2);
+      font-weight: 700;
+      color: var(--text-primary);
+      letter-spacing: -0.01em;
+      margin-bottom: 4px;
+    }
+    .preview-card__ref {
+      font-size: var(--text-small);
+      color: var(--text-secondary);
+      margin-bottom: var(--space-3);
+    }
+    .preview-card__emotions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: var(--space-3);
+    }
+    .preview-card__emotions:empty { display: none; }
+    .preview-emotion-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 5px 10px;
+      background: var(--bg-soft);
+      border-radius: var(--radius-pill);
+      font-size: var(--text-small);
+      color: var(--accent-sage-text);
+      font-weight: 500;
+    }
+    .preview-card__memo {
+      font-size: var(--text-small);
+      line-height: 1.6;
+      color: var(--text-body);
+      padding: var(--space-3) var(--space-4);
+      background: var(--bg-soft);
+      border-radius: var(--radius-md);
+      margin-bottom: var(--space-3);
+      white-space: pre-wrap;
+      word-break: keep-all;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .preview-card__link {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: var(--text-small);
+      font-weight: 600;
+      color: var(--accent-sage);
+      text-decoration: none;
+    }
+    .preview-card__link:active { color: var(--accent-sage-dark); }
+
+    /* 전체 빈 상태 (기록이 하나도 없을 때) */
+    .empty-state {
+      text-align: center;
+      padding: var(--space-10) var(--space-4);
+      color: var(--text-secondary);
+    }
+    .empty-state__emoji {
+      font-size: 42px;
+      margin-bottom: var(--space-3);
+      line-height: 1;
+    }
+    .empty-state__title {
+      font-size: var(--text-h2);
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: var(--space-2);
+    }
+    .empty-state__desc {
+      font-size: var(--text-small);
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container app-container--no-nav">
+   <main class="app-scroll">
+
+    <header class="archive-header">
+      <button class="back-btn" id="backBtn" aria-label="뒤로">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 18 9 12 15 6"/>
+        </svg>
+      </button>
+      <h1 class="archive-title">묵상 달력</h1>
+    </header>
+
+    <!-- 스트릭 히어로 카드 (75% 총 묵상 횟수 · 25% 연속 묵상일) -->
+    <section class="streak-hero">
+      <div class="streak-hero__main">
+        <div class="streak-hero__label">총 묵상 횟수</div>
+        <div class="streak-hero__main-stat">
+          <span class="streak-hero__emoji">🌱</span>
+          <span class="streak-hero__value" id="streakTotal">0</span>
+        </div>
+      </div>
+      <div class="streak-hero__side">
+        <div class="streak-hero__side-label">연속 묵상일</div>
+        <div class="streak-hero__side-stat">
+          <span class="streak-hero__side-emoji">🔥</span>
+          <span class="streak-hero__side-value" id="streakCurrent">0</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- 월 이동 -->
+    <nav class="month-nav">
+      <button class="month-nav__btn" id="prevMonthBtn" aria-label="이전 달">
+        <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 18 9 12 15 6"/>
+        </svg>
+      </button>
+      <div class="month-nav__label" id="monthLabel">—</div>
+      <button class="month-nav__btn" id="nextMonthBtn" aria-label="다음 달">
+        <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="9 18 15 12 9 6"/>
+        </svg>
+      </button>
+    </nav>
+
+    <!-- 달력 -->
+    <section class="calendar">
+      <div class="calendar-weekdays">
+        <div class="calendar-weekdays__day calendar-weekdays__day--sun">일</div>
+        <div class="calendar-weekdays__day">월</div>
+        <div class="calendar-weekdays__day">화</div>
+        <div class="calendar-weekdays__day">수</div>
+        <div class="calendar-weekdays__day">목</div>
+        <div class="calendar-weekdays__day">금</div>
+        <div class="calendar-weekdays__day">토</div>
+      </div>
+      <div class="calendar-grid" id="calendarGrid"></div>
+      <div class="calendar-empty" id="calendarEmpty" style="display: none;">이번 달은 완료 기록이 없어요</div>
+    </section>
+
+    <!-- 인라인 미리보기 (완료일 탭 시 표시) -->
+    <article class="preview-card" id="previewCard" aria-live="polite">
+      <div class="preview-card__date" id="previewDate">—</div>
+      <h2 class="preview-card__title" id="previewTitle">—</h2>
+      <div class="preview-card__ref" id="previewRef">—</div>
+      <div class="preview-card__emotions" id="previewEmotions"></div>
+      <div class="preview-card__memo" id="previewMemo" style="display: none;"></div>
+      <a class="preview-card__link" href="archive.html">
+        <span>전체 기록 보기</span>
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="9 18 15 12 9 6"/>
+        </svg>
+      </a>
+    </article>
+
+   </main>
+  </div>
+
+  <!-- Scripts -->
+  <script src="scripts/storage.js"></script>
+  <script src="scripts/common.js"></script>
+  <script>
+    const EMOTION_MAP = {
+      gratitude: { emoji: '🙏', label: '감사' },
+      peace:     { emoji: '🕊️', label: '평안' },
+      joy:       { emoji: '😊', label: '기쁨' },
+      insight:   { emoji: '💡', label: '깨달음' },
+      grace:     { emoji: '✨', label: '은혜' },
+      hope:      { emoji: '🌱', label: '희망' },
+      repent:    { emoji: '😔', label: '회개' },
+      sadness:   { emoji: '💧', label: '슬픔' },
+      fear:      { emoji: '😟', label: '두려움' },
+    };
+
+    const pad2 = (n) => String(n).padStart(2, '0');
+    const toLocalISO = (d) =>
+      `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+
+    const todayLocal = new Date();
+    const todayISO = toLocalISO(todayLocal);
+
+    // 현재 보고 있는 월 (초기값: 오늘 기준 달)
+    let viewYear = todayLocal.getFullYear();
+    let viewMonth = todayLocal.getMonth(); // 0-11
+
+    let completedSet = new Set();
+
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('backBtn').addEventListener('click', () => {
+        window.location.href = 'index.html';
+      });
+      document.getElementById('prevMonthBtn').addEventListener('click', () => {
+        viewMonth--;
+        if (viewMonth < 0) { viewMonth = 11; viewYear--; }
+        clearSelection();
+        renderMonth();
+      });
+      document.getElementById('nextMonthBtn').addEventListener('click', () => {
+        if (isViewingThisMonthOrLater()) return;
+        viewMonth++;
+        if (viewMonth > 11) { viewMonth = 0; viewYear++; }
+        clearSelection();
+        renderMonth();
+      });
+
+      // 그리드 클릭 위임 (완료 셀만 반응)
+      document.getElementById('calendarGrid').addEventListener('click', (e) => {
+        const btn = e.target.closest('.calendar-cell--completed');
+        if (!btn) return;
+        selectDate(btn.getAttribute('data-date'), btn);
+      });
+
+      renderStreak();
+      completedSet = collectCompletedDates();
+      renderMonth();
+    });
+
+    function renderStreak() {
+      const s = Storage.getStreak();
+      document.getElementById('streakTotal').textContent = s.totalCompleted;
+      document.getElementById('streakCurrent').textContent = s.current;
+    }
+
+    // localStorage의 records.*에서 "완료" 상태인 날짜만 모음
+    function collectCompletedDates() {
+      const allDates = new Set();
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        const m = key && key.match(/^records\.(\d{4}-\d{2}-\d{2})\./);
+        if (m) allDates.add(m[1]);
+      }
+      const completed = new Set();
+      allDates.forEach(date => {
+        const r = Storage.getDailyRecord(date);
+        if (r.completed || r.progressStep === 5) completed.add(date);
+      });
+      return completed;
+    }
+
+    function isViewingThisMonthOrLater() {
+      return viewYear > todayLocal.getFullYear()
+        || (viewYear === todayLocal.getFullYear() && viewMonth >= todayLocal.getMonth());
+    }
+
+    function renderMonth() {
+      document.getElementById('monthLabel').textContent =
+        `${viewYear}년 ${viewMonth + 1}월`;
+      document.getElementById('nextMonthBtn').disabled = isViewingThisMonthOrLater();
+
+      const firstDay = new Date(viewYear, viewMonth, 1).getDay(); // 0=일
+      const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+
+      const cells = [];
+
+      // 첫 주의 빈 셀
+      for (let i = 0; i < firstDay; i++) {
+        cells.push('<div class="calendar-cell calendar-cell--empty"></div>');
+      }
+
+      let monthHasCompleted = false;
+      for (let d = 1; d <= daysInMonth; d++) {
+        const dateISO = `${viewYear}-${pad2(viewMonth + 1)}-${pad2(d)}`;
+        const dayOfWeek = (firstDay + d - 1) % 7; // 0=일 ~ 6=토
+        const isFuture = dateISO > todayISO;
+        const isToday = dateISO === todayISO;
+        const isCompleted = completedSet.has(dateISO);
+
+        const classes = ['calendar-cell'];
+        if (isFuture) classes.push('calendar-cell--future');
+        if (isToday) classes.push('calendar-cell--today');
+        if (isCompleted) {
+          classes.push('calendar-cell--completed');
+          monthHasCompleted = true;
+
+          // 앞/뒤 날짜가 완료되었으면 가장자리를 평평하게 (같은 달 내 연속)
+          const prevISO = `${viewYear}-${pad2(viewMonth + 1)}-${pad2(d - 1)}`;
+          const nextISO = `${viewYear}-${pad2(viewMonth + 1)}-${pad2(d + 1)}`;
+          if (completedSet.has(prevISO)) {
+            classes.push('calendar-cell--streak-left');
+          }
+          if (completedSet.has(nextISO)) {
+            classes.push('calendar-cell--streak-right');
+            // 브리지는 같은 행(주)일 때만 — 토요일(6)은 다음 셀이 다음 행
+            if (dayOfWeek < 6) {
+              classes.push('calendar-cell--streak-bridge-right');
+            }
+          }
+        }
+
+        if (isCompleted) {
+          cells.push(
+            `<button type="button" class="${classes.join(' ')}" data-date="${dateISO}" aria-label="${dateISO} 완료">${d}</button>`
+          );
+        } else {
+          cells.push(`<div class="${classes.join(' ')}">${d}</div>`);
+        }
+      }
+
+      document.getElementById('calendarGrid').innerHTML = cells.join('');
+      document.getElementById('calendarEmpty').style.display =
+        monthHasCompleted ? 'none' : 'block';
+    }
+
+    async function selectDate(date, cellEl) {
+      document.querySelectorAll('.calendar-cell--selected')
+        .forEach(el => el.classList.remove('calendar-cell--selected'));
+      cellEl.classList.add('calendar-cell--selected');
+
+      const record = Storage.getDailyRecord(date);
+      const qt = await Common.loadJSON(`../data/qt/${date}.json`);
+
+      const [y, m, d] = date.split('-').map(Number);
+      document.getElementById('previewDate').textContent =
+        Common.formatKoreanDate(new Date(y, m - 1, d));
+      document.getElementById('previewTitle').textContent =
+        qt?.title || '(말씀 제목 준비 중)';
+      document.getElementById('previewRef').textContent =
+        qt?.scripture_ref || '';
+
+      const emotionsEl = document.getElementById('previewEmotions');
+      const chips = (record.emotions || [])
+        .map(id => EMOTION_MAP[id])
+        .filter(Boolean)
+        .map(e => `<span class="preview-emotion-chip"><span>${e.emoji}</span><span>${escapeHTML(e.label)}</span></span>`);
+      emotionsEl.innerHTML = chips.join('');
+
+      const memoEl = document.getElementById('previewMemo');
+      if (record.memo && record.memo.trim()) {
+        memoEl.textContent = record.memo;
+        memoEl.style.display = '';
+      } else {
+        memoEl.style.display = 'none';
+      }
+
+      const card = document.getElementById('previewCard');
+      card.classList.add('is-visible');
+      setTimeout(() => {
+        card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }, 50);
+    }
+
+    function clearSelection() {
+      document.getElementById('previewCard').classList.remove('is-visible');
+    }
+
+    function escapeHTML(str) {
+      if (str == null) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+  </script>
+</body>
+</html>

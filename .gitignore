@@ -43,3 +43,6 @@ logs/
 .coverage
 .pytest_cache/
 htmlcov/
+
+# 로컬 전용 시딩 페이지 (배포 X)
+src/seed-test.html
