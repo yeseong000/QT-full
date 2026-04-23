@@ -89,6 +89,7 @@ input, textarea {
   min-height: 0;             /* flex + overflow 조합에 필요 */
   overflow-y: auto;
   overflow-x: hidden;
+  scrollbar-gutter: stable both-edges;  /* 양쪽 대칭 거터 → 콘텐츠 정중앙 유지 */
   padding:
     calc(var(--page-padding-top) + env(safe-area-inset-top, 0))
     var(--page-padding-x)

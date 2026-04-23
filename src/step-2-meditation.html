@@ -531,11 +531,10 @@
         window.location.href = 'step-1-scripture.html';
       });
 
-      // 다음 → 3단계 (아직 없음)
+      // 다음 → 3단계
       document.getElementById('nextBtn').addEventListener('click', () => {
-        // Storage.setDailyRecord(TODAY, { progressStep: 3 });
-        // window.location.href = 'step-3-prayer.html';
-        alert('3단계 적용+기도 화면은 곧 만들어질 예정이에요! 🙏');
+        Storage.setDailyRecord(TODAY, { progressStep: 3 });
+        window.location.href = 'step-3-prayer.html';
       });
 
       // 폰트 크기 토글

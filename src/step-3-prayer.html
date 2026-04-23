@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="ko" data-font-size="md">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no, maximum-scale=1">
+  <meta name="theme-color" content="#F7F4ED">
+
+  <!-- iOS PWA -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="주만나 AI">
+  <meta name="format-detection" content="telephone=no">
+
+  <title>적용과 기도 · 주만나 AI 큐티</title>
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.css">
+  <link rel="stylesheet" href="styles/design-tokens.css">
+  <link rel="stylesheet" href="styles/common.css">
+
+  <style>
+    /* ========== 3단계 전용 ========== */
+
+    /* 묵상 카드 공통 (step-2와 동일) */
+    .meditation-card {
+      background: var(--bg-card);
+      border-radius: var(--radius-lg);
+      padding: var(--card-padding);
+      margin-bottom: var(--card-gap);
+    }
+    .meditation-card__title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: var(--text-h2);
+      font-weight: 700;
+      color: var(--text-primary);
+      letter-spacing: -0.01em;
+      margin-bottom: var(--space-5);
+    }
+    .meditation-card__icon {
+      width: 28px;
+      height: 28px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: var(--accent-sage-soft);
+      font-size: 15px;
+    }
+
+    /* ------------------------------------------------------------------
+       말씀 적용하기 (번호 리스트)
+       ------------------------------------------------------------------ */
+    .application-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      counter-reset: app-counter;
+    }
+    .application-list li {
+      counter-increment: app-counter;
+      position: relative;
+      padding: var(--space-5) 0 var(--space-5) 44px;
+      border-top: 1px solid var(--border-subtle);
+    }
+    .application-list li:first-child {
+      padding-top: 0;
+      border-top: none;
+    }
+    .application-list li:last-child {
+      padding-bottom: 0;
+    }
+    .application-list li::before {
+      content: counter(app-counter);
+      position: absolute;
+      left: 0;
+      top: var(--space-5);
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--accent-sage-soft);
+      color: var(--accent-sage-text);
+      display: grid;
+      place-items: center;
+      font-size: var(--text-small);
+      font-weight: 700;
+      letter-spacing: 0;
+    }
+    .application-list li:first-child::before {
+      top: 0;
+    }
+    .application-item__statement {
+      font-size: var(--text-body);
+      font-weight: 600;
+      color: var(--text-primary);
+      line-height: 1.55;
+      margin-bottom: var(--space-2);
+    }
+    .application-item__detail {
+      font-size: var(--text-small);
+      color: var(--text-secondary);
+      line-height: 1.7;
+    }
+
+    /* ------------------------------------------------------------------
+       기도문
+       ------------------------------------------------------------------ */
+    .prayer-content {
+      font-size: var(--text-scripture);
+      line-height: 2.0;
+      color: var(--text-body);
+      padding: var(--space-2) 0 var(--space-4);
+    }
+    .prayer-line {
+      padding: 2px 0;
+    }
+    .prayer-line--empty {
+      height: var(--space-4);
+      padding: 0;
+    }
+
+    /* "기도했어요" 버튼 */
+    .prayed-btn {
+      width: 100%;
+      margin-top: var(--space-4);
+      transition: background var(--duration-base),
+                  color var(--duration-base);
+    }
+    .prayed-btn.is-prayed {
+      background: var(--accent-sage-soft);
+      color: var(--accent-sage-text);
+      box-shadow: none;
+    }
+
+    /* 로딩/에러 */
+    .loading,
+    .error {
+      padding: var(--space-8) var(--space-4);
+      text-align: center;
+      color: var(--text-secondary);
+      font-size: var(--text-small);
+    }
+    .error {
+      color: #B84A4A;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+   <main class="app-scroll">
+
+    <!-- 진행 단계 (4단계 중 3단계) -->
+    <div class="progress-dots" aria-label="진행 단계 3/4">
+      <div class="progress-dot active"></div>
+      <div class="progress-dot active"></div>
+      <div class="progress-dot active"></div>
+      <div class="progress-dot"></div>
+    </div>
+
+    <!-- 상단바 -->
+    <header class="top-bar">
+      <div class="top-bar__left">
+        <button class="icon-btn" id="closeBtn" aria-label="닫기">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path d="M18 6L6 18M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+      <div class="top-bar__right">
+        <button class="icon-btn icon-btn--font" id="fontSizeBtn" aria-label="폰트 크기">
+          가가
+        </button>
+      </div>
+    </header>
+
+    <!-- 페이지 제목 -->
+    <h1 class="page-title">말씀을 삶으로 옮겨보세요</h1>
+
+    <!-- 말씀 적용하기 카드 -->
+    <section class="meditation-card" id="applicationCard">
+      <h2 class="meditation-card__title">
+        <span class="meditation-card__icon">🌱</span>
+        말씀 적용하기
+      </h2>
+      <ol class="application-list" id="applicationList">
+        <li class="loading" style="padding:0;list-style:none;">적용 말씀을 준비하고 있어요...</li>
+      </ol>
+    </section>
+
+    <!-- 기도문 카드 -->
+    <section class="meditation-card" id="prayerCard">
+      <h2 class="meditation-card__title">
+        <span class="meditation-card__icon">🙏</span>
+        오늘의 기도
+      </h2>
+      <div class="prayer-content" id="prayerContent">
+        <div class="loading" style="padding:0;">기도문을 준비하고 있어요...</div>
+      </div>
+      <button class="btn btn-primary prayed-btn" id="prayedBtn">
+        🙏 기도했어요
+      </button>
+    </section>
+
+   </main>
+
+   <!-- 하단 네비 (app-container 내부) -->
+   <nav class="bottom-nav">
+     <button class="btn btn-secondary btn-icon-only" id="prevBtn" aria-label="이전">
+       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+         <polyline points="15 18 9 12 15 6"/>
+       </svg>
+     </button>
+     <button class="btn btn-primary" id="nextBtn">다음</button>
+   </nav>
+
+  </div>
+
+  <!-- Scripts -->
+  <script src="scripts/storage.js"></script>
+  <script src="scripts/common.js"></script>
+  <script>
+    const TODAY = Common.todayISO();
+    const FALLBACK_DATE = '2026-04-22';
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      await loadAI();
+      setupEventListeners();
+      applyFontSize();
+      hydratePrayedState();
+      Storage.setDailyRecord(TODAY, { progressStep: 3 });
+    });
+
+    // ========== AI 묵상 데이터 로드 ==========
+    async function loadAI() {
+      let ai = await Common.loadJSON(`../data/ai/${TODAY}.json`);
+      if (!ai) {
+        ai = await Common.loadJSON(`../data/ai/${FALLBACK_DATE}.json`);
+      }
+
+      if (!ai) {
+        document.getElementById('applicationList').innerHTML =
+          '<li class="error" style="padding:0;list-style:none;">적용 말씀을 불러올 수 없어요.</li>';
+        document.getElementById('prayerContent').innerHTML =
+          '<div class="error">기도문을 불러올 수 없어요.</div>';
+        return;
+      }
+
+      renderApplications(ai.application);
+      renderPrayer(ai.prayer);
+    }
+
+    function renderApplications(apps) {
+      const list = document.getElementById('applicationList');
+      if (!Array.isArray(apps) || apps.length === 0) {
+        list.innerHTML = '<li style="padding:0;list-style:none;" class="text-secondary">적용 말씀이 준비되지 않았어요.</li>';
+        return;
+      }
+      list.innerHTML = apps.map(a => `
+        <li>
+          <div class="application-item__statement">${escapeHTML(a.statement || '')}</div>
+          <div class="application-item__detail">${escapeHTML(a.detail || '')}</div>
+        </li>
+      `).join('');
+    }
+
+    function renderPrayer(lines) {
+      const container = document.getElementById('prayerContent');
+      if (!Array.isArray(lines) || lines.length === 0) {
+        container.innerHTML = '<div class="text-secondary">기도문이 준비되지 않았어요.</div>';
+        return;
+      }
+      container.innerHTML = lines.map(l => {
+        if (l === '' || l == null) {
+          return '<div class="prayer-line prayer-line--empty"></div>';
+        }
+        return `<div class="prayer-line">${escapeHTML(l)}</div>`;
+      }).join('');
+    }
+
+    // ========== 기도했어요 버튼 ==========
+    function hydratePrayedState() {
+      const record = Storage.getDailyRecord(TODAY);
+      if (record.prayed) {
+        markPrayed();
+      }
+    }
+
+    function markPrayed() {
+      const btn = document.getElementById('prayedBtn');
+      btn.classList.add('is-prayed');
+      btn.textContent = '✓ 기도 완료';
+    }
+
+    // ========== 이벤트 ==========
+    function setupEventListeners() {
+      // 닫기 → 홈
+      document.getElementById('closeBtn').addEventListener('click', () => {
+        window.location.href = 'index.html';
+      });
+
+      // 이전 → 2단계
+      document.getElementById('prevBtn').addEventListener('click', () => {
+        window.location.href = 'step-2-meditation.html';
+      });
+
+      // 다음 → 4단계 (아직 없음)
+      document.getElementById('nextBtn').addEventListener('click', () => {
+        // Storage.setDailyRecord(TODAY, { progressStep: 4 });
+        // window.location.href = 'step-4-record.html';
+        alert('4단계 감정+메모 화면은 곧 만들어질 예정이에요! 🌿');
+      });
+
+      // 폰트 크기 토글
+      document.getElementById('fontSizeBtn').addEventListener('click', toggleFontSize);
+
+      // 기도했어요 버튼
+      document.getElementById('prayedBtn').addEventListener('click', () => {
+        Storage.setDailyRecord(TODAY, { prayed: true });
+        markPrayed();
+      });
+    }
+
+    // ========== 폰트 크기 ==========
+    function toggleFontSize() {
+      const sizes = ['sm', 'md', 'lg'];
+      const settings = Storage.getSettings();
+      const currentIdx = sizes.indexOf(settings.fontSize);
+      const nextIdx = (currentIdx + 1) % sizes.length;
+      Storage.setSetting('fontSize', sizes[nextIdx]);
+      applyFontSize();
+    }
+
+    function applyFontSize() {
+      const size = Storage.getSettings().fontSize;
+      document.documentElement.setAttribute('data-font-size', size);
+    }
+
+    // ========== 유틸 ==========
+    function escapeHTML(str) {
+      if (str == null) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+  </script>
+</body>
+</html>
