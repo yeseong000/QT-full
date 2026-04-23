@@ -177,7 +177,7 @@ input, textarea {
   /* iOS overlay 느낌의 자동 숨김 스크롤바 (PC 프레임 전용) */
   .app-scroll,
   .scripture-toggle__body {
-    scrollbar-width: none;   /* Firefox/신형 Chrome: 네이티브 숨김 (webkit 커스텀만 표시) */
+    scrollbar-width: thin;   /* 브라우저에 "얇은 스크롤바" 알림 (webkit이 이를 2px로 추가 커스텀) */
     scrollbar-color: transparent transparent;
     transition: scrollbar-color 400ms;
   }
@@ -187,7 +187,7 @@ input, textarea {
   }
   .app-scroll::-webkit-scrollbar,
   .scripture-toggle__body::-webkit-scrollbar {
-    width: 2px;  /* 4px → 2px : 일반 앱 수준으로 얇게 */
+    width: 1px;  /* 최대한 가늘게 — 실선 한 가닥 느낌 */
   }
   .app-scroll::-webkit-scrollbar-track,
   .scripture-toggle__body::-webkit-scrollbar-track {
@@ -197,7 +197,6 @@ input, textarea {
   .app-scroll::-webkit-scrollbar-thumb,
   .scripture-toggle__body::-webkit-scrollbar-thumb {
     background: transparent;
-    border-radius: 1px;
     transition: background 400ms;
   }
   .app-scroll.is-scrolling::-webkit-scrollbar-thumb,

@@ -370,10 +370,8 @@
           Storage.setDailyRecord(TODAY, { completed: true });
           Storage.markCompleted();   // 스트릭 +1
         }
-        // Storage.setDailyRecord(TODAY, { progressStep: 5 });
-        // window.location.href = 'step-5-done.html';
-        const streak = Storage.getStreak();
-        alert(`🌿 오늘 묵상 완료!\n\n연속 ${streak.current}일 · 총 ${streak.totalCompleted}회\n\n(5단계 완료 화면은 곧 만들어집니다.)`);
+        Storage.setDailyRecord(TODAY, { progressStep: 5 });
+        window.location.href = 'step-5-done.html';
       });
 
       // 폰트 크기 토글
