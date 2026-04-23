@@ -229,7 +229,7 @@ input, textarea {
   display: flex;
   justify-content: center;
   gap: 5px;
-  margin-bottom: var(--space-4);    /* 16px - 상단바와 붙지 않도록 */
+  /* top-bar 안에 들어가서 별도 margin 불필요 */
 }
 .progress-dot {
   width: 28px;
