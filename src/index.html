@@ -130,7 +130,7 @@
     .today-card {
       background: var(--bg-card);
       border-radius: var(--radius-lg);
-      padding: var(--space-8) var(--card-padding);
+      padding: calc(var(--space-8) * 1.05) var(--card-padding);  /* 위아래 5% 더 */
       margin-bottom: var(--card-gap);
       text-align: center;
       transition: transform var(--duration-base);
@@ -140,7 +140,7 @@
     }
 
     .today-label {
-      font-size: var(--text-caption);
+      font-size: var(--text-small);   /* 12px → 14px (한 단계 키움) */
       font-weight: 600;
       color: var(--accent-sage);
       text-transform: uppercase;
