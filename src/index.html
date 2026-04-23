@@ -22,8 +22,52 @@
 
     .home-header {
       display: flex;
-      justify-content: flex-end;
+      align-items: center;
+      gap: var(--space-3);
       margin-bottom: var(--space-6);
+    }
+
+    /* 스트릭 탭 (좌측, 넓게) */
+    .streak-tab {
+      flex: 1;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 16px;
+      min-height: 44px;
+      background: var(--accent-sage-soft);
+      border-radius: var(--radius-pill);
+      color: var(--accent-sage-text);
+      border: 0;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      transition: transform var(--duration-fast),
+                  background var(--duration-base);
+      font-family: inherit;
+      letter-spacing: -0.01em;
+    }
+    .streak-tab:active {
+      transform: scale(0.98);
+    }
+    .streak-tab__emoji {
+      font-size: 18px;
+      line-height: 1;
+      flex-shrink: 0;
+    }
+    .streak-tab__text {
+      font-size: var(--text-small);
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .streak-tab__text strong {
+      font-weight: 700;
+      margin-right: 2px;
+    }
+    .streak-tab__sep {
+      opacity: 0.5;
+      margin: 0 4px;
     }
 
     .greeting-section {
@@ -160,14 +204,33 @@
     .error { color: #C0392B; }
 
     /* ---------- 설정 모달 ---------- */
+    /* 제목 + 설명 한 줄 배치 */
+    .modal-top {
+      display: flex;
+      align-items: baseline;
+      gap: var(--space-3);
+      margin-bottom: var(--space-6);
+      flex-wrap: wrap;
+    }
+    .modal-top .modal-title {
+      margin-bottom: 0;
+      flex-shrink: 0;
+    }
+    .modal-top .modal-desc {
+      margin-bottom: 0;
+      flex: 1;
+      min-width: 0;
+    }
+
     .setting-item {
       margin-bottom: var(--space-6);
     }
     .setting-label {
-      font-size: var(--text-small);
-      color: var(--text-secondary);
+      font-size: var(--text-body);       /* 14 → 16 살짝 키움 */
+      color: var(--text-primary);        /* secondary → primary 강조 */
       margin-bottom: var(--space-3);
-      font-weight: 500;
+      font-weight: 600;
+      letter-spacing: -0.01em;
     }
 
     /* 테마 선택 그리드 */
@@ -224,8 +287,14 @@
   <div class="app-container app-container--no-nav">
    <main class="app-scroll">
 
-    <!-- 상단: 설정 버튼 -->
+    <!-- 상단: 스트릭 탭 + 설정 버튼 -->
     <header class="home-header">
+      <button class="streak-tab" id="streakTab" aria-label="묵상 기록 보기">
+        <span class="streak-tab__emoji">🌱</span>
+        <span class="streak-tab__text">
+          <strong id="streakCount">0일 연속</strong><span class="streak-tab__sep">·</span><span id="streakTotal">총 0회 완료</span>
+        </span>
+      </button>
       <button class="icon-btn" id="settingsBtn" aria-label="설정">
         <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
           <circle cx="12" cy="12" r="3"/>
@@ -239,15 +308,6 @@
       <div class="greeting-emoji" id="greetingEmoji">☀️</div>
       <h1 class="greeting-text" id="greetingText">좋은 아침이에요, 어린양님</h1>
       <p class="greeting-date" id="greetingDate">2026년 4월 22일 수요일</p>
-    </section>
-
-    <!-- 스트릭 카드 -->
-    <section class="streak-card" id="streakCard">
-      <div class="streak-emoji">🌱</div>
-      <div class="streak-info">
-        <div class="streak-number" id="streakNumber">0일 연속</div>
-        <div class="streak-label" id="streakLabel">총 0회 묵상 완료</div>
-      </div>
     </section>
 
     <!-- 오늘의 말씀 -->
@@ -283,8 +343,10 @@
   <!-- ========== 설정 모달 ========== -->
   <div class="modal-backdrop" id="settingsModal">
     <div class="modal-sheet">
-      <h2 class="modal-title">설정</h2>
-      <p class="modal-desc">닉네임과 배경은 언제든지 바꿀 수 있어요.</p>
+      <div class="modal-top">
+        <h2 class="modal-title">설정</h2>
+        <p class="modal-desc">닉네임과 배경은 언제든지 바꿀 수 있어요.</p>
+      </div>
 
       <div class="setting-item">
         <div class="setting-label">닉네임</div>
@@ -304,13 +366,13 @@
             <div class="theme-swatch" style="background: #F7F4ED;"></div>
             <div class="theme-label">기본</div>
           </button>
-          <button class="theme-option" type="button" data-theme="white" aria-label="순백 배경">
-            <div class="theme-swatch" style="background: #FFFFFF; box-shadow: inset 0 0 0 1px #E0E0E0;"></div>
-            <div class="theme-label">순백</div>
+          <button class="theme-option" type="button" data-theme="rose" aria-label="로즈 배경">
+            <div class="theme-swatch" style="background: #FBEFE9;"></div>
+            <div class="theme-label">로즈</div>
           </button>
-          <button class="theme-option" type="button" data-theme="warm" aria-label="따뜻한 크림 배경">
-            <div class="theme-swatch" style="background: #FAF0E6;"></div>
-            <div class="theme-label">크림</div>
+          <button class="theme-option" type="button" data-theme="sand" aria-label="샌드 배경">
+            <div class="theme-swatch" style="background: #F4EAD2;"></div>
+            <div class="theme-label">샌드</div>
           </button>
           <button class="theme-option" type="button" data-theme="dark" aria-label="다크 배경">
             <div class="theme-swatch" style="background: #1E2520;"></div>
@@ -350,8 +412,8 @@
     // ========== 스트릭 렌더링 ==========
     function renderStreak() {
       const streak = Storage.getStreak();
-      document.getElementById('streakNumber').textContent = `${streak.current}일 연속`;
-      document.getElementById('streakLabel').textContent = `총 ${streak.totalCompleted}회 묵상 완료`;
+      document.getElementById('streakCount').textContent = `${streak.current}일 연속`;
+      document.getElementById('streakTotal').textContent = `총 ${streak.totalCompleted}회 완료`;
     }
 
     // ========== 오늘의 QT 로드 ==========
@@ -400,6 +462,11 @@
 
     // ========== 이벤트 리스너 ==========
     function setupEventListeners() {
+      // 스트릭 탭 → 아카이브로 이동
+      document.getElementById('streakTab').addEventListener('click', () => {
+        window.location.href = 'archive.html';
+      });
+
       // 설정 모달 열기
       document.getElementById('settingsBtn').addEventListener('click', () => {
         document.getElementById('nameInput').value = Storage.getUserName();

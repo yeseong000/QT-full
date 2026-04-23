@@ -59,85 +59,167 @@
       padding-left: var(--space-2);
     }
 
-    /* 레코드 카드 */
-    .record-card {
-      display: block;
+    /* 아코디언 아이템 */
+    .record-item {
       background: var(--bg-card);
       border-radius: var(--radius-lg);
-      padding: var(--space-5) var(--card-padding);
       margin-bottom: var(--space-3);
-      cursor: pointer;
-      transition: transform var(--duration-fast);
-      -webkit-tap-highlight-color: transparent;
-      color: inherit;
-      text-decoration: none;
+      overflow: hidden;
+      transition: box-shadow var(--duration-base);
     }
-    .record-card:active {
-      transform: scale(0.99);
+    .record-item.is-open {
+      box-shadow: var(--shadow-soft);
     }
-    .record-card__header {
+
+    /* 접힌 행 (항상 보이는 부분) */
+    .record-summary {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: var(--space-2);
+      width: 100%;
+      padding: 14px 20px;
+      background: transparent;
+      border: 0;
+      text-align: left;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
       gap: var(--space-3);
+      font-family: inherit;
     }
-    .record-card__date {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
+    .record-summary:active {
+      background: var(--bg-soft);
+    }
+    .record-summary__left {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .record-summary__date {
+      font-size: var(--text-body);
+      font-weight: 600;
+      color: var(--text-primary);
+      letter-spacing: -0.01em;
+    }
+    .record-summary__title {
       font-size: var(--text-small);
       color: var(--text-secondary);
-      font-weight: 500;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
-    .record-card__check {
-      width: 22px;
-      height: 22px;
+    .record-summary__right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+    .record-summary__check {
+      width: 20px;
+      height: 20px;
+      display: grid;
+      place-items: center;
       border-radius: 50%;
       background: var(--accent-sage);
       color: white;
-      display: grid;
-      place-items: center;
-      font-size: 13px;
+      font-size: 11px;
       font-weight: 700;
     }
-    .record-card__check--incomplete {
+    .record-summary__check--incomplete {
       background: var(--border-chip);
       color: var(--text-secondary);
     }
-    .record-card__title {
-      font-size: var(--text-h2);
-      font-weight: 700;
-      color: var(--text-primary);
-      line-height: 1.4;
-      margin-bottom: var(--space-1);
-      word-break: keep-all;
-    }
-    .record-card__ref {
-      font-size: var(--text-small);
+    .record-summary__chevron {
+      width: 18px;
+      height: 18px;
       color: var(--text-secondary);
+      transition: transform var(--duration-base) var(--ease-out);
+    }
+    .record-item.is-open .record-summary__chevron {
+      transform: rotate(180deg);
+    }
+
+    /* 펼침 영역 */
+    .record-detail {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height var(--duration-slow) var(--ease-out);
+    }
+    .record-item.is-open .record-detail {
+      max-height: 1200px;
+    }
+    .record-detail__inner {
+      padding: var(--space-4) 20px var(--space-5);
+      border-top: 1px solid var(--border-subtle);
+    }
+    .record-detail__section {
+      margin-bottom: var(--space-5);
+    }
+    .record-detail__section:last-child {
+      margin-bottom: 0;
+    }
+    .record-detail__label {
+      font-size: var(--text-caption);
+      font-weight: 600;
+      color: var(--accent-sage);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
       margin-bottom: var(--space-3);
     }
-    .record-card__meta {
+
+    /* 요약 리스트 */
+    .detail-summary {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .detail-summary li {
+      position: relative;
+      padding: 6px 0 6px 16px;
+      font-size: var(--text-body);
+      line-height: 1.7;
+      color: var(--text-body);
+      word-break: keep-all;
+    }
+    .detail-summary li::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 15px;
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--accent-sage);
+    }
+
+    /* 메모 박스 */
+    .detail-memo {
+      font-size: var(--text-body);
+      line-height: 1.75;
+      color: var(--text-body);
+      white-space: pre-wrap;
+      word-break: keep-all;
+      padding: var(--space-4) var(--space-5);
+      background: var(--bg-soft);
+      border-radius: var(--radius-md);
+    }
+
+    /* 감정 칩 (펼친 뷰용) */
+    .detail-emotions {
       display: flex;
-      align-items: center;
-      gap: var(--space-2);
       flex-wrap: wrap;
-      font-size: var(--text-small);
+      gap: 6px;
     }
-    .record-card__emoji {
-      font-size: 14px;
-      line-height: 1;
-    }
-    .record-card__memo-mark {
+    .detail-emotion-chip {
       display: inline-flex;
       align-items: center;
-      gap: 4px;
-      padding: 2px 10px;
+      gap: 5px;
+      padding: 6px 12px;
       background: var(--bg-soft);
-      color: var(--accent-sage-text);
       border-radius: var(--radius-pill);
-      font-size: 11px;
+      font-size: var(--text-small);
+      color: var(--accent-sage-text);
       font-weight: 500;
     }
 
@@ -196,11 +278,17 @@
   <script src="scripts/storage.js"></script>
   <script src="scripts/common.js"></script>
   <script>
-    // 감정 칩 ID → emoji 매핑 (step-4와 동일)
-    const EMOTION_EMOJI = {
-      gratitude: '🙏', peace: '🕊️', joy: '😊',
-      insight: '💡', grace: '✨', hope: '🌱',
-      repent: '😔', sadness: '💧', fear: '😟',
+    // 감정 칩 ID → {emoji, label}
+    const EMOTION_MAP = {
+      gratitude: { emoji: '🙏', label: '감사' },
+      peace:     { emoji: '🕊️', label: '평안' },
+      joy:       { emoji: '😊', label: '기쁨' },
+      insight:   { emoji: '💡', label: '깨달음' },
+      grace:     { emoji: '✨', label: '은혜' },
+      hope:      { emoji: '🌱', label: '희망' },
+      repent:    { emoji: '😔', label: '회개' },
+      sadness:   { emoji: '💧', label: '슬픔' },
+      fear:      { emoji: '😟', label: '두려움' },
     };
 
     document.addEventListener('DOMContentLoaded', async () => {
@@ -210,7 +298,7 @@
       await renderArchive();
     });
 
-    // localStorage에서 records.{date}.* 키의 모든 날짜 수집
+    // localStorage records.* 키에서 모든 날짜 수집 (최신순)
     function collectRecordDates() {
       const dates = new Set();
       for (let i = 0; i < localStorage.length; i++) {
@@ -218,7 +306,7 @@
         const m = key && key.match(/^records\.(\d{4}-\d{2}-\d{2})\./);
         if (m) dates.add(m[1]);
       }
-      return Array.from(dates).sort().reverse();  // 최신 순
+      return Array.from(dates).sort().reverse();
     }
 
     async function renderArchive() {
@@ -227,20 +315,21 @@
 
       if (dates.length === 0) {
         container.innerHTML = renderEmptyState();
-        document.getElementById('startTodayBtn')?.addEventListener('click', () => {
-          window.location.href = 'index.html';
-        });
+        hookupEmptyStateButton();
         return;
       }
 
-      // 각 날짜의 QT + AI 데이터 로드
+      // 각 날짜의 qt + ai + record 로드
       const entries = await Promise.all(dates.map(async (date) => {
         const record = Storage.getDailyRecord(date);
-        const qt = await Common.loadJSON(`../data/qt/${date}.json`);
-        return { date, record, qt };
+        const [qt, ai] = await Promise.all([
+          Common.loadJSON(`../data/qt/${date}.json`),
+          Common.loadJSON(`../data/ai/${date}.json`),
+        ]);
+        return { date, record, qt, ai };
       }));
 
-      // 의미 있는 기록만 필터 (completed OR emotions OR memo)
+      // 의미 있는 기록만 (완료 OR 감정 OR 메모)
       const meaningful = entries.filter(e =>
         e.record.completed ||
         (e.record.emotions && e.record.emotions.length > 0) ||
@@ -249,65 +338,115 @@
 
       if (meaningful.length === 0) {
         container.innerHTML = renderEmptyState();
-        document.getElementById('startTodayBtn')?.addEventListener('click', () => {
-          window.location.href = 'index.html';
-        });
+        hookupEmptyStateButton();
         return;
       }
 
-      // 월별 그룹화
+      // 월별 그룹
       const byMonth = {};
       meaningful.forEach(e => {
-        const monthKey = e.date.slice(0, 7);  // "2026-04"
-        if (!byMonth[monthKey]) byMonth[monthKey] = [];
-        byMonth[monthKey].push(e);
+        const monthKey = e.date.slice(0, 7);
+        (byMonth[monthKey] ??= []).push(e);
       });
 
       const months = Object.keys(byMonth).sort().reverse();
       container.innerHTML = months.map(monthKey => {
         const [y, m] = monthKey.split('-');
         const label = `${parseInt(y, 10)}년 ${parseInt(m, 10)}월`;
-        const items = byMonth[monthKey].map(renderRecordCard).join('');
+        const items = byMonth[monthKey].map(renderRecordItem).join('');
         return `
           <section class="month-group">
             <div class="month-label">${label}</div>
-            ${items}
+            <div class="record-list">${items}</div>
           </section>
         `;
       }).join('');
+
+      // 가장 최근 1개는 펼쳐서 시작
+      const first = container.querySelector('.record-item');
+      if (first) first.classList.add('is-open');
+
+      // 클릭 토글 바인딩 (이벤트 위임)
+      container.addEventListener('click', (e) => {
+        const summary = e.target.closest('.record-summary');
+        if (!summary) return;
+        const item = summary.closest('.record-item');
+        const isOpen = item.classList.toggle('is-open');
+        summary.setAttribute('aria-expanded', String(isOpen));
+      });
     }
 
-    function renderRecordCard({ date, record, qt }) {
-      const [, m, d] = date.split('-');
-      const dayOfWeek = ['일','월','화','수','목','금','토'][new Date(date).getDay()];
-      const title = qt?.title || '데이터 없음';
-      const ref = qt?.scripture_ref || '';
+    function renderRecordItem({ date, record, qt, ai }) {
+      const [y, m, d] = date.split('-');
+      const weekday = ['일','월','화','수','목','금','토'][new Date(date).getDay()];
+      const title = qt?.title || ai?.title || '(데이터 준비 중)';
+      const summaryTop3 = (ai?.core_summary || []).slice(0, 3);
 
-      const emotionHTML = (record.emotions || [])
-        .map(id => EMOTION_EMOJI[id] || '')
-        .filter(Boolean)
-        .map(e => `<span class="record-card__emoji">${e}</span>`)
-        .join('');
-
-      const memoMark = record.memo && record.memo.trim()
-        ? `<span class="record-card__memo-mark">📝 메모</span>`
-        : '';
-
-      const checkClass = record.completed ? '' : ' record-card__check--incomplete';
+      // 완료 배지
+      const checkClass = record.completed ? '' : ' record-summary__check--incomplete';
       const checkMark = record.completed ? '✓' : '·';
 
+      // 디테일 섹션들
+      const sections = [];
+
+      if (summaryTop3.length > 0) {
+        sections.push(`
+          <div class="record-detail__section">
+            <div class="record-detail__label">핵심 요약</div>
+            <ul class="detail-summary">
+              ${summaryTop3.map(s => `<li>${escapeHTML(s)}</li>`).join('')}
+            </ul>
+          </div>
+        `);
+      }
+
+      const emotions = (record.emotions || [])
+        .map(id => EMOTION_MAP[id])
+        .filter(Boolean);
+      if (emotions.length > 0) {
+        sections.push(`
+          <div class="record-detail__section">
+            <div class="record-detail__label">오늘의 마음</div>
+            <div class="detail-emotions">
+              ${emotions.map(e => `
+                <span class="detail-emotion-chip">
+                  <span>${e.emoji}</span>
+                  <span>${escapeHTML(e.label)}</span>
+                </span>
+              `).join('')}
+            </div>
+          </div>
+        `);
+      }
+
+      if (record.memo && record.memo.trim()) {
+        sections.push(`
+          <div class="record-detail__section">
+            <div class="record-detail__label">내 메모</div>
+            <div class="detail-memo">${escapeHTML(record.memo)}</div>
+          </div>
+        `);
+      }
+
+      const detailHTML = sections.length > 0
+        ? `<div class="record-detail"><div class="record-detail__inner">${sections.join('')}</div></div>`
+        : `<div class="record-detail"><div class="record-detail__inner"><div style="color: var(--text-secondary); font-size: var(--text-small);">추가 기록이 없어요.</div></div></div>`;
+
       return `
-        <article class="record-card" data-date="${date}">
-          <div class="record-card__header">
-            <span class="record-card__date">${m}/${d} (${dayOfWeek})</span>
-            <span class="record-card__check${checkClass}">${checkMark}</span>
-          </div>
-          <h3 class="record-card__title">${escapeHTML(title)}</h3>
-          <div class="record-card__ref">${escapeHTML(ref)}</div>
-          <div class="record-card__meta">
-            ${emotionHTML}
-            ${memoMark}
-          </div>
+        <article class="record-item" data-date="${date}">
+          <button class="record-summary" type="button" aria-expanded="false">
+            <div class="record-summary__left">
+              <div class="record-summary__date">${parseInt(m, 10)}월 ${parseInt(d, 10)}일 (${weekday})</div>
+              <div class="record-summary__title">${escapeHTML(title)}</div>
+            </div>
+            <div class="record-summary__right">
+              <span class="record-summary__check${checkClass}">${checkMark}</span>
+              <svg class="record-summary__chevron" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="6 9 12 15 18 9"/>
+              </svg>
+            </div>
+          </button>
+          ${detailHTML}
         </article>
       `;
     }
@@ -326,6 +465,10 @@
           </button>
         </div>
       `;
+    }
+    function hookupEmptyStateButton() {
+      const btn = document.getElementById('startTodayBtn');
+      if (btn) btn.addEventListener('click', () => { window.location.href = 'index.html'; });
     }
 
     function escapeHTML(str) {

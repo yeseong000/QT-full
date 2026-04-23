@@ -140,28 +140,41 @@ html[data-font-size="lg"] {
    배경 테마 (설정에서 선택)
    ========================================================================== */
 
-/* 순백 */
-html[data-theme="white"] {
-  --bg-paper: #FFFFFF;
-  --bg-card: #FAFAF7;
-  --bg-soft: #EAF2EC;
-  --bg-input: #F7F7F4;
-  --border-subtle: #EDEDE9;
+/* 로즈 — 따뜻한 살구빛 */
+html[data-theme="rose"] {
+  --bg-paper: #FBEFE9;
+  --bg-card: #FFFAF7;
+  --bg-soft: #F2DDD2;
+  --bg-input: #FAEDE5;
+
+  --text-primary: #3D2E2A;
+  --text-body: #4E3E38;
+  --text-secondary: #8B7469;
+  --text-placeholder: #B8A79C;
+
+  --border-subtle: #F0DED3;
+  --border-chip: #E6D2C4;
+  --border-input: #D8C0B0;
 }
 
-/* 따뜻한 크림 */
-html[data-theme="warm"] {
-  --bg-paper: #FAF0E6;
-  --bg-card: #FFFCF7;
-  --bg-soft: #F5E8D5;
-  --bg-input: #F7ECDA;
-  --text-primary: #3D3024;
-  --text-body: #4A3C2E;
-  --text-secondary: #8B7255;
-  --border-subtle: #EEE4D1;
+/* 샌드 — 황금 모래빛 */
+html[data-theme="sand"] {
+  --bg-paper: #F4EAD2;
+  --bg-card: #FFFAEB;
+  --bg-soft: #E9DBB4;
+  --bg-input: #EFE5C8;
+
+  --text-primary: #3D3218;
+  --text-body: #4E4122;
+  --text-secondary: #8B7A50;
+  --text-placeholder: #B8A878;
+
+  --border-subtle: #EADFB8;
+  --border-chip: #DACA93;
+  --border-input: #C8B878;
 }
 
-/* 다크 */
+/* 다크 — 깊은 녹회색 */
 html[data-theme="dark"] {
   --bg-paper: #1E2520;
   --bg-card: #2A332D;
@@ -179,11 +192,12 @@ html[data-theme="dark"] {
 
   --shadow-soft: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
-/* 다크 모드: PC 프레임 바깥 배경 어둡게 */
+
+/* PC 프레임 바깥 배경도 테마에 맞게 */
 @media (min-width: 481px) {
-  html[data-theme="dark"] body {
-    background: #0F1411 !important;
-  }
+  html[data-theme="rose"] body { background: #E6C9B8; }
+  html[data-theme="sand"] body { background: #D8C494; }
+  html[data-theme="dark"] body { background: #0F1411 !important; }
 }
 
 /* ==========================================================================
