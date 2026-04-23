@@ -144,7 +144,7 @@ html[data-font-size="lg"] {
 /* ─── 🌸 ROSE — Dawn Rose (따뜻한 살구 + 테라코타 액센트) ─────────────── */
 html[data-theme="rose"] {
   /* 배경 */
-  --bg-paper: #FBEFE9;
+  --bg-paper: #FCF3EE;
   --bg-card: #FFFAF7;
   --bg-soft: #F5D5C8;
   --bg-input: #FAEDE5;
@@ -174,37 +174,6 @@ html[data-theme="rose"] {
   --shadow-soft: 0 1px 2px rgba(61, 42, 37, 0.06);
   --shadow-float: 0 4px 12px rgba(61, 42, 37, 0.08);
   --shadow-button: 0 2px 6px rgba(194, 124, 101, 0.28);
-}
-
-/* ─── 🏖️ SAND — Golden Hour (황금 모래 + 캐러멜 액센트) ──────────────── */
-html[data-theme="sand"] {
-  --bg-paper: #F4EAD2;
-  --bg-card: #FFFAEB;
-  --bg-soft: #E9DBB4;
-  --bg-input: #EFE5C8;
-
-  --text-primary: #3D3218;       /* 딥 앰버 */
-  --text-body: #4E4122;
-  --text-secondary: #8B7A50;
-  --text-placeholder: #B8A878;
-  --text-on-accent: #FFFFFF;
-
-  /* Accent: 캐러멜 골드 */
-  --accent-sage: #B88742;
-  --accent-sage-dark: #9C6F30;
-  --accent-sage-soft: #E9DBB4;
-  --accent-sage-text: #8B6224;
-
-  --border-subtle: #EADFB8;
-  --border-chip: #D4C690;
-  --border-input: #C8B878;
-  --check-inactive: #D4C690;
-  --check-active: #B88742;
-  --highlight-underline: #F5E0A0;
-
-  --shadow-soft: 0 1px 2px rgba(61, 50, 24, 0.05);
-  --shadow-float: 0 4px 12px rgba(61, 50, 24, 0.08);
-  --shadow-button: 0 2px 6px rgba(184, 135, 66, 0.28);
 }
 
 /* ─── 🌙 DARK — Midnight (숲 밤 + 달빛 세이지 액센트) ─────────────────── */
@@ -241,7 +210,6 @@ html[data-theme="dark"] {
 /* PC 프레임 바깥 배경 — 테마 온도에 맞춤 */
 @media (min-width: 481px) {
   html[data-theme="rose"] body { background: #E6C9B8; }
-  html[data-theme="sand"] body { background: #D8C494; }
   html[data-theme="dark"] body { background: #0F1411 !important; }
 }
 
