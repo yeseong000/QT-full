@@ -4,7 +4,7 @@
 
 // 테마별 모바일 브라우저 chrome 색 (--bg-paper와 일치)
 const THEME_CHROME_COLORS = {
-  default: '#F7F4ED',
+  default: '#F0F4F2',
   rose:    '#FCF3EE',
   dark:    '#1A231D',
 };

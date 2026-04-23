@@ -115,7 +115,7 @@ input, textarea {
    ------------------------------------------------------------------ */
 @media (min-width: 481px) {
   body {
-    background: #E8E3D8;   /* 프레임 바깥 배경 (살짝 어두운 베이지) */
+    background: #D9E3DF;   /* 프레임 바깥 배경 */
     min-height: 100vh;
     padding: 40px 20px;
     display: flex;
