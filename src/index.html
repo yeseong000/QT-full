@@ -206,23 +206,55 @@
     .error { color: #C0392B; }
 
     /* ---------- 설정 모달 ---------- */
-    /* 제목 + 설명 한 줄 배치 */
     .modal-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: var(--space-3);
+      margin-bottom: var(--space-6);
+    }
+    .modal-top-left {
       display: flex;
       align-items: baseline;
       gap: var(--space-3);
-      margin-bottom: var(--space-6);
       flex-wrap: wrap;
-    }
-    .modal-top .modal-title {
-      margin-bottom: 0;
-      flex-shrink: 0;
-    }
-    .modal-top .modal-desc {
-      margin-bottom: 0;
       flex: 1;
-      min-width: 0;
     }
+    .modal-top .modal-title { margin-bottom: 0; flex-shrink: 0; }
+    .modal-top .modal-desc  { margin-bottom: 0; }
+
+    /* 해시 배지 */
+    .user-hash-badge {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      background: var(--bg-base);
+      border: 1px solid rgba(0,0,0,0.08);
+      border-radius: 20px;
+      padding: 5px 8px 5px 12px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      flex-shrink: 0;
+      letter-spacing: 0.02em;
+      font-variant-numeric: tabular-nums;
+    }
+    html[data-theme="dark"] .user-hash-badge {
+      border-color: rgba(255,255,255,0.10);
+    }
+    .hash-copy-btn {
+      background: none;
+      border: none;
+      padding: 2px;
+      cursor: pointer;
+      color: var(--accent-sage);
+      display: flex;
+      align-items: center;
+      border-radius: 4px;
+      line-height: 1;
+      transition: opacity 0.15s;
+    }
+    .hash-copy-btn:active { opacity: 0.5; }
 
     .setting-item {
       margin-bottom: var(--space-6);
@@ -346,8 +378,16 @@
   <div class="modal-backdrop" id="settingsModal">
     <div class="modal-sheet">
       <div class="modal-top">
-        <h2 class="modal-title">설정</h2>
-        <p class="modal-desc">닉네임과 배경은 언제든지 바꿀 수 있어요.</p>
+        <div class="modal-top-left">
+          <h2 class="modal-title">설정</h2>
+          <p class="modal-desc">닉네임과 배경은 언제든지 바꿀 수 있어요.</p>
+        </div>
+        <div class="user-hash-badge" id="userHashBadge" style="display:none">
+          <span id="userHashText"></span>
+          <button class="hash-copy-btn" id="hashCopyBtn" title="복사" aria-label="해시 복사">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+          </button>
+        </div>
       </div>
 
       <div class="setting-item">
@@ -405,6 +445,18 @@
       document.getElementById('greetingText').textContent = Common.getGreeting(name);
       document.getElementById('greetingEmoji').textContent = Common.getTimeEmoji();
       document.getElementById('greetingDate').textContent = Common.formatKoreanDate();
+    }
+
+    // ========== 해시 배지 렌더링 ==========
+    function renderHashBadge() {
+      const hash = Storage.getUserHash();
+      const badge = document.getElementById('userHashBadge');
+      if (hash) {
+        document.getElementById('userHashText').textContent = hash;
+        badge.style.display = 'flex';
+      } else {
+        badge.style.display = 'none';
+      }
     }
 
     // ========== 스트릭 렌더링 ==========
@@ -468,7 +520,20 @@
       // 설정 모달 열기
       document.getElementById('settingsBtn').addEventListener('click', () => {
         document.getElementById('nameInput').value = Storage.getUserName();
+        renderHashBadge();
         document.getElementById('settingsModal').classList.add('is-open');
+      });
+
+      // 해시 복사 버튼
+      document.getElementById('hashCopyBtn').addEventListener('click', () => {
+        const text = document.getElementById('userHashText').textContent;
+        navigator.clipboard.writeText(text).then(() => {
+          const btn = document.getElementById('hashCopyBtn');
+          const COPY_ICON = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>';
+          const CHECK_ICON = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+          btn.innerHTML = CHECK_ICON;
+          setTimeout(() => { btn.innerHTML = COPY_ICON; }, 1500);
+        });
       });
 
       // 설정 취소

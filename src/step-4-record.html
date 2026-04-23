@@ -290,6 +290,7 @@
   <!-- Scripts -->
   <script src="scripts/storage.js"></script>
   <script src="scripts/common.js"></script>
+  <script src="scripts/supabase-sync.js"></script>
   <script>
     const TODAY = Common.todayISO();
 
@@ -462,13 +463,44 @@
       });
 
       // 묵상 완료하기 → 5단계
-      document.getElementById('completeBtn').addEventListener('click', () => {
+      document.getElementById('completeBtn').addEventListener('click', async function () {
+        if (this.dataset.saving) return;
+        this.dataset.saving = '1';
+
         const record = Storage.getDailyRecord(TODAY);
         if (!record.completed) {
           Storage.setDailyRecord(TODAY, { completed: true });
-          Storage.markCompleted();   // 스트릭 +1
+          Storage.markCompleted();
         }
         Storage.setDailyRecord(TODAY, { progressStep: 5 });
+
+        // 서버 동기화 (Supabase 설정된 경우에만)
+        if (typeof SupabaseSync !== 'undefined' && SupabaseSync.isConfigured()) {
+          try {
+            let hash = Storage.getUserHash();
+            if (!hash) {
+              // 첫 완료: 닉네임#5자리 해시 생성
+              const nickname = Storage.getUserName();
+              let attempts = 0;
+              while (!hash && attempts < 5) {
+                const num = String(Math.floor(10000 + Math.random() * 90000));
+                const candidate = `${nickname}#${num}`;
+                const ok = await SupabaseSync.registerHash(candidate, nickname);
+                if (ok) {
+                  Storage.setUserHash(candidate);
+                  hash = candidate;
+                }
+                attempts++;
+              }
+            }
+            if (hash) {
+              await SupabaseSync.syncRecord(hash, TODAY, Storage.getDailyRecord(TODAY));
+            }
+          } catch (e) {
+            console.warn('서버 동기화 실패 (로컬 저장 완료):', e);
+          }
+        }
+
         window.location.href = 'step-5-done.html';
       });
 

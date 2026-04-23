@@ -82,6 +82,18 @@ const Storage = {
   },
 
   // ========================================================================
+  // 사용자 해시 (서버 신원 — 닉네임#5자리 형식)
+  // ========================================================================
+
+  getUserHash() {
+    return this.get('user.hash', null);
+  },
+
+  setUserHash(hash) {
+    this.set('user.hash', hash);
+  },
+
+  // ========================================================================
   // 스트릭(연속일)
   // ========================================================================
 
@@ -131,12 +143,14 @@ const Storage = {
 
   getDailyRecord(date) {
     return {
-      completed: this.get(`records.${date}.completed`, false),
-      prayed: this.get(`records.${date}.prayed`, false),
-      underlines: this.get(`records.${date}.underlines`, []),
-      emotions: this.get(`records.${date}.emotions`, []),
-      memo: this.get(`records.${date}.memo`, ''),
-      progressStep: this.get(`records.${date}.progressStep`, 0),
+      completed:       this.get(`records.${date}.completed`, false),
+      prayed:          this.get(`records.${date}.prayed`, false),
+      underlines:      this.get(`records.${date}.underlines`, []),
+      emotions:        this.get(`records.${date}.emotions`, []),
+      memo:            this.get(`records.${date}.memo`, ''),
+      reflection:      this.get(`records.${date}.reflection`, ''),
+      questionAnswers: this.get(`records.${date}.questionAnswers`, []),
+      progressStep:    this.get(`records.${date}.progressStep`, 0),
     };
   },
 
