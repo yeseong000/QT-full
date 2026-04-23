@@ -137,63 +137,108 @@ html[data-font-size="lg"] {
 }
 
 /* ==========================================================================
-   배경 테마 (설정에서 선택)
+   배경 테마 — 조화로운 색채 시스템
+   각 테마는 배경·텍스트·accent 를 동일 온도 계열로 맞춰 시각 충돌 제거
    ========================================================================== */
 
-/* 로즈 — 따뜻한 살구빛 */
+/* ─── 🌸 ROSE — Dawn Rose (따뜻한 살구 + 테라코타 액센트) ─────────────── */
 html[data-theme="rose"] {
+  /* 배경 */
   --bg-paper: #FBEFE9;
   --bg-card: #FFFAF7;
-  --bg-soft: #F2DDD2;
+  --bg-soft: #F5D5C8;
   --bg-input: #FAEDE5;
 
-  --text-primary: #3D2E2A;
-  --text-body: #4E3E38;
+  /* 텍스트 */
+  --text-primary: #3D2A25;       /* 마호가니 */
+  --text-body: #4E3B34;
   --text-secondary: #8B7469;
   --text-placeholder: #B8A79C;
+  --text-on-accent: #FFFFFF;
 
+  /* Accent: 테라코타 로즈 */
+  --accent-sage: #C27C65;
+  --accent-sage-dark: #A66348;
+  --accent-sage-soft: #F5D5C8;
+  --accent-sage-text: #9C5539;
+
+  /* 경계선/체크 */
   --border-subtle: #F0DED3;
-  --border-chip: #E6D2C4;
-  --border-input: #D8C0B0;
+  --border-chip: #E6CEC1;
+  --border-input: #D8BEB0;
+  --check-inactive: #E6CEC1;
+  --check-active: #C27C65;
+  --highlight-underline: #FFE0C8;
+
+  /* 그림자 (accent 톤) */
+  --shadow-soft: 0 1px 2px rgba(61, 42, 37, 0.06);
+  --shadow-float: 0 4px 12px rgba(61, 42, 37, 0.08);
+  --shadow-button: 0 2px 6px rgba(194, 124, 101, 0.28);
 }
 
-/* 샌드 — 황금 모래빛 */
+/* ─── 🏖️ SAND — Golden Hour (황금 모래 + 캐러멜 액센트) ──────────────── */
 html[data-theme="sand"] {
   --bg-paper: #F4EAD2;
   --bg-card: #FFFAEB;
   --bg-soft: #E9DBB4;
   --bg-input: #EFE5C8;
 
-  --text-primary: #3D3218;
+  --text-primary: #3D3218;       /* 딥 앰버 */
   --text-body: #4E4122;
   --text-secondary: #8B7A50;
   --text-placeholder: #B8A878;
+  --text-on-accent: #FFFFFF;
+
+  /* Accent: 캐러멜 골드 */
+  --accent-sage: #B88742;
+  --accent-sage-dark: #9C6F30;
+  --accent-sage-soft: #E9DBB4;
+  --accent-sage-text: #8B6224;
 
   --border-subtle: #EADFB8;
-  --border-chip: #DACA93;
+  --border-chip: #D4C690;
   --border-input: #C8B878;
+  --check-inactive: #D4C690;
+  --check-active: #B88742;
+  --highlight-underline: #F5E0A0;
+
+  --shadow-soft: 0 1px 2px rgba(61, 50, 24, 0.05);
+  --shadow-float: 0 4px 12px rgba(61, 50, 24, 0.08);
+  --shadow-button: 0 2px 6px rgba(184, 135, 66, 0.28);
 }
 
-/* 다크 — 깊은 녹회색 */
+/* ─── 🌙 DARK — Midnight (숲 밤 + 달빛 세이지 액센트) ─────────────────── */
 html[data-theme="dark"] {
-  --bg-paper: #1E2520;
-  --bg-card: #2A332D;
-  --bg-soft: #334038;
-  --bg-input: #252D27;
+  --bg-paper: #1A231D;
+  --bg-card: #2A342D;
+  --bg-soft: #2A3F35;              /* accent-soft = 어두운 딥 sage */
+  --bg-input: #252E27;
 
   --text-primary: #E8EDE8;
-  --text-body: #D0D6D0;
+  --text-body: #CBD2CB;
   --text-secondary: #8A948D;
   --text-placeholder: #5D6560;
+  --text-on-accent: #1A231D;       /* 밝은 accent 위 어두운 텍스트 */
+
+  /* Accent: 달빛 sage (어두운 배경에 가시성 확보) */
+  --accent-sage: #8FD4B8;
+  --accent-sage-dark: #A6DFC5;     /* hover 시 더 밝게 */
+  --accent-sage-soft: #2A3F35;
+  --accent-sage-text: #A6DFC5;
 
   --border-subtle: #3A433D;
   --border-chip: #4A554C;
   --border-input: #434B44;
+  --check-inactive: #4A554C;
+  --check-active: #8FD4B8;
+  --highlight-underline: #3D4838;
 
   --shadow-soft: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-float: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-button: 0 2px 6px rgba(143, 212, 184, 0.3);
 }
 
-/* PC 프레임 바깥 배경도 테마에 맞게 */
+/* PC 프레임 바깥 배경 — 테마 온도에 맞춤 */
 @media (min-width: 481px) {
   html[data-theme="rose"] body { background: #E6C9B8; }
   html[data-theme="sand"] body { background: #D8C494; }
