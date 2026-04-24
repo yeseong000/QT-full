@@ -525,20 +525,21 @@
         <p style="font-size: var(--text-small); color: var(--text-secondary); margin: 0 0 var(--space-3); line-height: 1.6;">
           이전에 쓰던 해시를 입력하시면 묵상 기록을 불러올 수 있어요.<br>예: 어린양#12345
         </p>
-        <input
-          type="text"
-          class="input-field"
-          id="restoreHashInput"
-          placeholder="닉네임#12345"
-          autocomplete="off"
-          autocapitalize="off"
-          autocorrect="off"
-          spellcheck="false"
-        >
-        <div style="display:flex; gap: var(--space-2); align-items:center; margin-top: var(--space-3);">
-          <button class="btn btn-secondary" id="restoreHashBtn" type="button">불러오기</button>
-          <span id="restoreStatus" style="font-size: var(--text-small); color: var(--text-secondary);"></span>
+        <div style="display:flex; gap: var(--space-3); align-items:center;">
+          <input
+            type="text"
+            class="input-field"
+            id="restoreHashInput"
+            placeholder="닉네임#12345"
+            autocomplete="off"
+            autocapitalize="off"
+            autocorrect="off"
+            spellcheck="false"
+            style="flex: 1; min-width: 0;"
+          >
+          <button class="btn btn-secondary" id="restoreHashBtn" type="button" style="white-space:nowrap; flex-shrink: 0;">불러오기</button>
         </div>
+        <div id="restoreStatus" style="font-size: var(--text-small); color: var(--text-secondary); margin-top: var(--space-2); min-height: 1.4em;"></div>
       </div>
 
       <div class="modal-actions">
