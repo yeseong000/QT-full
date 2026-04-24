@@ -378,6 +378,10 @@
       color: var(--accent-sage-text);
       font-weight: 600;
     }
+
+    /* 세리프 폰트: 큰 제목 오버플로 방지 — 글자 폭이 더 넓어 줄바꿈/짤림 발생 */
+    html[data-font-style="noto-serif"] .greeting-text { font-size: 28px; }
+    html[data-font-style="noto-serif"] .today-title   { font-size: 25px; }
   </style>
 </head>
 <body>
@@ -505,13 +509,13 @@
       <div class="setting-item" style="margin-bottom: 0;">
         <div class="setting-label">폰트 스타일</div>
         <div class="font-option-grid" id="fontStyleGrid">
-          <button class="font-option" type="button" data-font-style="pretendard" aria-label="기본 폰트">
-            <span class="font-option__preview">가나다</span>
-            <span class="font-option__label">기본</span>
-          </button>
           <button class="font-option" type="button" data-font-style="noto-serif" aria-label="세리프 폰트">
             <span class="font-option__preview" style="font-family: 'Noto Serif KR', serif;">가나다</span>
             <span class="font-option__label">세리프</span>
+          </button>
+          <button class="font-option" type="button" data-font-style="pretendard" aria-label="기본 폰트">
+            <span class="font-option__preview" style="font-family: 'Pretendard Variable', sans-serif;">가나다</span>
+            <span class="font-option__label">기본</span>
           </button>
         </div>
       </div>
@@ -739,7 +743,7 @@
 
     // ========== 폰트 스타일 선택기 ==========
     function setupFontStyleSelector() {
-      const current = Storage.get('settings.fontStyle', 'pretendard') || 'pretendard';
+      const current = Storage.get('settings.fontStyle', 'noto-serif') || 'noto-serif';
       const options = document.querySelectorAll('#fontStyleGrid .font-option');
 
       options.forEach(opt => {

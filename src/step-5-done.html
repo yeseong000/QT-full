@@ -103,6 +103,7 @@
       line-height: 1.6;
       backdrop-filter: blur(10px);
       word-break: keep-all;
+      white-space: pre-line;
     }
 
     /* 묵상 카드 공통 */
@@ -242,7 +243,7 @@
 
     // 마일스톤 메시지
     function getMilestoneMessage(days) {
-      if (days === 1)   return '✨ 첫 묵상을 완료하셨어요! 첫 걸음을 내딛으셨네요.';
+      if (days === 1)   return '✨ 첫 묵상을 완료하셨어요!\n첫 걸음을 내딛으셨네요.';
       if (days === 3)   return '🌱 3일 연속! 멋지게 시작하고 계세요.';
       if (days === 7)   return '🌿 일주일 연속! 습관이 자리잡고 있어요.';
       if (days === 14)  return '💚 2주 연속! 꾸준한 마음에 감탄해요.';

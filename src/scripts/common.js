@@ -40,14 +40,16 @@ function applyTheme(theme) {
   } catch(e) {}
 })();
 
-// 폰트 스타일 즉시 적용
+// 폰트 스타일 즉시 적용 (기본: 세리프)
 (function applyStoredFontStyle() {
   try {
-    const style = localStorage.getItem('settings.fontStyle');
-    if (style && style !== 'pretendard') {
+    const style = localStorage.getItem('settings.fontStyle') || 'noto-serif';
+    if (style !== 'pretendard') {
       document.documentElement.setAttribute('data-font-style', style);
     }
-  } catch(e) {}
+  } catch(e) {
+    document.documentElement.setAttribute('data-font-style', 'noto-serif');
+  }
 })();
 
 // 테마 즉시 적용 (DOMContentLoaded 전에 실행 → 플래시 최소화)
@@ -69,7 +71,7 @@ function applyTheme(theme) {
 })();
 
 function applyFontStyle(style) {
-  const s = style || Storage.get('settings.fontStyle', 'pretendard') || 'pretendard';
+  const s = style || Storage.get('settings.fontStyle', 'noto-serif') || 'noto-serif';
   if (s === 'pretendard') {
     document.documentElement.removeAttribute('data-font-style');
   } else {

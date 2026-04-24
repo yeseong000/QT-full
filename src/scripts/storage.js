@@ -176,7 +176,7 @@ const Storage = {
     return {
       theme: this.get('settings.theme', 'light'),
       fontSize: this.get('settings.fontSize', 'md'),
-      fontStyle: this.get('settings.fontStyle', 'pretendard'),
+      fontStyle: this.get('settings.fontStyle', 'noto-serif'),
       background: this.get('settings.background', 'default'),
     };
   },
