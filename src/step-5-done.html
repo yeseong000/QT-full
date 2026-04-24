@@ -103,6 +103,12 @@
       line-height: 1.6;
       backdrop-filter: blur(10px);
       word-break: keep-all;
+      text-align: center;
+    }
+    /* inline-block으로 감싸서 두 줄이 같은 박스 내부에서 중앙 정렬되도록 */
+    .milestone__inner {
+      display: inline-block;
+      text-align: center;
       white-space: pre-line;
     }
 
@@ -269,15 +275,16 @@
       const streak = Storage.getStreak();
       const userName = Storage.getUserName();
 
-      document.getElementById('userNameDisplay').textContent = userName;
+      document.getElementById('userNameDisplay').textContent = Common.withHonorific(userName);
       document.getElementById('streakCount').textContent = streak.current;
       document.getElementById('totalCount').textContent = streak.totalCompleted;
 
-      // 마일스톤
+      // 마일스톤 — inner span으로 감싸 두 줄을 박스 내부에서 중앙 정렬
       const milestoneMsg = getMilestoneMessage(streak.current);
       if (milestoneMsg) {
         const el = document.getElementById('milestoneMessage');
-        el.textContent = milestoneMsg;
+        el.innerHTML = '<span class="milestone__inner"></span>';
+        el.firstElementChild.textContent = milestoneMsg;
         el.style.display = '';
       }
 

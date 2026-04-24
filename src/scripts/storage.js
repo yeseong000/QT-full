@@ -7,7 +7,7 @@ const Storage = {
   /**
    * 기본 닉네임 (최초 방문 시 할당)
    */
-  DEFAULT_NICKNAME: '어린양님',
+  DEFAULT_NICKNAME: '어린양',
 
   /**
    * 값 가져오기

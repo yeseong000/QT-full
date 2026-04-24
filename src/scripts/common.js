@@ -84,11 +84,19 @@ const Common = {
   applyFontStyle,
 
   /**
-   * 시간대별 인사말 가져오기
-   * @param {string} name - 사용자 이름
-   * @returns {string} 인사말
+   * 닉네임에 '님' 자동 부착 (이미 '님'으로 끝나면 그대로)
    */
-  getGreeting(name = '어린양님') {
+  withHonorific(name) {
+    if (!name) return '어린양님';
+    return name.endsWith('님') ? name : `${name}님`;
+  },
+
+  /**
+   * 시간대별 인사말 가져오기
+   * @param {string} name - 사용자 이름 (님 없이)
+   * @returns {string} 인사말 (님 자동 부착)
+   */
+  getGreeting(name = '어린양') {
     const hour = new Date().getHours();
     let base;
 
@@ -104,7 +112,8 @@ const Common = {
       base = '고요한 밤이네요';
     }
 
-    return `${base}, ${name}`;
+    const displayName = name.endsWith('님') ? name : `${name}님`;
+    return `${base}, ${displayName}`;
   },
 
   /**
