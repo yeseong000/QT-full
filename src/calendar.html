@@ -299,6 +299,15 @@
       text-decoration: none;
     }
     .preview-card__link:active { color: var(--accent-sage-dark); }
+    .preview-card__start {
+      width: 100%;
+      margin-top: var(--space-2);
+    }
+    .calendar-cell--has-data {
+      cursor: pointer;
+      color: var(--text-secondary);
+    }
+    .calendar-cell--has-data:active { background: var(--accent-sage-soft); }
 
     /* 전체 빈 상태 (기록이 하나도 없을 때) */
     .empty-state {
@@ -391,12 +400,13 @@
       <div class="preview-card__ref" id="previewRef">—</div>
       <div class="preview-card__emotions" id="previewEmotions"></div>
       <div class="preview-card__memo" id="previewMemo" style="display: none;"></div>
-      <a class="preview-card__link" href="archive.html">
+      <a class="preview-card__link" id="previewLink" href="archive.html">
         <span>전체 기록 보기</span>
         <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="9 18 15 12 9 6"/>
         </svg>
       </a>
+      <button class="btn btn-primary preview-card__start" id="previewStartBtn" style="display:none;">묵상 시작하기</button>
     </article>
 
    </main>
@@ -449,9 +459,9 @@
         renderMonth();
       });
 
-      // 그리드 클릭 위임 (완료 셀만 반응)
+      // 그리드 클릭 위임 (완료 셀 + 기록 없는 과거 날짜 모두 반응)
       document.getElementById('calendarGrid').addEventListener('click', (e) => {
-        const btn = e.target.closest('.calendar-cell--completed');
+        const btn = e.target.closest('button.calendar-cell');
         if (!btn) return;
         selectDate(btn.getAttribute('data-date'), btn);
       });
@@ -537,6 +547,11 @@
           cells.push(
             `<button type="button" class="${classes.join(' ')}" data-date="${dateISO}" aria-label="${dateISO} 완료">${d}</button>`
           );
+        } else if (!isFuture) {
+          classes.push('calendar-cell--has-data');
+          cells.push(
+            `<button type="button" class="${classes.join(' ')}" data-date="${dateISO}" aria-label="${dateISO}">${d}</button>`
+          );
         } else {
           cells.push(`<div class="${classes.join(' ')}">${d}</div>`);
         }
@@ -553,31 +568,57 @@
       cellEl.classList.add('calendar-cell--selected');
 
       const record = Storage.getDailyRecord(date);
+      const isCompleted = record.completed || record.progressStep === 5;
       const qt = await Common.loadJSON(`../data/qt/${date}.json`);
 
-      const [y, m, d] = date.split('-').map(Number);
+      // JSON도 없고 기록도 없으면 미리보기 닫기
+      if (!qt && !isCompleted) {
+        clearSelection();
+        return;
+      }
+
+      const [y, mo, d] = date.split('-').map(Number);
       document.getElementById('previewDate').textContent =
-        Common.formatKoreanDate(new Date(y, m - 1, d));
+        Common.formatKoreanDate(new Date(y, mo - 1, d));
       document.getElementById('previewTitle').textContent =
         qt?.title || '(말씀 제목 준비 중)';
       document.getElementById('previewRef').textContent =
         qt?.scripture_ref || '';
 
       const emotionsEl = document.getElementById('previewEmotions');
-      const chips = (record.emotions || [])
-        .map(id => EMOTION_MAP[id])
-        .filter(Boolean)
-        .map(e => `<span class="preview-emotion-chip"><span>${e.emoji}</span><span>${escapeHTML(e.label)}</span></span>`);
-      emotionsEl.innerHTML = chips.join('');
-
       const memoEl = document.getElementById('previewMemo');
-      // 신규 reflection 우선, 없으면 옛 memo 폴백 (Q1/Q2 답변은 미리보기엔 생략)
-      const previewText = (record.reflection || record.memo || '').trim();
-      if (previewText) {
-        memoEl.textContent = previewText;
-        memoEl.style.display = '';
+      const linkEl = document.getElementById('previewLink');
+      const startBtn = document.getElementById('previewStartBtn');
+
+      if (isCompleted) {
+        // 기록 있음: 감정 칩 + 메모 표시, 전체 기록 보기 링크 표시
+        const chips = (record.emotions || [])
+          .map(id => EMOTION_MAP[id])
+          .filter(Boolean)
+          .map(e => `<span class="preview-emotion-chip"><span>${e.emoji}</span><span>${escapeHTML(e.label)}</span></span>`);
+        emotionsEl.innerHTML = chips.join('');
+
+        const previewText = (record.reflection || record.memo || '').trim();
+        if (previewText) {
+          memoEl.textContent = previewText;
+          memoEl.style.display = '';
+        } else {
+          memoEl.style.display = 'none';
+        }
+
+        linkEl.style.display = '';
+        startBtn.style.display = 'none';
       } else {
+        // 기록 없음 + JSON 있음: QT 본문만 표시, 묵상 시작하기 버튼
+        emotionsEl.innerHTML = '';
         memoEl.style.display = 'none';
+        linkEl.style.display = 'none';
+
+        startBtn.style.display = '';
+        startBtn.onclick = () => {
+          sessionStorage.setItem('qtDate', date);
+          window.location.href = 'step-1-scripture.html';
+        };
       }
 
       const card = document.getElementById('previewCard');

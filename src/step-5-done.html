@@ -232,7 +232,7 @@
   <script src="scripts/storage.js"></script>
   <script src="scripts/common.js"></script>
   <script>
-    const TODAY = Common.todayISO();
+    const TODAY = sessionStorage.getItem('qtDate') || Common.todayISO();
 
     // 감정 칩 정의 (step-4와 동일)
     const EMOTIONS = [
@@ -314,6 +314,7 @@
 
     function setupEventListeners() {
       document.getElementById('homeBtn').addEventListener('click', () => {
+        sessionStorage.removeItem('qtDate');
         window.location.href = 'index.html';
       });
     }

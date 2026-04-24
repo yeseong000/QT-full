@@ -375,7 +375,7 @@
   <script src="scripts/storage.js"></script>
   <script src="scripts/common.js"></script>
   <script>
-    const TODAY = Common.todayISO();
+    const TODAY = sessionStorage.getItem('qtDate') || Common.todayISO();
     const FALLBACK_DATE = '2026-04-22';
 
     let qtData = null;
