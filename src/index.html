@@ -360,7 +360,7 @@
     <section class="greeting-section">
       <div class="greeting-emoji" id="greetingEmoji">☀️</div>
       <h1 class="greeting-text" id="greetingText">좋은 아침이에요, 어린양님</h1>
-      <p class="greeting-date" id="greetingDate">2026년 4월 22일 수요일</p>
+      <p class="greeting-date" id="greetingDate"></p>
     </section>
 
     <!-- 오늘의 말씀 -->
@@ -520,11 +520,7 @@
       const content = document.getElementById('todayContent');
       const errorEl = document.getElementById('todayError');
 
-      // 실제로는 today 날짜로 로드하지만, 데모용으로 2026-04-22 fallback
       let qt = await Common.loadJSON(`../data/qt/${today}.json`);
-      if (!qt) {
-        qt = await Common.loadJSON('../data/qt/2026-04-22.json');
-      }
 
       loading.style.display = 'none';
 
