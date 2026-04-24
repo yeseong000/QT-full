@@ -103,7 +103,7 @@
   <div class="app-container">
    <main class="app-scroll">
 
-    <!-- 상단바 (X · 진행 단계 1/4 · 가가) -->
+    <!-- 상단바 (X · 진행 단계 1/4) -->
     <header class="top-bar">
       <div class="top-bar__left">
         <button class="icon-btn" id="closeBtn" aria-label="닫기">
@@ -118,11 +118,7 @@
         <div class="progress-dot"></div>
         <div class="progress-dot"></div>
       </div>
-      <div class="top-bar__right">
-        <button class="icon-btn icon-btn--font" id="fontSizeBtn" aria-label="폰트 크기">
-          가가
-        </button>
-      </div>
+      <div class="top-bar__right" style="width: 44px;"></div>
     </header>
 
     <!-- 페이지 제목 -->
@@ -170,13 +166,14 @@
   <script src="scripts/storage.js"></script>
   <script src="scripts/common.js"></script>
   <script>
-    const TODAY = Common.todayISO();
+    const TODAY = sessionStorage.getItem('qtDate') || Common.todayISO();
     const FALLBACK_DATE = '2026-04-22';
 
     document.addEventListener('DOMContentLoaded', async () => {
       await loadScripture();
       setupEventListeners();
       applyFontSize();
+      Common.applyFontStyle();
       showFabTooltipIfFirst();
       // 진행 상태 저장
       Storage.setDailyRecord(TODAY, { progressStep: 1 });
@@ -225,27 +222,13 @@
         window.location.href = 'step-2-meditation.html';
       });
 
-      // 폰트 크기 토글 (sm → md → lg → sm)
-      document.getElementById('fontSizeBtn').addEventListener('click', toggleFontSize);
-
       // FAB 클릭 → 밑줄 안내
       document.getElementById('highlightFab').addEventListener('click', () => {
         alert('텍스트를 길게 누르고 드래그하면 하이라이트됩니다.\n(향후 저장 기능 추가 예정)');
       });
     }
 
-    // ========== 폰트 크기 ==========
-    function toggleFontSize() {
-      const sizes = ['sm', 'md', 'lg'];
-      const settings = Storage.getSettings();
-      const currentIdx = sizes.indexOf(settings.fontSize);
-      const nextIdx = (currentIdx + 1) % sizes.length;
-      const newSize = sizes[nextIdx];
-
-      Storage.setSetting('fontSize', newSize);
-      applyFontSize();
-    }
-
+    // ========== 폰트 크기 (설정에서 변경, 여기서는 적용만) ==========
     function applyFontSize() {
       const size = Storage.getSettings().fontSize;
       document.documentElement.setAttribute('data-font-size', size);

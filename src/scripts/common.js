@@ -32,12 +32,30 @@ function applyTheme(theme) {
   if (iosBar) iosBar.setAttribute('content', t === 'dark' ? 'black-translucent' : 'default');
 }
 
+// 폰트 크기 즉시 적용
+(function applyStoredFontSize() {
+  try {
+    const size = localStorage.getItem('settings.fontSize');
+    if (size) document.documentElement.setAttribute('data-font-size', size);
+  } catch(e) {}
+})();
+
+// 폰트 스타일 즉시 적용
+(function applyStoredFontStyle() {
+  try {
+    const style = localStorage.getItem('settings.fontStyle');
+    if (style && style !== 'pretendard') {
+      document.documentElement.setAttribute('data-font-style', style);
+    }
+  } catch(e) {}
+})();
+
 // 테마 즉시 적용 (DOMContentLoaded 전에 실행 → 플래시 최소화)
 (function applyStoredTheme() {
   let stored = null;
   try {
     const raw = localStorage.getItem('settings.background');
-    if (raw) stored = JSON.parse(raw);
+    if (raw) stored = raw;
   } catch (e) { /* localStorage 차단/private 모드: 무시 */ }
 
   // 사용자가 명시적으로 고른 값이 있으면 우선,
@@ -50,8 +68,18 @@ function applyTheme(theme) {
   applyTheme(stored);
 })();
 
+function applyFontStyle(style) {
+  const s = style || Storage.get('settings.fontStyle', 'pretendard') || 'pretendard';
+  if (s === 'pretendard') {
+    document.documentElement.removeAttribute('data-font-style');
+  } else {
+    document.documentElement.setAttribute('data-font-style', s);
+  }
+}
+
 const Common = {
   applyTheme,
+  applyFontStyle,
 
   /**
    * 시간대별 인사말 가져오기
@@ -93,7 +121,7 @@ const Common = {
    * 오늘 날짜 (YYYY-MM-DD)
    */
   todayISO() {
-    return new Date().toISOString().slice(0, 10);
+    return new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' });
   },
 
   /**
