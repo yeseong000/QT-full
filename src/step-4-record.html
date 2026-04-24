@@ -314,6 +314,7 @@
       setupQuestions();
       setupEventListeners();
       applyFontSize();
+      Common.applyFontStyle();   // 저장된 폰트 스타일(세리프 등) 보장 적용
       Storage.setDailyRecord(TODAY, { progressStep: 4 });
     });
 

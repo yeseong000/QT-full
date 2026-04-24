@@ -486,7 +486,7 @@
             <div class="theme-label">로즈</div>
           </button>
           <button class="theme-option" type="button" data-theme="dark" aria-label="다크 배경">
-            <div class="theme-swatch" style="background: #1E2520;"></div>
+            <div class="theme-swatch" style="background: #1A1D1B;"></div>
             <div class="theme-label">다크</div>
           </button>
         </div>
@@ -676,6 +676,46 @@
       };
     }
 
+    // ========== 설정 모달 staged 상태 ==========
+    // 옵션을 누르는 즉시 본문에 반영하지 않고, 저장 시점에 한꺼번에 반영
+    let stagedSettings = null;
+
+    function openSettingsModal() {
+      // 현재 저장값을 staged로 복사
+      stagedSettings = {
+        background: Storage.get('settings.background', 'default') || 'default',
+        fontSize:   Storage.get('settings.fontSize', 'md') || 'md',
+        fontStyle:  Storage.get('settings.fontStyle', 'noto-serif') || 'noto-serif',
+      };
+      // 셀렉터 UI를 staged 기준으로 다시 그림
+      syncSelectorUI();
+
+      document.getElementById('nameInput').value = Storage.getUserName();
+      renderHashBadge();
+      document.getElementById('settingsModal').classList.add('is-open');
+    }
+
+    function closeSettingsModal({ revertVisualPreview = false } = {}) {
+      const sheet = document.querySelector('#settingsModal .modal-sheet');
+      if (sheet) sheet.style.transform = '';
+      document.getElementById('settingsModal').classList.remove('is-open');
+      stagedSettings = null;
+    }
+
+    // 현재 staged 값을 셀렉터 UI(테마/사이즈/스타일)에 반영 (DOM 본문은 건드리지 않음)
+    function syncSelectorUI() {
+      if (!stagedSettings) return;
+      document.querySelectorAll('#themeGrid .theme-option').forEach(o => {
+        o.classList.toggle('is-selected', o.dataset.theme === stagedSettings.background);
+      });
+      document.querySelectorAll('#fontSizeGrid .font-option').forEach(o => {
+        o.classList.toggle('is-selected', o.dataset.fontSize === stagedSettings.fontSize);
+      });
+      document.querySelectorAll('#fontStyleGrid .font-option').forEach(o => {
+        o.classList.toggle('is-selected', o.dataset.fontStyle === stagedSettings.fontStyle);
+      });
+    }
+
     // ========== 이벤트 리스너 ==========
     function setupEventListeners() {
       // 스트릭 탭 → 묵상 달력으로 이동
@@ -684,11 +724,7 @@
       });
 
       // 설정 모달 열기
-      document.getElementById('settingsBtn').addEventListener('click', () => {
-        document.getElementById('nameInput').value = Storage.getUserName();
-        renderHashBadge();
-        document.getElementById('settingsModal').classList.add('is-open');
-      });
+      document.getElementById('settingsBtn').addEventListener('click', openSettingsModal);
 
       // 해시 복사 버튼
       document.getElementById('hashCopyBtn').addEventListener('click', () => {
@@ -702,12 +738,12 @@
         });
       });
 
-      // 설정 취소
+      // 설정 취소 (staged 폐기)
       document.getElementById('cancelSettingsBtn').addEventListener('click', () => {
-        document.getElementById('settingsModal').classList.remove('is-open');
+        closeSettingsModal();
       });
 
-      // 설정 저장
+      // 설정 저장 (staged → Storage + 본문 반영)
       document.getElementById('saveSettingsBtn').addEventListener('click', () => {
         const input = document.getElementById('nameInput');
         const newName = input.value.trim();
@@ -718,16 +754,29 @@
         }
 
         Storage.setUserName(newName);
-        document.getElementById('settingsModal').classList.remove('is-open');
+
+        if (stagedSettings) {
+          Storage.setSetting('background', stagedSettings.background);
+          Storage.setSetting('fontSize',   stagedSettings.fontSize);
+          Storage.setSetting('fontStyle',  stagedSettings.fontStyle);
+          Common.applyTheme(stagedSettings.background);
+          document.documentElement.setAttribute('data-font-size', stagedSettings.fontSize);
+          Common.applyFontStyle(stagedSettings.fontStyle);
+        }
+
+        closeSettingsModal();
         renderGreeting();
       });
 
-      // 배경 클릭으로 모달 닫기
+      // 백드롭 클릭으로 모달 닫기 (취소와 동일)
       document.getElementById('settingsModal').addEventListener('click', (e) => {
         if (e.target.id === 'settingsModal') {
-          e.currentTarget.classList.remove('is-open');
+          closeSettingsModal();
         }
       });
+
+      // 모달 스와이프 다운 닫기
+      setupModalSwipeDown();
 
       // 아카이브로 이동
       document.getElementById('archiveLink').addEventListener('click', (e) => {
@@ -737,6 +786,55 @@
 
       // 다른 기기에서 불러오기
       document.getElementById('restoreHashBtn').addEventListener('click', handleRestore);
+    }
+
+    // ========== 모달 스와이프 다운 닫기 ==========
+    function setupModalSwipeDown() {
+      const sheet = document.querySelector('#settingsModal .modal-sheet');
+      if (!sheet) return;
+
+      let startY = 0, deltaY = 0, dragging = false, pointerId = null;
+      const interactiveSelector = 'button, input, textarea, select, [role="button"], .font-option, .theme-option, .hash-copy-btn';
+
+      sheet.addEventListener('pointerdown', (e) => {
+        // 옵션/버튼/입력 위에서는 드래그 시작 안 함
+        if (e.target.closest(interactiveSelector)) return;
+        // 마우스의 경우 좌클릭만
+        if (e.pointerType === 'mouse' && e.button !== 0) return;
+        dragging = true;
+        startY = e.clientY;
+        deltaY = 0;
+        pointerId = e.pointerId;
+        sheet.classList.add('is-dragging');
+        try { sheet.setPointerCapture(pointerId); } catch (_) {}
+      });
+
+      sheet.addEventListener('pointermove', (e) => {
+        if (!dragging || e.pointerId !== pointerId) return;
+        deltaY = Math.max(0, e.clientY - startY);  // 위쪽 드래그는 무시
+        sheet.style.transform = `translateY(${deltaY}px)`;
+      });
+
+      const endDrag = (e) => {
+        if (!dragging || (e && e.pointerId !== pointerId)) return;
+        dragging = false;
+        sheet.classList.remove('is-dragging');
+        try { sheet.releasePointerCapture(pointerId); } catch (_) {}
+
+        const threshold = Math.max(100, sheet.offsetHeight * 0.25);
+        if (deltaY > threshold) {
+          // 닫기 (취소와 동일: staged 폐기)
+          closeSettingsModal();
+        } else {
+          // 원위치로 복귀 (CSS transition으로 부드럽게)
+          sheet.style.transform = '';
+        }
+        deltaY = 0;
+        pointerId = null;
+      };
+
+      sheet.addEventListener('pointerup', endDrag);
+      sheet.addEventListener('pointercancel', endDrag);
     }
 
     // ========== 해시로 기록 복원 ==========
@@ -794,31 +892,27 @@
       setTimeout(() => window.location.reload(), 800);
     }
 
-    // ========== 테마 선택기 ==========
+    // ========== 테마 선택기 (staged: 본문에 반영하지 않고 staged에만 기록) ==========
     function setupThemeSelector() {
       const current = Storage.get('settings.background', 'default') || 'default';
-      const options = document.querySelectorAll('.theme-option');
+      const options = document.querySelectorAll('#themeGrid .theme-option');
 
-      // 현재 선택 상태 반영
+      // 초기 표시: 저장값 기준
       options.forEach(opt => {
-        if (opt.dataset.theme === current) {
-          opt.classList.add('is-selected');
-        }
+        if (opt.dataset.theme === current) opt.classList.add('is-selected');
       });
 
-      // 클릭 → 즉시 적용 + 저장
       options.forEach(opt => {
         opt.addEventListener('click', () => {
-          const theme = opt.dataset.theme;
-          Storage.setSetting('background', theme);
-          Common.applyTheme(theme);   // data-theme + 주소창 + iOS 상태바 동시 갱신
+          if (!stagedSettings) return;
+          stagedSettings.background = opt.dataset.theme;
           options.forEach(o => o.classList.remove('is-selected'));
           opt.classList.add('is-selected');
         });
       });
     }
 
-    // ========== 폰트 크기 선택기 ==========
+    // ========== 폰트 크기 선택기 (staged) ==========
     function setupFontSizeSelector() {
       const current = Storage.get('settings.fontSize', 'md') || 'md';
       const options = document.querySelectorAll('#fontSizeGrid .font-option');
@@ -826,16 +920,15 @@
       options.forEach(opt => {
         if (opt.dataset.fontSize === current) opt.classList.add('is-selected');
         opt.addEventListener('click', () => {
-          const size = opt.dataset.fontSize;
-          Storage.setSetting('fontSize', size);
-          document.documentElement.setAttribute('data-font-size', size);
+          if (!stagedSettings) return;
+          stagedSettings.fontSize = opt.dataset.fontSize;
           options.forEach(o => o.classList.remove('is-selected'));
           opt.classList.add('is-selected');
         });
       });
     }
 
-    // ========== 폰트 스타일 선택기 ==========
+    // ========== 폰트 스타일 선택기 (staged) ==========
     function setupFontStyleSelector() {
       const current = Storage.get('settings.fontStyle', 'noto-serif') || 'noto-serif';
       const options = document.querySelectorAll('#fontStyleGrid .font-option');
@@ -843,9 +936,8 @@
       options.forEach(opt => {
         if (opt.dataset.fontStyle === current) opt.classList.add('is-selected');
         opt.addEventListener('click', () => {
-          const style = opt.dataset.fontStyle;
-          Storage.setSetting('fontStyle', style);
-          Common.applyFontStyle(style);
+          if (!stagedSettings) return;
+          stagedSettings.fontStyle = opt.dataset.fontStyle;
           options.forEach(o => o.classList.remove('is-selected'));
           opt.classList.add('is-selected');
         });

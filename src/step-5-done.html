@@ -169,6 +169,23 @@
       background: #E9EEF5; border-color: var(--chip-reflect); color: #5C6B80;
     }
 
+    /* 다크모드: 칩 색상 가라앉히기 (라이트 톤 hardcoded → 어두운 보색) */
+    html[data-theme="dark"] .emotion-chip[data-color="calm"] {
+      background: #3A3024; border-color: rgba(245, 185, 66, 0.45); color: #D4B780;
+    }
+    html[data-theme="dark"] .emotion-chip[data-color="reflect"] {
+      background: #2A2F38; border-color: rgba(139, 157, 184, 0.45); color: #9BA8BC;
+    }
+
+    /* 다크모드: streak hero의 흰색 오버레이가 글로우처럼 보이는 문제 수정
+       흰 → 검은 오버레이로 가라앉혀 자연스러운 깊이감 */
+    html[data-theme="dark"] .streak-hero__total {
+      background: rgba(0, 0, 0, 0.25);
+    }
+    html[data-theme="dark"] .milestone {
+      background: rgba(0, 0, 0, 0.22);
+    }
+
     /* 메모 미리보기 */
     .memo-preview {
       font-size: var(--text-body);
@@ -267,6 +284,7 @@
       render();
       setupEventListeners();
       applyFontSize();
+      Common.applyFontStyle();   // 저장된 폰트 스타일(세리프 등) 보장 적용
       Storage.setDailyRecord(TODAY, { progressStep: 5 });
     });
 

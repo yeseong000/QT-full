@@ -201,46 +201,47 @@ html[data-theme="dark"] {
   /* 브라우저에 다크 테마임을 명시 → 폼 컨트롤/스크롤바/자동완성 배경이 다크로 렌더 */
   color-scheme: dark;
 
-  --bg-paper: #1A231D;
-  --bg-card: #2A342D;
-  --bg-soft: #2A3F35;              /* accent-soft = 어두운 딥 sage */
-  --bg-input: #252E27;
+  /* 배경: 그린 채도 낮춰 더 자연스러운 다크 톤 (컨셉은 유지하되 형광끼 제거) */
+  --bg-paper: #1A1D1B;
+  --bg-card: #25292A;
+  --bg-soft: #2A3633;              /* accent-soft = 가라앉힌 딥 sage */
+  --bg-input: #22262A;
 
   --text-primary: #E8EDE8;
   --text-body: #CBD2CB;
   --text-secondary: #9BA59E;       /* 4.5:1 대비 확보 — 보조 안내문 가독성 */
   --text-placeholder: #5D6560;
-  --text-on-accent: #1A231D;       /* 밝은 accent 위 어두운 텍스트 */
+  --text-on-accent: #15181A;       /* 밝은 accent 위 어두운 텍스트 (배경에 맞춤) */
 
-  /* Accent: 달빛 sage (어두운 배경에 가시성 확보) */
-  --accent-sage: #8FD4B8;
-  --accent-sage-dark: #A6DFC5;     /* hover 시 더 밝게 */
-  --accent-sage-soft: #2A3F35;
-  --accent-sage-text: #A6DFC5;
+  /* Accent: 달빛 sage — 채도/명도 다운으로 글로우 제거 */
+  --accent-sage: #6FB496;
+  --accent-sage-dark: #5FA083;     /* hover 시 살짝 어둡게 (더 안정감) */
+  --accent-sage-soft: #2A3633;
+  --accent-sage-text: #8AC4A8;
 
-  --border-subtle: #3A433D;
-  --border-chip: #4A554C;
-  --border-input: #434B44;
-  --check-inactive: #4A554C;
-  --check-active: #8FD4B8;
-  --highlight-underline: #3D4838;
+  --border-subtle: #353A37;
+  --border-chip: #454C48;
+  --border-input: #3F4540;
+  --check-inactive: #454C48;
+  --check-active: #6FB496;
+  --highlight-underline: #353F38;
 
   /* 다크 그림자 전략:
      - 검정 그림자는 어두운 배경에서 안 보임 → 옅은 accent-tinted 테두리로 elevation 표현
-     - 떠있는 요소(modal·FAB)만 진한 black drop으로 깊이감 추가 */
-  --shadow-soft:   inset 0 0 0 1px rgba(143, 212, 184, 0.06);
-  --shadow-float:  inset 0 0 0 1px rgba(143, 212, 184, 0.10),
+     - 떠있는 요소(modal·FAB)만 진한 black drop으로 깊이감 추가
+     - 글로우(0 0 18px) 제거 → 버튼이 빛나 보이는 현상 차단 */
+  --shadow-soft:   inset 0 0 0 1px rgba(111, 180, 150, 0.05);
+  --shadow-float:  inset 0 0 0 1px rgba(111, 180, 150, 0.08),
                    0 12px 32px rgba(0, 0, 0, 0.55);
-  --shadow-button: 0 0 18px rgba(143, 212, 184, 0.22),
-                   0 2px 6px rgba(0, 0, 0, 0.35);
-  --shadow-hero:   inset 0 0 0 1px rgba(143, 212, 184, 0.12),
+  --shadow-button: 0 2px 6px rgba(0, 0, 0, 0.35);
+  --shadow-hero:   inset 0 0 0 1px rgba(111, 180, 150, 0.10),
                    0 12px 32px rgba(0, 0, 0, 0.40);
 }
 
 /* PC 프레임 바깥 배경 — 테마 온도에 맞춤 */
 @media (min-width: 481px) {
   html[data-theme="rose"] body { background: #E6C9B8; }
-  html[data-theme="dark"] body { background: #0F1411 !important; }
+  html[data-theme="dark"] body { background: #0E1011 !important; }
 }
 
 /* ==========================================================================

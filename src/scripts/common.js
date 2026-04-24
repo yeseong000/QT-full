@@ -6,7 +6,7 @@
 const THEME_CHROME_COLORS = {
   default: '#F0F4F2',
   rose:    '#FCF3EE',
-  dark:    '#1A231D',
+  dark:    '#1A1D1B',
 };
 
 /**

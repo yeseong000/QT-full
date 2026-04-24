@@ -240,6 +240,7 @@
       await loadAI();
       setupEventListeners();
       applyFontSize();
+      Common.applyFontStyle();   // 저장된 폰트 스타일(세리프 등) 보장 적용
       hydratePrayedState();
       Storage.setDailyRecord(TODAY, { progressStep: 3 });
     });
