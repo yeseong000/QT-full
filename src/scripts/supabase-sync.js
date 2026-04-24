@@ -65,6 +65,64 @@ const SupabaseSync = {
       qs: `user_hash=eq.${encodeURIComponent(userHash)}&order=date.desc`,
     });
   },
+
+  // 해시 존재 여부 조회 (복원용)
+  async lookupHash(userHash) {
+    const rows = await _req('GET', 'qt_users', {
+      qs: `user_hash=eq.${encodeURIComponent(userHash)}`,
+    });
+    return Array.isArray(rows) && rows.length > 0 ? rows[0] : null;
+  },
+
+  /**
+   * 로컬에 해시가 있으면 그대로, 없으면 새로 만들어 서버에 등록.
+   * 첫 방문/첫 묵상 모두 같은 진입점으로 사용.
+   */
+  async ensureUserHash() {
+    let hash = Storage.getUserHash();
+    if (hash) return hash;
+
+    const nickname = Storage.getUserName();
+    let attempts = 0;
+    while (attempts < 5) {
+      const num = String(Math.floor(10000 + Math.random() * 90000));
+      const candidate = `${nickname}#${num}`;
+      try {
+        const ok = await this.registerHash(candidate, nickname);
+        if (ok) {
+          Storage.setUserHash(candidate);
+          return candidate;
+        }
+      } catch (e) {
+        console.warn('해시 등록 실패:', e);
+        return null;
+      }
+      attempts++;
+    }
+    return null;
+  },
+
+  /**
+   * 다른 기기에서 쓰던 해시로 로컬 전체 복원.
+   * 반환: { ok: boolean, reason?, recordCount? }
+   */
+  async restoreFromHash(userHash) {
+    const trimmed = String(userHash || '').trim();
+    if (!trimmed) return { ok: false, reason: 'empty' };
+    if (!/^.+#\d{5}$/.test(trimmed)) return { ok: false, reason: 'format' };
+
+    try {
+      const user = await this.lookupHash(trimmed);
+      if (!user) return { ok: false, reason: 'not_found' };
+
+      const records = await this.fetchAllRecords(trimmed);
+      Storage.restoreFromServer(trimmed, records || []);
+      return { ok: true, recordCount: (records || []).length };
+    } catch (e) {
+      console.warn('복원 실패:', e);
+      return { ok: false, reason: 'network' };
+    }
+  },
 };
 
 if (typeof window !== 'undefined') window.SupabaseSync = SupabaseSync;

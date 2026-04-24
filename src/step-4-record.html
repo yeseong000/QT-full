@@ -155,29 +155,29 @@
        오늘의 질문 (Q1 / Q2)
        ------------------------------------------------------------------ */
     .question-item {
-      margin-bottom: var(--space-6);
+      margin-bottom: var(--space-8);
     }
     .question-item:last-child {
       margin-bottom: 0;
     }
     .question-num {
       display: inline-block;
-      padding: 3px 12px;
+      padding: 4px 14px;
       border-radius: var(--radius-pill);
       background: var(--accent-sage-soft);
       color: var(--accent-sage-text);
-      font-size: var(--text-caption);
+      font-size: 13px;
       font-weight: 700;
       letter-spacing: -0.02em;
-      margin-left: 16px;    /* textarea 안쪽 padding과 정렬 */
+      margin-left: 8px;
       margin-bottom: var(--space-2);
     }
     .question-text {
-      font-size: var(--text-body);
+      font-size: 15px;
       line-height: 1.6;
       color: var(--text-body);
       word-break: keep-all;
-      padding-left: 16px;   /* textarea 안쪽 padding과 정렬 */
+      padding-left: 8px;
       margin-bottom: var(--space-3);
     }
     .question-answer {
@@ -292,7 +292,7 @@
   <script src="scripts/common.js"></script>
   <script src="scripts/supabase-sync.js"></script>
   <script>
-    const TODAY = Common.todayISO();
+    const TODAY = sessionStorage.getItem('qtDate') || Common.todayISO();
 
     // 감정 칩 정의 (3가지 색상 × 3개 = 9개)
     const EMOTIONS = [
@@ -427,7 +427,7 @@
       container.innerHTML = questions.map((q, i) => `
         <div class="question-item">
           <span class="question-num">Q${i + 1}</span>
-          <p class="question-text">${escapeHTML(q)}</p>
+          <p class="question-text">${escapeHTML(q).replace(/\?\s+/g, '?<br>')}</p>
           <textarea
             class="memo-textarea question-answer"
             data-q-idx="${i}"
@@ -477,22 +477,7 @@
         // 서버 동기화 (Supabase 설정된 경우에만)
         if (typeof SupabaseSync !== 'undefined' && SupabaseSync.isConfigured()) {
           try {
-            let hash = Storage.getUserHash();
-            if (!hash) {
-              // 첫 완료: 닉네임#5자리 해시 생성
-              const nickname = Storage.getUserName();
-              let attempts = 0;
-              while (!hash && attempts < 5) {
-                const num = String(Math.floor(10000 + Math.random() * 90000));
-                const candidate = `${nickname}#${num}`;
-                const ok = await SupabaseSync.registerHash(candidate, nickname);
-                if (ok) {
-                  Storage.setUserHash(candidate);
-                  hash = candidate;
-                }
-                attempts++;
-              }
-            }
+            const hash = await SupabaseSync.ensureUserHash();
             if (hash) {
               await SupabaseSync.syncRecord(hash, TODAY, Storage.getDailyRecord(TODAY));
             }

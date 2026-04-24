@@ -506,7 +506,7 @@
         </div>
       </div>
 
-      <div class="setting-item" style="margin-bottom: 0;">
+      <div class="setting-item">
         <div class="setting-label">폰트 스타일</div>
         <div class="font-option-grid" id="fontStyleGrid">
           <button class="font-option" type="button" data-font-style="noto-serif" aria-label="세리프 폰트">
@@ -520,6 +520,27 @@
         </div>
       </div>
 
+      <div class="setting-item" style="margin-bottom: 0;">
+        <div class="setting-label">다른 기기에서 불러오기</div>
+        <p style="font-size: var(--text-small); color: var(--text-secondary); margin: 0 0 var(--space-3); line-height: 1.6;">
+          이전에 쓰던 해시를 입력하시면 묵상 기록을 불러올 수 있어요.<br>예: 어린양#12345
+        </p>
+        <input
+          type="text"
+          class="input-field"
+          id="restoreHashInput"
+          placeholder="닉네임#12345"
+          autocomplete="off"
+          autocapitalize="off"
+          autocorrect="off"
+          spellcheck="false"
+        >
+        <div style="display:flex; gap: var(--space-2); align-items:center; margin-top: var(--space-3);">
+          <button class="btn btn-secondary" id="restoreHashBtn" type="button">불러오기</button>
+          <span id="restoreStatus" style="font-size: var(--text-small); color: var(--text-secondary);"></span>
+        </div>
+      </div>
+
       <div class="modal-actions">
         <button class="btn btn-secondary" id="cancelSettingsBtn">취소</button>
         <button class="btn btn-primary" id="saveSettingsBtn" style="flex: 1;">저장</button>
@@ -530,6 +551,7 @@
   <!-- ========== Scripts ========== -->
   <script src="scripts/storage.js"></script>
   <script src="scripts/common.js"></script>
+  <script src="scripts/supabase-sync.js"></script>
   <script>
     // ========== 초기화 ==========
     document.addEventListener('DOMContentLoaded', () => {
@@ -544,7 +566,20 @@
       setupFontSizeSelector();
       setupFontStyleSelector();
       setupEventListeners();
+
+      // 첫 방문 시 해시 미리 발급 (캐시 삭제 대비 — 묵상 완료 전이라도 서버에 박제)
+      ensureHashSilently();
     });
+
+    // ========== 해시 자동 발급 ==========
+    async function ensureHashSilently() {
+      if (typeof SupabaseSync === 'undefined' || !SupabaseSync.isConfigured()) return;
+      try {
+        await SupabaseSync.ensureUserHash();
+      } catch (e) {
+        console.warn('해시 자동 발급 실패 (무시):', e);
+      }
+    }
 
     // ========== 인사말 렌더링 ==========
     function renderGreeting() {
@@ -698,6 +733,64 @@
         e.preventDefault();
         window.location.href = 'archive.html';
       });
+
+      // 다른 기기에서 불러오기
+      document.getElementById('restoreHashBtn').addEventListener('click', handleRestore);
+    }
+
+    // ========== 해시로 기록 복원 ==========
+    async function handleRestore() {
+      const input = document.getElementById('restoreHashInput');
+      const status = document.getElementById('restoreStatus');
+      const btn = document.getElementById('restoreHashBtn');
+      const value = input.value.trim();
+
+      status.style.color = 'var(--text-secondary)';
+
+      if (!value) {
+        status.textContent = '해시를 입력해주세요';
+        input.focus();
+        return;
+      }
+
+      if (typeof SupabaseSync === 'undefined' || !SupabaseSync.isConfigured()) {
+        status.textContent = '서버 연결이 설정되지 않았어요';
+        return;
+      }
+
+      // 이미 본인 해시가 있으면 한 번 더 확인
+      const existing = Storage.getUserHash();
+      if (existing && existing !== value) {
+        const yes = confirm(
+          `현재 기기에 저장된 해시(${existing})가 있어요.\n` +
+          `"${value}"의 기록으로 덮어쓰시겠어요?\n\n` +
+          `※ 현재 해시의 로컬 기록은 사라질 수 있어요.`
+        );
+        if (!yes) return;
+      }
+
+      btn.disabled = true;
+      status.textContent = '불러오는 중...';
+
+      const result = await SupabaseSync.restoreFromHash(value);
+
+      btn.disabled = false;
+
+      if (!result.ok) {
+        const msgs = {
+          empty:     '해시를 입력해주세요',
+          format:    '형식이 올바르지 않아요 (예: 어린양#12345)',
+          not_found: '해당 해시를 찾을 수 없어요',
+          network:   '네트워크 오류예요. 잠시 후 다시 시도해주세요',
+        };
+        status.style.color = 'var(--text-secondary)';
+        status.textContent = msgs[result.reason] || '불러오기에 실패했어요';
+        return;
+      }
+
+      status.style.color = 'var(--accent-sage-text)';
+      status.textContent = `${result.recordCount}일치 기록을 불러왔어요. 새로고침할게요...`;
+      setTimeout(() => window.location.reload(), 800);
     }
 
     // ========== 테마 선택기 ==========

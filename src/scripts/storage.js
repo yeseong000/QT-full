@@ -89,8 +89,89 @@ const Storage = {
     return this.get('user.hash', null);
   },
 
-  setUserHash(hash) {
+  /**
+   * 해시 저장 — 한 번 박제되면 절대 덮어쓰지 않음.
+   * 다른 기기에서 불러오기로 복원할 때만 force=true 사용.
+   */
+  setUserHash(hash, { force = false } = {}) {
+    if (!hash) return false;
+    if (!force && this.get('user.hash', null)) return false;
     this.set('user.hash', hash);
+    return true;
+  },
+
+  /**
+   * 서버에서 받은 해시 + 기록 묶음으로 localStorage 전체 복원.
+   * 캐시가 지워졌거나 다른 기기에서 처음 로그인할 때 사용.
+   */
+  restoreFromServer(hash, records) {
+    this.set('user.hash', hash);
+
+    // 해시에서 닉네임 추출 (예: "어린양#12345" → "어린양")
+    const m = String(hash).match(/^(.+)#\d+$/);
+    if (m) this.set('user.name', m[1]);
+
+    if (Array.isArray(records)) {
+      records.forEach((r) => {
+        if (!r || !r.date) return;
+        this.setDailyRecord(r.date, {
+          completed:       !!r.completed,
+          emotions:        r.emotions          || [],
+          reflection:      r.reflection        || '',
+          questionAnswers: r.question_answers  || [],
+          memo:            r.memo              || '',
+          progressStep:    r.progress_step     || (r.completed ? 5 : 0),
+        });
+      });
+      this._recalculateStreak(records);
+    }
+  },
+
+  /**
+   * 서버 기록 배열에서 스트릭 정보를 다시 계산해 localStorage에 반영.
+   * (스트릭 자체는 서버에 저장하지 않으므로 날짜 리스트로부터 유도.)
+   */
+  _recalculateStreak(records) {
+    const dates = records
+      .filter((r) => r && r.completed && r.date)
+      .map((r) => r.date)
+      .sort();
+
+    if (dates.length === 0) return;
+
+    const totalCompleted = dates.length;
+    const lastDate = dates[dates.length - 1];
+
+    // 최장 연속 (longest)
+    let longest = 1;
+    let run = 1;
+    for (let i = 1; i < dates.length; i++) {
+      const diff = (new Date(dates[i]) - new Date(dates[i - 1])) / 86400000;
+      if (diff === 1) {
+        run++;
+        if (run > longest) longest = run;
+      } else {
+        run = 1;
+      }
+    }
+
+    // 현재 연속 (current) — 마지막 완료일이 오늘/어제일 때만 유효
+    const today = new Date().toISOString().slice(0, 10);
+    const yesterday = this._getYesterday();
+    let current = 0;
+    if (lastDate === today || lastDate === yesterday) {
+      current = 1;
+      for (let i = dates.length - 2; i >= 0; i--) {
+        const diff = (new Date(dates[i + 1]) - new Date(dates[i])) / 86400000;
+        if (diff === 1) current++;
+        else break;
+      }
+    }
+
+    this.set('streak.current', current);
+    this.set('streak.longest', longest);
+    this.set('streak.lastDate', lastDate);
+    this.set('streak.totalCompleted', totalCompleted);
   },
 
   // ========================================================================
