@@ -67,6 +67,193 @@
       color: var(--text-primary);
     }
 
+    /* 저장된 하이라이트 마크 */
+    mark.hl {
+      background: var(--highlight-underline);
+      color: inherit;
+      padding: 1px 2px;
+      border-radius: 3px;
+      cursor: pointer;
+      transition: filter var(--duration-base);
+    }
+    mark.hl:active {
+      filter: brightness(0.95);
+    }
+
+    /* 선택 영역 위 미니 버튼 (밑줄 긋기) */
+    .selection-toolbar {
+      position: absolute;
+      z-index: 100;
+      display: none;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 12px;
+      background: var(--text-primary);
+      color: white;
+      border-radius: var(--radius-pill);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18);
+      font-size: var(--text-small);
+      font-weight: 600;
+      border: 0;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      transform: translate(-50%, -100%);
+      white-space: nowrap;
+    }
+    .selection-toolbar.visible {
+      display: inline-flex;
+      animation: toolbarIn var(--duration-base) var(--ease-out);
+    }
+    .selection-toolbar svg {
+      width: 16px;
+      height: 16px;
+    }
+    @keyframes toolbarIn {
+      from { opacity: 0; transform: translate(-50%, -90%); }
+      to   { opacity: 1; transform: translate(-50%, -100%); }
+    }
+
+    /* 하이라이트 액션 메뉴 (메모/지우기) */
+    .highlight-action-menu {
+      position: absolute;
+      z-index: 100;
+      display: none;
+      gap: 4px;
+      padding: 6px;
+      background: white;
+      border-radius: var(--radius-md);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.14);
+      transform: translate(-50%, -100%);
+    }
+    .highlight-action-menu.visible {
+      display: inline-flex;
+      animation: toolbarIn var(--duration-base) var(--ease-out);
+    }
+    .highlight-action-menu button {
+      padding: 8px 14px;
+      background: transparent;
+      border: 0;
+      border-radius: var(--radius-sm);
+      font-size: var(--text-small);
+      font-weight: 600;
+      color: var(--text-primary);
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      font-family: inherit;
+    }
+    .highlight-action-menu button:active {
+      background: var(--bg-soft);
+    }
+    .highlight-action-menu button.danger {
+      color: #C0392B;
+    }
+
+    /* 바텀시트 (메모 작성) */
+    .bottom-sheet-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.4);
+      z-index: 200;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity var(--duration-base);
+    }
+    .bottom-sheet-backdrop.visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .bottom-sheet {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 210;
+      background: var(--bg-card);
+      border-top-left-radius: 20px;
+      border-top-right-radius: 20px;
+      padding: 12px 20px calc(20px + env(safe-area-inset-bottom));
+      box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.12);
+      transform: translateY(100%);
+      transition: transform var(--duration-slow) var(--ease-out);
+    }
+    .bottom-sheet.is-open {
+      transform: translateY(0);
+    }
+    .bottom-sheet__handle {
+      width: 40px;
+      height: 4px;
+      background: var(--border-chip);
+      border-radius: 2px;
+      margin: 0 auto 14px;
+    }
+    .bottom-sheet__title {
+      font-size: var(--text-h2);
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: var(--space-2);
+    }
+    .bottom-sheet__quote {
+      font-size: var(--text-small);
+      color: var(--text-secondary);
+      margin-bottom: var(--space-4);
+      padding: 10px 14px;
+      background: var(--highlight-underline);
+      border-radius: var(--radius-sm);
+      line-height: 1.5;
+      max-height: 96px;
+      overflow-y: auto;
+    }
+    .bottom-sheet__textarea {
+      width: 100%;
+      min-height: 120px;
+      max-height: 240px;
+      padding: 14px;
+      background: var(--bg-soft);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      font-family: inherit;
+      font-size: var(--text-body);
+      line-height: 1.6;
+      color: var(--text-body);
+      resize: none;
+      box-sizing: border-box;
+      outline: none;
+      transition: border-color var(--duration-base);
+    }
+    .bottom-sheet__textarea:focus {
+      border-color: var(--accent-sage);
+    }
+    .bottom-sheet__actions {
+      display: flex;
+      gap: 10px;
+      margin-top: var(--space-4);
+    }
+    .bottom-sheet__actions .btn {
+      flex: 1;
+    }
+
+    /* 토스트 (간단 안내) */
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: calc(110px + env(safe-area-inset-bottom));
+      transform: translateX(-50%) translateY(20px);
+      padding: 12px 18px;
+      background: var(--text-primary);
+      color: white;
+      border-radius: var(--radius-pill);
+      font-size: var(--text-small);
+      z-index: 300;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity var(--duration-base), transform var(--duration-base);
+      white-space: nowrap;
+    }
+    .toast.visible {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
     /* FAB 툴팁 (app-container 내부 absolute) */
     .fab-tooltip {
       position: absolute;
@@ -150,6 +337,24 @@
      마음에 드는 구절을 드래그해 밑줄을 그어보세요
    </div>
 
+   <!-- 선택 영역 위 미니 버튼 -->
+   <button class="selection-toolbar" id="selectionToolbar" type="button" aria-label="밑줄 긋기">
+     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+       <path d="M12 20h9"/>
+       <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+     </svg>
+     <span>밑줄 긋기</span>
+   </button>
+
+   <!-- 하이라이트 액션 메뉴 -->
+   <div class="highlight-action-menu" id="highlightActionMenu" role="menu">
+     <button type="button" id="hlMemoBtn" role="menuitem">메모하기</button>
+     <button type="button" id="hlDeleteBtn" class="danger" role="menuitem">지우기</button>
+   </div>
+
+   <!-- 토스트 -->
+   <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
    <!-- 하단 네비 (app-container 내부) -->
    <nav class="bottom-nav">
      <button class="btn btn-secondary btn-icon-only" id="prevBtn" aria-label="이전">
@@ -162,12 +367,30 @@
 
   </div>
 
+  <!-- 바텀시트 백드롭 + 메모 입력 (body 직속, position: fixed) -->
+  <div class="bottom-sheet-backdrop" id="bottomSheetBackdrop"></div>
+  <div class="bottom-sheet" id="memoSheet" role="dialog" aria-modal="true" aria-labelledby="memoSheetTitle">
+    <div class="bottom-sheet__handle"></div>
+    <div class="bottom-sheet__title" id="memoSheetTitle">메모 작성</div>
+    <div class="bottom-sheet__quote" id="memoSheetQuote"></div>
+    <textarea
+      class="bottom-sheet__textarea"
+      id="memoSheetTextarea"
+      placeholder="이 구절에서 느낀 점을 적어보세요..."
+      maxlength="500"
+    ></textarea>
+    <div class="bottom-sheet__actions">
+      <button type="button" class="btn btn-secondary" id="memoSheetCancel">취소</button>
+      <button type="button" class="btn btn-primary" id="memoSheetSave">저장</button>
+    </div>
+  </div>
+
   <!-- Scripts -->
   <script src="scripts/storage.js"></script>
   <script src="scripts/common.js"></script>
   <script>
     const TODAY = sessionStorage.getItem('qtDate') || Common.todayISO();
-    const FALLBACK_DATE = '2026-04-22';
+    const HAS_EXPLICIT_DATE = !!sessionStorage.getItem('qtDate');
 
     document.addEventListener('DOMContentLoaded', async () => {
       await loadScripture();
@@ -182,8 +405,14 @@
     // ========== 말씀 로드 ==========
     async function loadScripture() {
       let qt = await Common.loadJSON(`../data/qt/${TODAY}.json`);
-      if (!qt) {
-        qt = await Common.loadJSON(`../data/qt/${FALLBACK_DATE}.json`);
+      if (!qt && !HAS_EXPLICIT_DATE) {
+        for (let i = 1; i <= 3; i++) {
+          const d = new Date(new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' }));
+          d.setDate(d.getDate() - i);
+          const fallbackDate = d.toLocaleDateString('sv-SE');
+          qt = await Common.loadJSON(`../data/qt/${fallbackDate}.json`);
+          if (qt) break;
+        }
       }
 
       if (!qt) {
@@ -198,10 +427,22 @@
       const container = document.getElementById('versesContainer');
       container.innerHTML = qt.verses.map(v => `
         <div class="verse-line" data-verse="${v.number}">
-          <span class="verse-number">${v.number}</span>
-          ${v.text}
+          <span class="verse-number">${v.number}</span><span class="verse-text" data-verse-text="${v.number}">${escapeHTML(v.text)}</span>
         </div>
       `).join('');
+
+      // 저장된 하이라이트 복원
+      restoreUnderlines();
+    }
+
+    function escapeHTML(str) {
+      if (str == null) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
     }
 
     // ========== 이벤트 ==========
@@ -222,10 +463,341 @@
         window.location.href = 'step-2-meditation.html';
       });
 
-      // FAB 클릭 → 밑줄 안내
+      // FAB 클릭 → 도움말 토스트
       document.getElementById('highlightFab').addEventListener('click', () => {
-        alert('텍스트를 길게 누르고 드래그하면 하이라이트됩니다.\n(향후 저장 기능 추가 예정)');
+        showToast('마음에 드는 구절을 드래그해보세요');
       });
+
+      setupHighlightInteractions();
+    }
+
+    // ========================================================================
+    // 하이라이트(밑줄 + 메모) 기능
+    // ========================================================================
+
+    let pendingSelection = null;       // 새 하이라이트 만들기 후보 (verse, range, text, rect)
+    let activeHighlightId = null;      // 현재 액션 메뉴/메모 시트가 가리키는 하이라이트 id
+
+    function setupHighlightInteractions() {
+      const versesContainer = document.getElementById('versesContainer');
+      const toolbar = document.getElementById('selectionToolbar');
+      const actionMenu = document.getElementById('highlightActionMenu');
+      const memoSheet = document.getElementById('memoSheet');
+      const backdrop = document.getElementById('bottomSheetBackdrop');
+
+      // 본문에서 손 뗐을 때 선택 감지 (모바일/데스크톱 공통)
+      versesContainer.addEventListener('mouseup', handleSelectionEnd);
+      versesContainer.addEventListener('touchend', handleSelectionEnd);
+
+      // 본문 외 영역 클릭 시 toolbar/actionMenu 숨김
+      document.addEventListener('mousedown', (e) => {
+        if (!toolbar.contains(e.target) && !versesContainer.contains(e.target)) {
+          hideSelectionToolbar();
+        }
+        if (!actionMenu.contains(e.target) && !e.target.closest('mark.hl')) {
+          hideActionMenu();
+        }
+      });
+
+      // toolbar 클릭 → 하이라이트 저장
+      toolbar.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (!pendingSelection) return;
+        commitNewHighlight(pendingSelection);
+      });
+
+      // 하이라이트 mark 클릭 → 액션 메뉴
+      versesContainer.addEventListener('click', (e) => {
+        const mark = e.target.closest('mark.hl');
+        if (!mark) return;
+        e.stopPropagation();
+        showActionMenu(mark);
+      });
+
+      // 액션 메뉴 버튼
+      document.getElementById('hlMemoBtn').addEventListener('click', () => {
+        if (!activeHighlightId) return;
+        const id = activeHighlightId;
+        hideActionMenu();
+        openMemoSheet(id);
+      });
+      document.getElementById('hlDeleteBtn').addEventListener('click', () => {
+        if (!activeHighlightId) return;
+        const id = activeHighlightId;
+        if (!confirm('이 밑줄을 지울까요?')) return;
+        hideActionMenu();
+        deleteHighlight(id);
+      });
+
+      // 메모 시트 버튼
+      document.getElementById('memoSheetCancel').addEventListener('click', closeMemoSheet);
+      document.getElementById('memoSheetSave').addEventListener('click', saveMemo);
+      backdrop.addEventListener('click', closeMemoSheet);
+
+      // ESC로 닫기
+      document.addEventListener('keydown', (e) => {
+        if (e.key !== 'Escape') return;
+        if (memoSheet.classList.contains('is-open')) closeMemoSheet();
+        else { hideSelectionToolbar(); hideActionMenu(); }
+      });
+    }
+
+    // ====== 선택 감지 → toolbar 띄우기 ======
+    function handleSelectionEnd() {
+      // 모바일 selection 안정화를 위해 약간의 지연
+      setTimeout(() => {
+        const sel = window.getSelection();
+        if (!sel || sel.isCollapsed || sel.rangeCount === 0) {
+          hideSelectionToolbar();
+          return;
+        }
+        const range = sel.getRangeAt(0);
+
+        // 이미 mark 안에서의 선택이면 무시 (이중 마크업 방지)
+        if (isWithinExistingMark(range)) {
+          hideSelectionToolbar();
+          return;
+        }
+
+        const verseInfo = getVerseRangeInfo(range);
+        if (!verseInfo) {
+          // 두 절에 걸쳤거나 verse-text 밖 선택
+          if (range.toString().trim().length > 0) {
+            showToast('한 절 안에서만 밑줄을 그을 수 있어요');
+          }
+          hideSelectionToolbar();
+          return;
+        }
+
+        pendingSelection = verseInfo;
+        positionToolbarAt(range.getBoundingClientRect());
+      }, 50);
+    }
+
+    function isWithinExistingMark(range) {
+      const ancestor = range.commonAncestorContainer;
+      const el = ancestor.nodeType === 1 ? ancestor : ancestor.parentElement;
+      return !!(el && el.closest('mark.hl'));
+    }
+
+    /**
+     * Range가 단일 verse-text 안에 있는지 확인하고,
+     * 시작/끝 글자 offset (verse-text 내부 절대 위치)을 계산
+     */
+    function getVerseRangeInfo(range) {
+      const startEl = range.startContainer.nodeType === 1
+        ? range.startContainer
+        : range.startContainer.parentElement;
+      const endEl = range.endContainer.nodeType === 1
+        ? range.endContainer
+        : range.endContainer.parentElement;
+
+      const startVerse = startEl.closest('[data-verse-text]');
+      const endVerse = endEl.closest('[data-verse-text]');
+      if (!startVerse || !endVerse) return null;
+      if (startVerse !== endVerse) return null;
+
+      const verseEl = startVerse;
+      const verseNumber = parseInt(verseEl.getAttribute('data-verse-text'), 10);
+
+      // verse-text 내부 텍스트 기준 시작/끝 글자 인덱스
+      const start = offsetWithin(verseEl, range.startContainer, range.startOffset);
+      const end = offsetWithin(verseEl, range.endContainer, range.endOffset);
+      if (start == null || end == null || start === end) return null;
+
+      const [s, e] = start < end ? [start, end] : [end, start];
+      const text = verseEl.textContent.slice(s, e);
+      if (!text.trim()) return null;
+
+      return {
+        verse: verseNumber,
+        range: { start: s, end: e },
+        text,
+        rect: range.getBoundingClientRect(),
+      };
+    }
+
+    /**
+     * root 안에서 (node, offset)이 차지하는 글자 인덱스 (텍스트만 카운트)
+     */
+    function offsetWithin(root, node, offset) {
+      const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+      let count = 0;
+      let cur;
+      while ((cur = walker.nextNode())) {
+        if (cur === node) return count + offset;
+        count += cur.nodeValue.length;
+      }
+      // node가 root와 같거나 element면 offset만큼의 노드 앞까지 합
+      if (node === root) {
+        let total = 0;
+        for (let i = 0; i < offset && i < root.childNodes.length; i++) {
+          total += root.childNodes[i].textContent.length;
+        }
+        return total;
+      }
+      return null;
+    }
+
+    function positionToolbarAt(rect) {
+      const toolbar = document.getElementById('selectionToolbar');
+      const cx = rect.left + rect.width / 2 + window.scrollX;
+      const top = rect.top + window.scrollY - 10;
+      toolbar.style.left = `${cx}px`;
+      toolbar.style.top = `${top}px`;
+      toolbar.classList.add('visible');
+    }
+
+    function hideSelectionToolbar() {
+      document.getElementById('selectionToolbar').classList.remove('visible');
+      pendingSelection = null;
+    }
+
+    // ====== 새 하이라이트 저장 ======
+    function commitNewHighlight(sel) {
+      const ul = {
+        id: `ul-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        verse: sel.verse,
+        range: sel.range,
+        text: sel.text,
+        color: 'yellow',
+        note: '',
+        createdAt: new Date().toISOString(),
+      };
+      Storage.addUnderline(TODAY, ul);
+      applyHighlightToDOM(ul);
+      window.getSelection().removeAllRanges();
+      hideSelectionToolbar();
+      showToast('밑줄을 그었어요');
+    }
+
+    // ====== 저장된 하이라이트 복원 ======
+    function restoreUnderlines() {
+      const list = Storage.getUnderlines(TODAY);
+      // 시작 위치가 큰 것부터 적용 (앞쪽부터 마크업하면 뒤쪽 offset이 어긋남)
+      const byVerse = {};
+      list.forEach(ul => {
+        (byVerse[ul.verse] ??= []).push(ul);
+      });
+      Object.values(byVerse).forEach(arr => {
+        arr.sort((a, b) => b.range.start - a.range.start);
+        arr.forEach(applyHighlightToDOM);
+      });
+    }
+
+    /**
+     * verse-text 안의 [start, end] 범위를 <mark class="hl"> 으로 감싼다.
+     */
+    function applyHighlightToDOM(ul) {
+      const verseEl = document.querySelector(`[data-verse-text="${ul.verse}"]`);
+      if (!verseEl) return;
+
+      const range = rangeFromOffsets(verseEl, ul.range.start, ul.range.end);
+      if (!range) return;
+
+      const mark = document.createElement('mark');
+      mark.className = 'hl';
+      mark.dataset.hlId = ul.id;
+      try {
+        range.surroundContents(mark);
+      } catch (e) {
+        // 부분적으로 다른 요소를 가로지를 경우 extractContents로 폴백
+        const frag = range.extractContents();
+        mark.appendChild(frag);
+        range.insertNode(mark);
+      }
+    }
+
+    function rangeFromOffsets(root, start, end) {
+      const range = document.createRange();
+      const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+      let count = 0;
+      let startSet = false;
+      let cur;
+      while ((cur = walker.nextNode())) {
+        const len = cur.nodeValue.length;
+        if (!startSet && count + len >= start) {
+          range.setStart(cur, start - count);
+          startSet = true;
+        }
+        if (startSet && count + len >= end) {
+          range.setEnd(cur, end - count);
+          return range;
+        }
+        count += len;
+      }
+      return null;
+    }
+
+    // ====== 액션 메뉴 (메모/지우기) ======
+    function showActionMenu(markEl) {
+      const menu = document.getElementById('highlightActionMenu');
+      activeHighlightId = markEl.dataset.hlId;
+      const rect = markEl.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2 + window.scrollX;
+      const top = rect.top + window.scrollY - 10;
+      menu.style.left = `${cx}px`;
+      menu.style.top = `${top}px`;
+      menu.classList.add('visible');
+    }
+
+    function hideActionMenu() {
+      document.getElementById('highlightActionMenu').classList.remove('visible');
+      activeHighlightId = null;
+    }
+
+    // ====== 메모 시트 ======
+    function openMemoSheet(id) {
+      const list = Storage.getUnderlines(TODAY);
+      const ul = list.find(u => u.id === id);
+      if (!ul) return;
+
+      activeHighlightId = id;
+      document.getElementById('memoSheetQuote').textContent = `"${ul.text}" (${ul.verse}절)`;
+      const ta = document.getElementById('memoSheetTextarea');
+      ta.value = ul.note || '';
+
+      document.getElementById('bottomSheetBackdrop').classList.add('visible');
+      document.getElementById('memoSheet').classList.add('is-open');
+      setTimeout(() => ta.focus(), 250);
+    }
+
+    function closeMemoSheet() {
+      document.getElementById('bottomSheetBackdrop').classList.remove('visible');
+      document.getElementById('memoSheet').classList.remove('is-open');
+      activeHighlightId = null;
+    }
+
+    function saveMemo() {
+      if (!activeHighlightId) { closeMemoSheet(); return; }
+      const note = document.getElementById('memoSheetTextarea').value.trim();
+      Storage.updateUnderline(TODAY, activeHighlightId, { note });
+      closeMemoSheet();
+      showToast(note ? '메모를 저장했어요' : '메모를 비웠어요');
+    }
+
+    // ====== 삭제 ======
+    function deleteHighlight(id) {
+      Storage.removeUnderline(TODAY, id);
+      const mark = document.querySelector(`mark.hl[data-hl-id="${id}"]`);
+      if (mark) {
+        const parent = mark.parentNode;
+        while (mark.firstChild) parent.insertBefore(mark.firstChild, mark);
+        parent.removeChild(mark);
+        parent.normalize();
+      }
+      showToast('밑줄을 지웠어요');
+    }
+
+    // ====== 토스트 ======
+    let toastTimer = null;
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('visible');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => t.classList.remove('visible'), 1800);
     }
 
     // ========== 폰트 크기 (설정에서 변경, 여기서는 적용만) ==========

@@ -205,6 +205,53 @@
       border-radius: var(--radius-md);
     }
 
+    /* 밑줄 친 구절 리스트 */
+    .detail-underlines {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-3);
+    }
+    .detail-underline-item {
+      padding: var(--space-3) var(--space-4);
+      background: var(--bg-soft);
+      border-radius: var(--radius-md);
+      border-left: 3px solid var(--highlight-underline);
+    }
+    .detail-underline-text {
+      font-size: var(--text-body);
+      line-height: 1.6;
+      color: var(--text-body);
+      word-break: keep-all;
+    }
+    .detail-underline-text mark {
+      background: var(--highlight-underline);
+      color: inherit;
+      padding: 0 2px;
+      border-radius: 2px;
+    }
+    .detail-underline-verse {
+      display: inline-block;
+      margin-left: 6px;
+      padding: 1px 8px;
+      border-radius: var(--radius-pill);
+      background: var(--accent-sage-soft);
+      color: var(--accent-sage-text);
+      font-size: var(--text-caption);
+      font-weight: 600;
+      vertical-align: middle;
+    }
+    .detail-underline-note {
+      margin-top: 6px;
+      font-size: var(--text-small);
+      line-height: 1.5;
+      color: var(--text-secondary);
+      white-space: pre-wrap;
+      word-break: keep-all;
+    }
+    .detail-underline-note::before {
+      content: '💭 ';
+    }
+
     /* 오늘의 질문 답변 (Q1/Q2) */
     .detail-questions {
       display: flex;
@@ -359,16 +406,18 @@
         return { date, record, qt, ai };
       }));
 
-      // 의미 있는 기록만 (완료 OR 감정 OR 느낀 점 OR 옛 메모 OR 질문 답변)
+      // 의미 있는 기록만 (완료 OR 감정 OR 느낀 점 OR 옛 메모 OR 질문 답변 OR 밑줄)
       const meaningful = entries.filter(e => {
         const r = e.record;
         const hasAnyAnswer = Array.isArray(r.questionAnswers) &&
                              r.questionAnswers.some(a => a && a.trim());
+        const hasUnderlines = Array.isArray(r.underlines) && r.underlines.length > 0;
         return r.completed ||
                (r.emotions && r.emotions.length > 0) ||
                (r.reflection && r.reflection.trim()) ||
                (r.memo && r.memo.trim()) ||
-               hasAnyAnswer;
+               hasAnyAnswer ||
+               hasUnderlines;
       });
 
       if (meaningful.length === 0) {
@@ -450,6 +499,31 @@
                 </span>
               `).join('')}
             </div>
+          </div>
+        `);
+      }
+
+      // 밑줄 친 구절
+      const underlines = Array.isArray(record.underlines) ? record.underlines : [];
+      if (underlines.length > 0) {
+        const items = underlines.map(ul => {
+          const noteHTML = ul.note && ul.note.trim()
+            ? `<div class="detail-underline-note">${escapeHTML(ul.note)}</div>`
+            : '';
+          return `
+            <div class="detail-underline-item">
+              <div class="detail-underline-text">
+                <mark>${escapeHTML(ul.text || '')}</mark>
+                <span class="detail-underline-verse">${ul.verse}절</span>
+              </div>
+              ${noteHTML}
+            </div>
+          `;
+        }).join('');
+        sections.push(`
+          <div class="record-detail__section">
+            <div class="record-detail__label">밑줄 친 구절</div>
+            <div class="detail-underlines">${items}</div>
           </div>
         `);
       }

@@ -241,6 +241,49 @@ const Storage = {
     });
   },
 
+  // ========================================================================
+  // 밑줄 (하이라이트) 헬퍼
+  // ========================================================================
+
+  /**
+   * 해당 날짜의 밑줄 배열 반환
+   */
+  getUnderlines(date) {
+    return this.get(`records.${date}.underlines`, []);
+  },
+
+  /**
+   * 새 밑줄 추가 (객체 그대로 push)
+   */
+  addUnderline(date, underline) {
+    const list = this.getUnderlines(date);
+    list.push(underline);
+    this.set(`records.${date}.underlines`, list);
+    return underline;
+  },
+
+  /**
+   * id로 밑줄 부분 업데이트 (메모 추가/수정 등)
+   */
+  updateUnderline(date, id, partial) {
+    const list = this.getUnderlines(date);
+    const idx = list.findIndex(u => u.id === id);
+    if (idx === -1) return null;
+    list[idx] = { ...list[idx], ...partial };
+    this.set(`records.${date}.underlines`, list);
+    return list[idx];
+  },
+
+  /**
+   * id로 밑줄 제거
+   */
+  removeUnderline(date, id) {
+    const list = this.getUnderlines(date);
+    const next = list.filter(u => u.id !== id);
+    this.set(`records.${date}.underlines`, next);
+    return list.length !== next.length;
+  },
+
   /**
    * 오늘 이미 완료했는지
    */

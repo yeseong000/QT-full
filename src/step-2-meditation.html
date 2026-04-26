@@ -376,7 +376,22 @@
   <script src="scripts/common.js"></script>
   <script>
     const TODAY = sessionStorage.getItem('qtDate') || Common.todayISO();
-    const FALLBACK_DATE = '2026-04-22';
+    const HAS_EXPLICIT_DATE = !!sessionStorage.getItem('qtDate');
+
+    async function loadWithFallback(kind) {
+      // kind: 'qt' or 'ai'
+      let data = await Common.loadJSON(`../data/${kind}/${TODAY}.json`);
+      if (!data && !HAS_EXPLICIT_DATE) {
+        for (let i = 1; i <= 3; i++) {
+          const d = new Date(new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' }));
+          d.setDate(d.getDate() - i);
+          const fallbackDate = d.toLocaleDateString('sv-SE');
+          data = await Common.loadJSON(`../data/${kind}/${fallbackDate}.json`);
+          if (data) break;
+        }
+      }
+      return data;
+    }
 
     let qtData = null;
     let scriptureMode = 'focus';  // 'focus' | 'full'
@@ -392,10 +407,7 @@
 
     // ========== AI 묵상 로드 ==========
     async function loadAI() {
-      let ai = await Common.loadJSON(`../data/ai/${TODAY}.json`);
-      if (!ai) {
-        ai = await Common.loadJSON(`../data/ai/${FALLBACK_DATE}.json`);
-      }
+      const ai = await loadWithFallback('ai');
 
       if (!ai) {
         document.getElementById('summaryList').innerHTML =
@@ -447,10 +459,7 @@
 
     // ========== 말씀 로드 (토글용) ==========
     async function loadScripture() {
-      let qt = await Common.loadJSON(`../data/qt/${TODAY}.json`);
-      if (!qt) {
-        qt = await Common.loadJSON(`../data/qt/${FALLBACK_DATE}.json`);
-      }
+      const qt = await loadWithFallback('qt');
 
       const container = document.getElementById('versesContainer');
       const labelEl = document.getElementById('scriptureLabel');
