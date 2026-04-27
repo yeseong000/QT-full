@@ -1,0 +1,18 @@
+name = "jumanna-qt-daily"
+main = "src/index.js"
+compatibility_date = "2026-04-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Cron Triggers
+# UTC 20:00 = KST 05:00 (다음 날)
+[triggers]
+crons = ["0 20 * * *"]
+
+# 시크릿은 코드/파일에 적지 않습니다.
+# 배포 전 다음 명령으로 등록하세요:
+#
+#   wrangler secret put OPENAI_API_KEY
+#   wrangler secret put GITHUB_TOKEN
+#   wrangler secret put GITHUB_REPO        # 예: "yeseong000/QT-full"
+#   wrangler secret put GITHUB_BRANCH      # 예: "main"
+#   wrangler secret put DISCORD_WEBHOOK_URL  # (선택) 실패 알림 — 나중에 추가 가능
