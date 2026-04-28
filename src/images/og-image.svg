@@ -1,0 +1,73 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="circle1" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#E8F0EA"/>
+      <stop offset="100%" stop-color="#E8F0EA" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="circle2" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#E8F0EA"/>
+      <stop offset="100%" stop-color="#E8F0EA" stop-opacity="0"/>
+    </radialGradient>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@700&amp;family=Noto+Sans+KR:wght@400;500&amp;display=swap');
+      .font-serif { font-family: 'Noto Serif KR', Georgia, serif; }
+      .font-sans  { font-family: 'Noto Sans KR', Arial, sans-serif; }
+    </style>
+  </defs>
+
+  <!-- 배경 -->
+  <rect width="1200" height="630" fill="#F0F4F2"/>
+
+  <!-- 배경 원 장식 -->
+  <circle cx="1050" cy="120" r="280" fill="url(#circle1)"/>
+  <circle cx="120" cy="530" r="220" fill="url(#circle2)"/>
+
+  <!-- 배경 테두리 원 -->
+  <circle cx="1020" cy="80" r="220" fill="none" stroke="#C9CFC9" stroke-width="1.5" opacity="0.4"/>
+  <circle cx="160" cy="510" r="140" fill="none" stroke="#C9CFC9" stroke-width="1" opacity="0.3"/>
+
+  <!-- 좌측 세로 액센트 라인 -->
+  <rect x="88" y="255" width="4" height="120" rx="2" fill="url(#accentGrad)"/>
+  <defs>
+    <linearGradient id="accentGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#5BA892"/>
+      <stop offset="100%" stop-color="#4A8F7C"/>
+    </linearGradient>
+  </defs>
+
+  <!-- DAILY QT 라벨 -->
+  <text x="120" y="248" class="font-sans"
+        font-family="'Noto Sans KR', Arial, sans-serif"
+        font-size="20" font-weight="500"
+        fill="#5BA892" letter-spacing="8">DAILY QT</text>
+
+  <!-- 메인 타이틀 -->
+  <text x="120" y="360" class="font-serif"
+        font-family="'Noto Serif KR', Georgia, serif"
+        font-size="96" font-weight="700"
+        fill="#2D3A32" letter-spacing="-2">주만나 QT</text>
+
+  <!-- 부제목 -->
+  <text x="120" y="420" class="font-sans"
+        font-family="'Noto Sans KR', Arial, sans-serif"
+        font-size="28" font-weight="400"
+        fill="#7A857E">매일 말씀과 묵상을 함께해요</text>
+
+  <!-- URL 배지 배경 -->
+  <rect x="120" y="462" width="290" height="46" rx="23" fill="#2D3A32"/>
+
+  <!-- URL 배지 점 -->
+  <circle cx="148" cy="485" r="5" fill="#5BA892"/>
+
+  <!-- URL 배지 텍스트 -->
+  <text x="164" y="491" class="font-sans"
+        font-family="'Noto Sans KR', Arial, sans-serif"
+        font-size="18" font-weight="500"
+        fill="#F0F4F2">hainaqt.vercel.app</text>
+
+  <!-- 우측 십자 장식 -->
+  <text x="980" y="370" class="font-serif"
+        font-family="'Noto Serif KR', Georgia, serif"
+        font-size="140" font-weight="400"
+        fill="#4A8F7C" opacity="0.08">✝</text>
+</svg>
