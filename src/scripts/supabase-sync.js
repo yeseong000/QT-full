@@ -85,7 +85,7 @@ const SupabaseSync = {
     const nickname = Storage.getUserName();
     let attempts = 0;
     while (attempts < 5) {
-      const num = String(Math.floor(10000 + Math.random() * 90000));
+      const num = String(Math.floor(1000 + Math.random() * 9000));
       const candidate = `${nickname}#${num}`;
       try {
         const ok = await this.registerHash(candidate, nickname);
@@ -93,9 +93,12 @@ const SupabaseSync = {
           Storage.setUserHash(candidate);
           return candidate;
         }
+        // 중복이면 다음 번호 시도
       } catch (e) {
-        console.warn('해시 등록 실패:', e);
-        return null;
+        // 네트워크 오류: 로컬에 먼저 저장해 유지 (다음 방문 시 재등록 시도)
+        console.warn('해시 서버 등록 실패 (로컬 저장):', e);
+        Storage.setUserHash(candidate);
+        return candidate;
       }
       attempts++;
     }
@@ -109,7 +112,7 @@ const SupabaseSync = {
   async restoreFromHash(userHash) {
     const trimmed = String(userHash || '').trim();
     if (!trimmed) return { ok: false, reason: 'empty' };
-    if (!/^.+#\d{5}$/.test(trimmed)) return { ok: false, reason: 'format' };
+    if (!/^.+#\d{4}$/.test(trimmed)) return { ok: false, reason: 'format' };
 
     try {
       const user = await this.lookupHash(trimmed);

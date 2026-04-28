@@ -212,6 +212,14 @@
       white-space: pre-wrap;
     }
 
+    /* 말씀 속 장면 카드 도입 문장 */
+    .passage-intro {
+      font-size: var(--text-body);
+      color: var(--text-secondary);
+      line-height: 1.7;
+      margin-bottom: 12px;
+    }
+
     /* 말씀 탭 (오늘 범위 / 전체 장) */
     .scripture-tabs {
       display: flex;
@@ -334,6 +342,7 @@
         <span class="meditation-card__icon">✨</span>
         말씀 속 장면
       </h2>
+      <p id="passageIntro" class="passage-intro" style="display:none;"></p>
       <ul class="summary-list" id="summaryList">
         <li class="loading" style="padding:0;">묵상을 준비하고 있어요...</li>
       </ul>
@@ -415,13 +424,30 @@
         return;
       }
 
-      renderSummary(ai.core_summary);
+      // 신·구 스키마 fallback
+      const _ctxParts = (ai.book_context || '').split('. ');
+      const bookOverview = ai.book_overview ||
+        (_ctxParts.slice(0, -1).join('. ') + (_ctxParts.length > 1 ? '.' : '') || ai.book_context || '');
+      const passageIntro = ai.passage_intro ||
+        (_ctxParts.length > 1 ? _ctxParts[_ctxParts.length - 1].trim() : '');
+      const scenes = ai.scenes || ai.core_summary || [];
+
+      renderSummary(scenes, passageIntro);
       renderCharacters(ai.characters);
-      renderBookContext(ai.book_context);
+      renderBookContext(bookOverview);
       renderCommentary(ai.verse_commentary);
     }
 
-    function renderSummary(summary) {
+    function renderSummary(summary, passageIntro) {
+      const introEl = document.getElementById('passageIntro');
+      if (introEl) {
+        if (passageIntro) {
+          introEl.textContent = passageIntro;
+          introEl.style.display = '';
+        } else {
+          introEl.style.display = 'none';
+        }
+      }
       const list = document.getElementById('summaryList');
       if (!Array.isArray(summary) || summary.length === 0) {
         list.innerHTML = '<li class="text-secondary" style="padding:0;">요약이 준비되지 않았어요.</li>';

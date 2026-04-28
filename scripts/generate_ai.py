@@ -96,11 +96,12 @@ def build_user_prompt(qt_data: dict) -> str:
 {verses_text}
 
 [요구사항]
-1. core_summary: 본문의 핵심을 정확히 5개의 짧은 문장으로 요약. 각 문장은 한 줄로 끝나게.
+1. scenes: 본문의 핵심 장면을 정확히 5개의 짧은 문장으로 묘사. 각 문장은 한 줄로 끝나게.
 2. characters: 본문에 등장하는 주요 인물 1~3명. 각 인물당 2~3문장 설명.
-3. book_context: 이 책({qt_data['book_name']})의 전체 흐름과 이 구절의 위치. 3~4문장.
-4. verse_commentary: 본문에서 주목할 만한 단어, 배경, 의미. 3~5문장.
-5. application: "말씀 적용하기" 3개.
+3. book_overview: 이 책({qt_data['book_name']})의 전체 배경과 주제만 설명. 2~3문장. 오늘 구절에 대한 언급 절대 금지.
+4. passage_intro: 오늘 본문이 이 책의 흐름 안에서 어디에 위치하는지. 정확히 1문장.
+5. verse_commentary: 본문에서 주목할 만한 단어, 배경, 의미. 3~5문장.
+6. application: "말씀 적용하기" 3개.
 
    [작성 원칙]
    - 본문에 직접 연결, 본문에 없는 내용 금지
@@ -128,7 +129,11 @@ def build_user_prompt(qt_data: dict) -> str:
    - statement = 첫 문장: 결단형 적용 (짧고 단정)
    - detail = 두 번째 문장: 본문과 연결된 보완 문장 (짧고 단정)
 
-6. prayer: 기도문. 8~14줄. 초원 앱처럼 짧게 줄바꿈된 시적인 형태 (빈 줄 포함 가능).
+7. prayer: 기도문. 11줄 내외(빈 줄 포함 10~13줄 목표). 초원 앱처럼 짧게 줄바꿈된 시적인 형태.
+   - 오늘 본문 등장인물의 감정이나 상황을 먼저 공감하며 시작
+   - 그 인물의 이야기에서 '나'의 이야기로 자연스럽게 전환
+   - 본문의 핵심 단어나 장면을 기도 안에 한 번 이상 녹여 넣기
+   - 마지막은 예수님 이름으로 마무리
 
 [스타일]
 - 모든 텍스트는 한국어
@@ -138,11 +143,12 @@ def build_user_prompt(qt_data: dict) -> str:
 
 JSON 형식으로만 응답하고, 다음 구조를 따르세요:
 {{
-  "core_summary": ["문장1", "문장2", "문장3", "문장4", "문장5"],
+  "scenes": ["문장1", "문장2", "문장3", "문장4", "문장5"],
   "characters": [
     {{"name": "이름", "description": "설명"}}
   ],
-  "book_context": "책 전체 맥락 설명",
+  "book_overview": "책 전체 배경 설명 (오늘 구절 언급 금지)",
+  "passage_intro": "오늘 본문의 위치 (정확히 1문장)",
   "verse_commentary": "구절 해설",
   "application": [
     {{"statement": "저는 오늘, ~.", "detail": "본문과 연결된 짧은 보완 문장 (저/제 사용)."}},
@@ -246,7 +252,7 @@ def generate_mock(qt_data: dict) -> dict:
 def _mock_ruth_1(qt_data: dict) -> dict:
     """룻기 1장 맞춤 샘플 (4/22 실제 본문용)"""
     return {
-        "core_summary": [
+        "scenes": [
             "룻은 나오미를 떠나지 않고 함께 가기로 결심합니다.",
             "\"어머니의 하나님이 나의 하나님이 되시리니\"",
             "나오미는 자신을 '마라'로 불러달라 합니다.",
@@ -263,7 +269,8 @@ def _mock_ruth_1(qt_data: dict) -> dict:
                 "description": "모압 여인이자 나오미의 며느리입니다. 남편을 잃고도 시어머니를 떠나지 않기로 결심합니다. 이방인의 길을 감수하며 헌신을 택한 사람입니다."
             }
         ],
-        "book_context": "룻기는 사사시대라는 혼란의 시기에 피어난 한 이방 여인의 헌신과 회복의 이야기입니다. 짧지만 강렬한 이 책은 '상실'에서 '회복'으로 이어지는 하나님의 섬세한 인도를 보여줍니다. 훗날 룻은 다윗의 증조모가 되어 예수 그리스도의 족보에 오르게 됩니다. 오늘 본문은 이 거대한 이야기의 시작점입니다.",
+        "book_overview": "룻기는 사사시대라는 혼란의 시기에 피어난 한 이방 여인의 헌신과 회복의 이야기입니다. 짧지만 강렬한 이 책은 '상실'에서 '회복'으로 이어지는 하나님의 섬세한 인도를 보여줍니다. 훗날 룻은 다윗의 증조모가 되어 예수 그리스도의 족보에 오르게 됩니다.",
+        "passage_intro": "오늘 본문은 이 거대한 이야기의 시작점입니다.",
         "verse_commentary": "'마라'는 히브리어로 '쓴맛'을 뜻합니다. 나오미는 자신의 고통을 숨기지 않고 솔직히 토로합니다. 그런데 본문 마지막에 '보리 추수가 시작될 때'라는 표현이 덧붙여집니다. 이는 단순한 시간 정보가 아닙니다. 비어 돌아온 그녀에게 다시 채우심이 시작될 것을 알리는 복선입니다.",
         "application": [
             {
@@ -281,17 +288,15 @@ def _mock_ruth_1(qt_data: dict) -> dict:
         ],
         "prayer": [
             "주님,",
-            "비어 돌아온 나오미에게",
-            "보리 추수의 때를 허락하신 주님.",
+            "룻이 낯선 밭에 서서",
+            "이삭을 줍던 그 마음을 생각합니다.",
             "",
-            "저의 쓰라린 자리에도",
-            "회복의 계절을 보내주옵소서.",
+            "두렵지만 내딛었던 그 발걸음처럼,",
+            "오늘 제가 선 낯선 자리에서도",
+            "주님이 이미 예비하심을 믿게 하소서.",
             "",
-            "룻처럼 흔들리지 않는 헌신으로",
-            "주님을 따르게 하시고,",
-            "",
-            "나오미처럼 솔직하게",
-            "주님께 아뢰게 하옵소서.",
+            "작은 은혜에 감사하는 눈을 주시고,",
+            "겸손히 손을 내밀게 하옵소서.",
             "",
             "예수님의 이름으로 기도합니다. 아멘."
         ]
@@ -304,7 +309,7 @@ def _mock_generic(qt_data: dict) -> dict:
     book = qt_data.get("book_name", "성경")
 
     return {
-        "core_summary": [
+        "scenes": [
             f"오늘 본문은 '{title}'이라는 주제를 담고 있습니다.",
             "하나님은 말씀을 통해 우리에게 다가오십니다.",
             "본문 속 인물들의 삶에 주목합니다.",
@@ -317,7 +322,8 @@ def _mock_generic(qt_data: dict) -> dict:
                 "description": f"{book} 본문에 등장하는 주요 인물입니다. 삶의 순간마다 하나님의 임재를 경험합니다. 이들의 이야기는 오늘 우리에게도 살아있는 말씀입니다."
             }
         ],
-        "book_context": f"{book}은 구약/신약 성경의 한 부분으로, 하나님의 구원 역사를 보여주는 중요한 책입니다. 오늘 본문은 이 책의 큰 흐름 속에서 특별한 위치를 차지합니다. 전체 맥락을 이해하면 본문의 의미가 더 풍성해집니다.",
+        "book_overview": f"{book}은 구약/신약 성경의 한 부분으로, 하나님의 구원 역사를 보여주는 중요한 책입니다. 전체 맥락을 이해하면 본문의 의미가 더 풍성해집니다.",
+        "passage_intro": "오늘 본문은 이 책의 큰 흐름 속에서 특별한 위치를 차지합니다.",
         "verse_commentary": "오늘 본문에서 주목할 만한 표현들이 있습니다. 성경 원어의 뉘앙스와 당시 역사적 배경을 함께 살펴보면 본문이 더 깊이 이해됩니다. 하나님은 말씀을 통해 오늘도 우리에게 말씀하십니다.",
         "application": [
             {
@@ -483,10 +489,16 @@ def validate(ai_data: dict) -> list:
     """AI_PROMPT.md 기준으로 검증. 경고 리스트 반환."""
     warnings = []
 
-    # core_summary: 5줄
-    summary = ai_data.get("core_summary", [])
-    if len(summary) != 5:
-        warnings.append(f"core_summary가 정확히 5줄이 아님 (현재 {len(summary)}줄)")
+    # scenes: 5개
+    scenes = ai_data.get("scenes", [])
+    if len(scenes) != 5:
+        warnings.append(f"scenes가 정확히 5개가 아님 (현재 {len(scenes)}개)")
+
+    # book_overview / passage_intro 존재 확인
+    if not ai_data.get("book_overview"):
+        warnings.append("book_overview 필드 없음")
+    if not ai_data.get("passage_intro"):
+        warnings.append("passage_intro 필드 없음")
 
     # characters: 1~3명
     chars = ai_data.get("characters", [])
@@ -498,10 +510,10 @@ def validate(ai_data: dict) -> list:
     if len(app) != 3:
         warnings.append(f"application이 정확히 3개가 아님 (현재 {len(app)}개)")
 
-    # prayer: 8~14줄
+    # prayer: 10~13줄 (빈 줄 포함)
     prayer = ai_data.get("prayer", [])
-    if not (8 <= len(prayer) <= 14):
-        warnings.append(f"prayer가 8~14줄 범위를 벗어남 (현재 {len(prayer)}줄)")
+    if not (10 <= len(prayer) <= 13):
+        warnings.append(f"prayer가 10~13줄 범위를 벗어남 (현재 {len(prayer)}줄)")
 
     # 금지어 검사
     all_text = json.dumps(ai_data, ensure_ascii=False)
@@ -609,7 +621,7 @@ def main() -> int:
         log(f"저장 완료: {output_path}", "OK")
 
     log("=" * 50)
-    log(f"요약:     {len(ai_data.get('core_summary', []))}줄")
+    log(f"장면:     {len(ai_data.get('scenes', []))}개")
     log(f"인물:     {len(ai_data.get('characters', []))}명")
     log(f"적용:     {len(ai_data.get('application', []))}개")
     log(f"기도문:   {len(ai_data.get('prayer', []))}줄")

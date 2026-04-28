@@ -4,16 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=1200">
   <title>OG 이미지 1200×630</title>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@700&family=Noto+Sans+KR:wght@400;500&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@700&family=Noto+Sans+KR:wght@500;700&display=swap">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-
-    html, body {
-      width: 1200px;
-      height: 630px;
-      overflow: hidden;
-      background: #F0F4F2;
-    }
+    html, body { width: 1200px; height: 630px; overflow: hidden; background: #F0F4F2; }
 
     .og-card {
       width: 1200px;
@@ -25,141 +19,109 @@
       align-items: center;
     }
 
-    .bg-circle-1 {
+    /* 배경 원 */
+    .bg-circle {
       position: absolute;
-      width: 500px;
-      height: 500px;
+      width: 560px;
+      height: 560px;
       border-radius: 50%;
-      background: radial-gradient(circle, #E8F0EA 0%, transparent 70%);
-      top: -120px;
-      right: -60px;
+      background: radial-gradient(circle, #dde9e1 0%, transparent 70%);
+      top: -140px;
+      right: -80px;
     }
-    .bg-circle-2 {
+    .bg-circle2 {
       position: absolute;
-      width: 360px;
-      height: 360px;
+      width: 340px;
+      height: 340px;
       border-radius: 50%;
-      background: radial-gradient(circle, #E8F0EA 0%, transparent 70%);
+      background: radial-gradient(circle, #dde9e1 0%, transparent 70%);
       bottom: -100px;
-      left: -60px;
+      left: -40px;
     }
     .bg-arc {
       position: absolute;
-      width: 320px;
-      height: 320px;
+      width: 380px;
+      height: 380px;
       border-radius: 50%;
-      border: 1.5px solid #C9CFC9;
-      opacity: 0.4;
-      top: -80px;
-      right: 60px;
-    }
-    .bg-arc-2 {
-      position: absolute;
-      width: 200px;
-      height: 200px;
-      border-radius: 50%;
-      border: 1px solid #C9CFC9;
-      opacity: 0.3;
-      bottom: 40px;
-      left: 80px;
+      border: 1.5px solid #b8c8bc;
+      opacity: 0.45;
+      top: -100px;
+      right: 40px;
     }
 
-    .accent-line {
+    /* 십자가 — 크고 선명하게 */
+    .cross {
       position: absolute;
-      left: 88px;
+      right: 80px;
       top: 50%;
       transform: translateY(-50%);
-      width: 4px;
-      height: 120px;
-      background: linear-gradient(to bottom, #5BA892, #4A8F7C);
-      border-radius: 2px;
-    }
-
-    .deco-cross {
-      position: absolute;
-      right: 108px;
-      top: 50%;
-      transform: translateY(-52%);
       font-family: 'Noto Serif KR', Georgia, serif;
-      font-size: 160px;
+      font-size: 320px;
       font-weight: 400;
-      color: #4A8F7C;
-      opacity: 0.07;
+      color: #5BA892;
+      opacity: 0.18;
       line-height: 1;
+      user-select: none;
     }
 
+    /* 좌측 액센트 라인 */
+    .accent-line {
+      position: absolute;
+      left: 80px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 5px;
+      height: 200px;
+      background: linear-gradient(to bottom, #5BA892, #4A8F7C);
+      border-radius: 3px;
+    }
+
+    /* 콘텐츠 */
     .content {
       position: relative;
       z-index: 10;
-      padding: 0 120px;
+      padding: 0 112px;
     }
 
     .eyebrow {
       font-family: 'Noto Sans KR', Arial, sans-serif;
-      font-size: 18px;
-      font-weight: 500;
+      font-size: 28px;
+      font-weight: 700;
       color: #5BA892;
-      letter-spacing: 0.14em;
-      margin-bottom: 24px;
+      letter-spacing: 0.18em;
+      margin-bottom: 20px;
     }
 
     .main-title {
       font-family: 'Noto Serif KR', Georgia, serif;
-      font-size: 88px;
+      font-size: 108px;
       font-weight: 700;
       color: #2D3A32;
-      line-height: 1.1;
-      margin-bottom: 24px;
+      line-height: 1.05;
+      margin-bottom: 28px;
       letter-spacing: -0.02em;
     }
 
     .subtitle {
       font-family: 'Noto Sans KR', Arial, sans-serif;
-      font-size: 26px;
-      font-weight: 400;
-      color: #7A857E;
-      margin-bottom: 44px;
-    }
-
-    .url-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-      background: #2D3A32;
-      color: #F0F4F2;
-      font-family: 'Noto Sans KR', Arial, sans-serif;
-      font-size: 18px;
+      font-size: 32px;
       font-weight: 500;
-      padding: 12px 24px;
-      border-radius: 100px;
-    }
-
-    .url-dot {
-      width: 7px;
-      height: 7px;
-      background: #5BA892;
-      border-radius: 50%;
-      flex-shrink: 0;
+      color: #7A857E;
+      line-height: 1.5;
     }
   </style>
 </head>
 <body>
   <div class="og-card">
-    <div class="bg-circle-1"></div>
-    <div class="bg-circle-2"></div>
+    <div class="bg-circle"></div>
+    <div class="bg-circle2"></div>
     <div class="bg-arc"></div>
-    <div class="bg-arc-2"></div>
+    <div class="cross">✝</div>
     <div class="accent-line"></div>
-    <div class="deco-cross">✝</div>
 
     <div class="content">
-      <div class="eyebrow">DAILY QT</div>
-      <div class="main-title">주만나 QT</div>
+      <div class="main-title">DAILY QT</div>
       <div class="subtitle">매일 말씀과 묵상을 함께해요</div>
-      <div class="url-badge">
-        <span class="url-dot"></span>
-        hainaqt.vercel.app
-      </div>
     </div>
   </div>
 </body>
