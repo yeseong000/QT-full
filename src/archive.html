@@ -281,6 +281,22 @@
       white-space: pre-wrap;
       word-break: keep-all;
     }
+    .detail-question-q {
+      font-size: var(--text-small);
+      color: var(--text-secondary);
+      line-height: 1.6;
+      margin-bottom: var(--space-2);
+      word-break: keep-all;
+      font-style: italic;
+    }
+    .record-detail__date-header {
+      font-size: var(--text-small);
+      color: var(--text-secondary);
+      font-weight: 600;
+      padding-bottom: var(--space-3);
+      border-bottom: 1px solid var(--border-light);
+      margin-bottom: var(--space-3);
+    }
 
     /* 감정 칩 (펼친 뷰용) */
     .detail-emotions {
@@ -541,6 +557,7 @@
 
       // 오늘의 질문 답변 (Q1/Q2)
       const answers = Array.isArray(record.questionAnswers) ? record.questionAnswers : [];
+      const questions = Array.isArray(qt?.oryun_questions) ? qt.oryun_questions : [];
       const hasAnswers = answers.some(a => a && a.trim());
       if (hasAnswers) {
         sections.push(`
@@ -549,9 +566,11 @@
             <div class="detail-questions">
               ${answers.map((a, i) => {
                 if (!a || !a.trim()) return '';
+                const qText = questions[i] || '';
                 return `
                   <div class="detail-question-item">
                     <div class="detail-question-num">Q${i + 1}</div>
+                    ${qText ? `<div class="detail-question-q">${escapeHTML(qText)}</div>` : ''}
                     <div class="detail-question-text">${escapeHTML(a)}</div>
                   </div>
                 `;
