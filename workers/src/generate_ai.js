@@ -1,45 +1,54 @@
-// scripts/generate_ai.py 의 generate_real() 2-pass 흐름을 그대로 옮긴 파일입니다.
+// OpenAI 대신 Anthropic Claude API를 사용합니다.
+// 한국 등 일부 지역에서 OpenAI API가 403을 반환하는 문제를 우회합니다.
 
 import { SYSTEM_PROMPT, REFINE_SYSTEM_PROMPT, buildUserPrompt, buildRefinePrompt } from './prompts.js';
 import { log } from './util.js';
 
-const MODEL = 'gpt-4o-mini';
-const PRICE_INPUT_PER_1M = 0.15;
-const PRICE_OUTPUT_PER_1M = 0.60;
-const USD_TO_KRW = 1500;
-const OPENAI_URL = 'https://api.openai.com/v1/chat/completions';
+const MODEL = 'claude-haiku-4-5-20251001';
+const PRICE_INPUT_PER_1M = 0.80;
+const PRICE_OUTPUT_PER_1M = 4.00;
+const USD_TO_KRW = 1400;
+const CLAUDE_URL = 'https://api.anthropic.com/v1/messages';
+const MAX_TOKENS = 4096;
 
 function calcCost(usage) {
   const costUsd =
-    (usage.prompt_tokens / 1_000_000) * PRICE_INPUT_PER_1M +
-    (usage.completion_tokens / 1_000_000) * PRICE_OUTPUT_PER_1M;
+    (usage.input_tokens / 1_000_000) * PRICE_INPUT_PER_1M +
+    (usage.output_tokens / 1_000_000) * PRICE_OUTPUT_PER_1M;
   return {
-    input_tokens: usage.prompt_tokens,
-    output_tokens: usage.completion_tokens,
-    total_tokens: usage.total_tokens,
+    input_tokens: usage.input_tokens,
+    output_tokens: usage.output_tokens,
+    total_tokens: usage.input_tokens + usage.output_tokens,
     cost_usd: Math.round(costUsd * 1_000_000) / 1_000_000,
     cost_krw: Math.round(costUsd * USD_TO_KRW * 100) / 100,
   };
 }
 
-async function callOpenAI(apiKey, messages, temperature) {
-  const res = await fetch(OPENAI_URL, {
+async function callClaude(apiKey, systemPrompt, userPrompt, temperature, prefill = '{') {
+  const messages = [
+    { role: 'user', content: userPrompt },
+    { role: 'assistant', content: prefill },
+  ];
+
+  const res = await fetch(CLAUDE_URL, {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${apiKey}`,
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
       model: MODEL,
+      system: systemPrompt,
       messages,
-      response_format: { type: 'json_object' },
+      max_tokens: MAX_TOKENS,
       temperature,
     }),
   });
 
   if (!res.ok) {
     const errText = await res.text();
-    throw new Error(`OpenAI API ${res.status}: ${errText.slice(0, 500)}`);
+    throw new Error(`Claude API ${res.status}: ${errText.slice(0, 500)}`);
   }
 
   return await res.json();
@@ -47,19 +56,13 @@ async function callOpenAI(apiKey, messages, temperature) {
 
 async function callPass1(apiKey, qtData) {
   const userPrompt = buildUserPrompt(qtData);
-  const response = await callOpenAI(
-    apiKey,
-    [
-      { role: 'system', content: SYSTEM_PROMPT },
-      { role: 'user', content: userPrompt },
-    ],
-    0.7,
-  );
+  const response = await callClaude(apiKey, SYSTEM_PROMPT, userPrompt, 0.7);
 
-  const content = response.choices?.[0]?.message?.content;
-  if (!content) throw new Error('1차 응답 본문이 비어있습니다');
+  const rawText = response.content?.[0]?.text;
+  if (!rawText) throw new Error('1차 응답 본문이 비어있습니다');
 
-  const aiData = JSON.parse(content);
+  const jsonText = '{' + rawText;
+  const aiData = JSON.parse(jsonText);
   const cost = calcCost(response.usage);
   log(
     'OK',
@@ -72,19 +75,14 @@ async function callPass1(apiKey, qtData) {
 
 async function callPass2(apiKey, application, qtData) {
   const userPrompt = buildRefinePrompt(application, qtData);
-  const response = await callOpenAI(
-    apiKey,
-    [
-      { role: 'system', content: REFINE_SYSTEM_PROMPT },
-      { role: 'user', content: userPrompt },
-    ],
-    0.3,
-  );
+  const prefill = '{\n  "application":';
+  const response = await callClaude(apiKey, REFINE_SYSTEM_PROMPT, userPrompt, 0.3, prefill);
 
-  const content = response.choices?.[0]?.message?.content;
-  if (!content) throw new Error('2차 응답 본문이 비어있습니다');
+  const rawText = response.content?.[0]?.text;
+  if (!rawText) throw new Error('2차 응답 본문이 비어있습니다');
 
-  const result = JSON.parse(content);
+  const jsonText = prefill + rawText;
+  const result = JSON.parse(jsonText);
   const refined = result.application;
   if (!Array.isArray(refined) || refined.length !== 3) {
     throw new Error('2차 정제 결과 구조 오류: application이 3개 리스트가 아님');

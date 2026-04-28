@@ -34,7 +34,7 @@ export async function notifyFailure(env, date, error) {
     `에러: ${error?.message || String(error)}`,
     '```',
     'Cloudflare Dashboard → Workers → jumanna-qt-daily → Logs 에서 자세한 로그를 확인하세요.',
-    '백업 워크플로가 KST 06:00 에 다시 시도합니다.',
+    '백업 워크플로가 KST 05:00 에 다시 시도합니다.',
   ].join('\n');
   await postDiscord(env, msg);
 }

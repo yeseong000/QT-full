@@ -508,6 +508,11 @@ input, textarea {
   /* 스와이프 다운 닫기를 위한 트랜지션 — 드래그 중엔 .is-dragging으로 끔 */
   transition: transform var(--duration-base) var(--ease-out);
   touch-action: pan-y;
+  /* 화면보다 높아지면 스크롤로 처리 */
+  max-height: 90svh;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
 }
 .modal-sheet.is-dragging {
   transition: none;

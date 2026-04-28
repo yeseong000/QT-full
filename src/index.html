@@ -801,6 +801,8 @@
         if (e.target.closest(interactiveSelector)) return;
         // 마우스의 경우 좌클릭만
         if (e.pointerType === 'mouse' && e.button !== 0) return;
+        // 시트 내부가 스크롤된 상태면 스와이프 닫기 비활성 (스크롤 먼저)
+        if (sheet.scrollTop > 0) return;
         dragging = true;
         startY = e.clientY;
         deltaY = 0;

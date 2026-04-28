@@ -5,8 +5,8 @@ name: Daily QT Backup (Worker 실패 대비)
 
 on:
   schedule:
-    # KST 06:00 = UTC 21:00 (전날) — Worker(KST 05:00)보다 1시간 늦게 가드 통과 시에만 실행
-    - cron: '0 21 * * *'
+    # KST 05:00 = UTC 20:00 (전날) — Worker(KST 04:00)보다 1시간 늦게 가드 통과 시에만 실행
+    - cron: '0 20 * * *'
   workflow_dispatch:   # 수동 실행 버튼
 
 concurrency:

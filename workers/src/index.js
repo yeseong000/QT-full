@@ -1,79 +1,62 @@
-// 주만나 QT 일일 자동화 Worker 진입점.
-// scheduled() 핸들러는 매일 KST 05:00 에 Cron Trigger로 호출됩니다.
-// fetch() 핸들러는 GET /run 으로 수동 트리거할 때 사용합니다.
+// Cloudflare Worker — 타이머 역할만 담당합니다.
+// 매일 KST 04:00 에 GitHub Actions workflow_dispatch를 호출하여
+// 크롤링·AI 생성·커밋은 GitHub Actions(미국 서버)에 위임합니다.
 
-import { fetchQt } from './fetch_qt.js';
-import { generateAi } from './generate_ai.js';
-import { commitJson } from './github.js';
 import { notifyFailure } from './notify.js';
-import { validateAi } from './validate.js';
-import { log, nowKstIso, todayKst } from './util.js';
+import { log, todayKst } from './util.js';
 
-async function runPipeline(env) {
+const WORKFLOW_FILE = 'daily_qt_backup.yml';
+
+async function triggerGitHubActions(env) {
+  const [owner, repo] = env.GITHUB_REPO.split('/');
+  const url = `https://api.github.com/repos/${owner}/${repo}/actions/workflows/${WORKFLOW_FILE}/dispatches`;
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${env.GITHUB_TOKEN}`,
+      'Accept': 'application/vnd.github+json',
+      'X-GitHub-Api-Version': '2022-11-28',
+      'Content-Type': 'application/json',
+      'User-Agent': 'jumanna-qt-daily-worker',
+    },
+    body: JSON.stringify({ ref: 'main' }),
+  });
+
+  // GitHub Actions dispatch 성공 시 204 No Content 반환
+  if (res.status !== 204) {
+    const errText = await res.text();
+    throw new Error(`GitHub Actions 트리거 실패 ${res.status}: ${errText.slice(0, 300)}`);
+  }
+
+  log('OK', `GitHub Actions 트리거 완료 (${WORKFLOW_FILE})`);
+}
+
+async function run(env) {
   const date = todayKst();
-  log('INFO', `===== 파이프라인 시작 (${date}) =====`);
+  log('INFO', `===== Cloudflare Worker 시작 (${date}) =====`);
 
-  let qtData;
   try {
-    qtData = await fetchQt();
+    await triggerGitHubActions(env);
+    log('INFO', '===== 트리거 완료 — GitHub Actions가 이어서 처리합니다 =====');
   } catch (err) {
-    log('ERR', `QT 크롤링 실패: ${err.message}`);
+    log('ERR', `트리거 실패: ${err.message}`);
     await notifyFailure(env, date, err);
     throw err;
   }
-
-  let aiResult;
-  try {
-    aiResult = await generateAi(qtData, env.OPENAI_API_KEY);
-  } catch (err) {
-    log('ERR', `AI 생성 실패: ${err.message}`);
-    await notifyFailure(env, date, err);
-    throw err;
-  }
-
-  const { aiData, costInfo, model } = aiResult;
-
-  const warnings = validateAi(aiData);
-  for (const w of warnings) log('WARN', w);
-  if (warnings.length === 0) log('OK', '검증 통과 ✓');
-
-  const aiResultPayload = {
-    date,
-    scripture_ref: qtData.scripture_ref,
-    title: qtData.title,
-    ...aiData,
-    generated_at: nowKstIso(),
-    model,
-    _cost: costInfo,
-  };
-
-  try {
-    await commitJson(env, `data/qt/${date}.json`, qtData,
-      `chore(data): 자동 크롤링 · ${date} QT (Worker)`);
-    await commitJson(env, `data/ai/${date}.json`, aiResultPayload,
-      `chore(data): 자동 크롤링 · ${date} AI 묵상 (Worker)`);
-  } catch (err) {
-    log('ERR', `GitHub 커밋 실패: ${err.message}`);
-    await notifyFailure(env, date, err);
-    throw err;
-  }
-
-  log('INFO', `===== 파이프라인 완료 (${date}) =====`);
 }
 
 export default {
-  // Cron Trigger 진입점
   async scheduled(event, env, ctx) {
-    ctx.waitUntil(runPipeline(env));
+    ctx.waitUntil(run(env));
   },
 
-  // 수동 트리거: GET /run
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
     if (url.pathname === '/run') {
       try {
-        await runPipeline(env);
-        return new Response('OK', {
+        await run(env);
+        return new Response('OK — GitHub Actions 트리거 완료', {
           status: 200,
           headers: { 'Content-Type': 'text/plain; charset=utf-8' },
         });
