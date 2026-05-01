@@ -66,28 +66,23 @@ jobs:
 
       - name: Discord 성공 알림
         if: success()
+        continue-on-error: true
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
         run: |
-          if [ -z "${DISCORD_WEBHOOK_URL}" ]; then
-            echo "DISCORD_WEBHOOK_URL 미설정 — 알림 건너뜀"
-            exit 0
-          fi
+          [ -z "${DISCORD_WEBHOOK_URL}" ] && exit 0
           DATE=$(TZ=Asia/Seoul date '+%Y-%m-%d')
-          TITLE=$(python -c "import json; d=json.load(open('data/qt/${DATE}.json')); print(d['title'])" 2>/dev/null || echo "알 수 없음")
-          REF=$(python -c "import json; d=json.load(open('data/qt/${DATE}.json')); print(d['scripture_ref'])" 2>/dev/null || echo "")
-          PAYLOAD=$(python -c "import json, sys; print(json.dumps({'content': '✅ **${DATE}** · ' + sys.argv[1] + ' (' + sys.argv[2] + ') 묵상 생성 완료'}))" "$TITLE" "$REF")
-          curl -s -X POST "$DISCORD_WEBHOOK_URL" \
-            -H "Content-Type: application/json" \
-            -d "$PAYLOAD"
+          TITLE=$(python -c "import json;d=json.load(open('data/qt/${DATE}.json',encoding='utf-8'));print(d.get('title','알 수 없음'))" 2>/dev/null || echo "알 수 없음")
+          REF=$(python -c "import json;d=json.load(open('data/qt/${DATE}.json',encoding='utf-8'));print(d.get('scripture_ref',''))" 2>/dev/null || echo "")
+          export DATE TITLE REF
+          python -c "import json,os,urllib.request as u;url=os.environ['DISCORD_WEBHOOK_URL'];msg='✅ **'+os.environ['DATE']+'** · '+os.environ['TITLE']+' ('+os.environ['REF']+') 묵상 생성 완료';data=json.dumps({'content':msg}).encode('utf-8');u.urlopen(u.Request(url,data=data,headers={'Content-Type':'application/json'},method='POST'));print('Discord 전송:',msg)"
 
       - name: Discord 실패 알림
         if: failure()
+        continue-on-error: true
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
         run: |
-          if [ -z "${DISCORD_WEBHOOK_URL}" ]; then exit 0; fi
-          DATE=$(TZ=Asia/Seoul date '+%Y-%m-%d')
-          curl -s -X POST "$DISCORD_WEBHOOK_URL" \
-            -H "Content-Type: application/json" \
-            -d "{\"content\": \"❌ **주만나 QT 자동 생성 실패** (${DATE})\\nGitHub Actions 로그를 확인하세요.\"}"
+          [ -z "${DISCORD_WEBHOOK_URL}" ] && exit 0
+          DATE=$(TZ=Asia/Seoul date '+%Y-%m-%d') && export DATE
+          python -c "import json,os,urllib.request as u;url=os.environ['DISCORD_WEBHOOK_URL'];d=os.environ['DATE'];msg='❌ **주만나 QT 자동 생성 실패** ('+d+')\nGitHub Actions 로그를 확인하세요.';data=json.dumps({'content':msg}).encode('utf-8');u.urlopen(u.Request(url,data=data,headers={'Content-Type':'application/json'},method='POST'))"
