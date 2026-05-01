@@ -156,15 +156,17 @@
       flex: 1;
     }
 
-    /* 토스트 (간단 안내) */
+    /* 토스트 (간단 안내) — 테마별 카드 톤으로 자연스럽게 */
     .toast {
       position: fixed;
       left: 50%;
       bottom: calc(110px + env(safe-area-inset-bottom));
       transform: translateX(-50%) translateY(20px);
       padding: 12px 18px;
-      background: var(--text-primary);
-      color: white;
+      background: var(--bg-card);
+      color: var(--text-primary);
+      border: 1px solid var(--border-subtle);
+      box-shadow: var(--shadow-float);
       border-radius: var(--radius-pill);
       font-size: var(--text-small);
       z-index: 300;
@@ -178,14 +180,16 @@
       transform: translateX(-50%) translateY(0);
     }
 
-    /* FAB 툴팁 (app-container 내부 absolute) */
+    /* FAB 툴팁 (app-container 내부 absolute) — 테마별 카드 톤 */
     .fab-tooltip {
       position: absolute;
       right: 20px;
       bottom: 196px;
       padding: 10px 14px;
-      background: var(--text-primary);
-      color: white;
+      background: var(--bg-card);
+      color: var(--text-primary);
+      border: 1px solid var(--border-subtle);
+      box-shadow: var(--shadow-float);
       border-radius: var(--radius-md);
       font-size: var(--text-small);
       z-index: 60;
@@ -201,11 +205,13 @@
     .fab-tooltip::after {
       content: '';
       position: absolute;
-      bottom: -5px;
+      bottom: -6px;
       right: 22px;
       width: 10px;
       height: 10px;
-      background: var(--text-primary);
+      background: var(--bg-card);
+      border-right: 1px solid var(--border-subtle);
+      border-bottom: 1px solid var(--border-subtle);
       transform: rotate(45deg);
     }
   </style>
