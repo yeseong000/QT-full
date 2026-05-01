@@ -85,24 +85,27 @@ jobs:
             echo "✅ ${DATE} 백업 데이터 커밋 & 푸시 완료"
           fi
 
-      - name: Discord 성공 알림
-        if: steps.check.outputs.skip != 'true' && success() && env.DISCORD_WEBHOOK_URL != ''
+      - name: Discord 성공 알림 (백업 파이프라인 실행)
+        if: steps.check.outputs.skip != 'true' && success()
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
         run: |
+          if [ -z "${DISCORD_WEBHOOK_URL}" ]; then exit 0; fi
           DATE=$(TZ=Asia/Seoul date '+%Y-%m-%d')
           TITLE=$(python -c "import json; d=json.load(open('data/qt/${DATE}.json')); print(d['title'])" 2>/dev/null || echo "알 수 없음")
           REF=$(python -c "import json; d=json.load(open('data/qt/${DATE}.json')); print(d['scripture_ref'])" 2>/dev/null || echo "")
+          PAYLOAD=$(python -c "import json, sys; print(json.dumps({'content': '✅ **${DATE}** · ' + sys.argv[1] + ' (' + sys.argv[2] + ') 묵상 생성 완료 (백업 실행)'}))" "$TITLE" "$REF")
           curl -s -X POST "$DISCORD_WEBHOOK_URL" \
             -H "Content-Type: application/json" \
-            -d "{\"content\": \"✅ **${DATE}** · ${TITLE} (${REF}) 묵상 생성 완료\"}"
+            -d "$PAYLOAD"
 
       - name: Discord 실패 알림
-        if: failure() && env.DISCORD_WEBHOOK_URL != ''
+        if: failure()
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
         run: |
+          if [ -z "${DISCORD_WEBHOOK_URL}" ]; then exit 0; fi
           DATE=$(TZ=Asia/Seoul date '+%Y-%m-%d')
           curl -s -X POST "$DISCORD_WEBHOOK_URL" \
             -H "Content-Type: application/json" \
-            -d "{\"content\": \"❌ **주만나 QT 자동 생성 실패** (${DATE})\n GitHub Actions 로그를 확인하세요.\"}"
+            -d "{\"content\": \"❌ **주만나 QT 자동 생성 실패** (${DATE})\\nGitHub Actions 로그를 확인하세요.\"}"
