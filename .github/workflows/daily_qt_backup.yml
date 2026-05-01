@@ -96,7 +96,7 @@ jobs:
           TITLE=$(python -c "import json;d=json.load(open('data/qt/${DATE}.json',encoding='utf-8'));print(d.get('title','알 수 없음'))" 2>/dev/null || echo "알 수 없음")
           REF=$(python -c "import json;d=json.load(open('data/qt/${DATE}.json',encoding='utf-8'));print(d.get('scripture_ref',''))" 2>/dev/null || echo "")
           export DATE TITLE REF
-          python -c "import json,os,urllib.request as u;url=os.environ['DISCORD_WEBHOOK_URL'];msg='✅ **'+os.environ['DATE']+'** · '+os.environ['TITLE']+' ('+os.environ['REF']+') 묵상 생성 완료 (백업 실행)';data=json.dumps({'content':msg}).encode('utf-8');u.urlopen(u.Request(url,data=data,headers={'Content-Type':'application/json'},method='POST'));print('Discord 전송:',msg)"
+          python -c "import json,os,urllib.request as u;url=os.environ['DISCORD_WEBHOOK_URL'].lstrip('﻿').strip();msg='✅ **'+os.environ['DATE']+'** · '+os.environ['TITLE']+' ('+os.environ['REF']+') 묵상 생성 완료 (백업 실행)';data=json.dumps({'content':msg}).encode('utf-8');u.urlopen(u.Request(url,data=data,headers={'Content-Type':'application/json'},method='POST'));print('Discord 전송:',msg)"
 
       - name: Discord 실패 알림
         if: failure()
@@ -106,4 +106,4 @@ jobs:
         run: |
           [ -z "${DISCORD_WEBHOOK_URL}" ] && exit 0
           DATE=$(TZ=Asia/Seoul date '+%Y-%m-%d') && export DATE
-          python -c "import json,os,urllib.request as u;url=os.environ['DISCORD_WEBHOOK_URL'];d=os.environ['DATE'];msg='❌ **주만나 QT 자동 생성 실패** ('+d+')\nGitHub Actions 로그를 확인하세요.';data=json.dumps({'content':msg}).encode('utf-8');u.urlopen(u.Request(url,data=data,headers={'Content-Type':'application/json'},method='POST'))"
+          python -c "import json,os,urllib.request as u;url=os.environ['DISCORD_WEBHOOK_URL'].lstrip('﻿').strip();d=os.environ['DATE'];msg='❌ **주만나 QT 자동 생성 실패** ('+d+')\nGitHub Actions 로그를 확인하세요.';data=json.dumps({'content':msg}).encode('utf-8');u.urlopen(u.Request(url,data=data,headers={'Content-Type':'application/json'},method='POST'))"
