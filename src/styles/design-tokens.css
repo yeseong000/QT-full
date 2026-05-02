@@ -141,11 +141,13 @@ html[data-font-size="lg"] {
 }
 
 html[data-font-size="lg-xl"] {
-  --text-body: 19.2px;
-  --text-scripture: 21px;
-  --text-hero: 36px;
-  --text-h1: 28.5px;
-  --text-h2: 22.5px;
+  --text-hero: 38px;
+  --text-h1: 30px;
+  --text-h2: 24px;
+  --text-scripture: 22px;
+  --text-body: 20px;
+  --text-small: 17px;
+  --text-caption: 15px;
 }
 
 /* ==========================================================================
