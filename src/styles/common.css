@@ -504,10 +504,6 @@ input, textarea {
   max-width: var(--app-max-width);
   padding-bottom: calc(var(--space-6) + env(safe-area-inset-bottom, 0));
   animation: slideUp var(--duration-slow) var(--ease-out);
-  /* 본문 폰트(--font-sans)가 세리프로 바뀌어도 모달은 영향받지 않도록 고정 */
-  font-family: 'Pretendard Variable', 'Pretendard', -apple-system,
-               BlinkMacSystemFont, 'Apple SD Gothic Neo',
-               'Noto Sans KR', sans-serif;
   /* 스와이프 다운 닫기를 위한 트랜지션 — 드래그 중엔 .is-dragging으로 끔 */
   transition: transform var(--duration-base) var(--ease-out);
   touch-action: pan-y;

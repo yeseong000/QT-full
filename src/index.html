@@ -237,31 +237,26 @@
     }
     .error { color: #C0392B; }
 
-    /* ---------- 설정 모달 ---------- */
+    /* ========== 설정 모달 ========== */
+
+    /* 헤더: 제목 + 해시 배지 한 줄 */
     .modal-top {
       display: flex;
-      align-items: flex-start;
+      align-items: center;
       justify-content: space-between;
       gap: var(--space-3);
-      margin-bottom: var(--space-6);
+      margin-bottom: var(--space-2);
     }
-    .modal-top-left {
-      display: flex;
-      align-items: baseline;
-      gap: var(--space-3);
-      flex-wrap: wrap;
-      flex: 1;
-    }
-    .modal-top .modal-title { margin-bottom: 0; flex-shrink: 0; }
-    .modal-top .modal-desc  { margin-bottom: 0; }
+    .modal-top .modal-title { margin-bottom: 0; }
+    .modal-desc { margin-bottom: var(--space-4); }
 
     /* 해시 배지 */
     .user-hash-badge {
       display: flex;
       align-items: center;
       gap: 5px;
-      background: var(--bg-base);
-      border: 1px solid rgba(0,0,0,0.08);
+      background: var(--bg-soft);
+      border: 1px solid var(--border-subtle);
       border-radius: 20px;
       padding: 5px 8px 5px 12px;
       font-size: 11px;
@@ -270,9 +265,6 @@
       flex-shrink: 0;
       letter-spacing: 0.02em;
       font-variant-numeric: tabular-nums;
-    }
-    html[data-theme="dark"] .user-hash-badge {
-      border-color: rgba(255,255,255,0.10);
     }
     .hash-copy-btn {
       background: none;
@@ -288,14 +280,22 @@
     }
     .hash-copy-btn:active { opacity: 0.5; }
 
+    /* 설정 항목 공통 */
     .setting-item {
-      margin-bottom: var(--space-6);
+      margin-bottom: var(--space-4);
     }
     .setting-label {
-      font-size: var(--text-body);       /* 14 → 16 살짝 키움 */
-      color: var(--text-primary);        /* secondary → primary 강조 */
-      margin-bottom: var(--space-3);
+      font-size: var(--text-body);
+      color: var(--text-primary);
+      margin-bottom: var(--space-2);
       font-weight: 600;
+      letter-spacing: -0.01em;
+    }
+    .setting-sub-label {
+      font-size: var(--text-small);
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: var(--space-2);
       letter-spacing: -0.01em;
     }
 
@@ -309,43 +309,35 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 8px;
-      padding: 12px 6px 10px;
+      gap: 6px;
+      padding: 10px 6px 8px;
       background: transparent;
       border: 1.5px solid var(--border-subtle);
       border-radius: var(--radius-md);
       cursor: pointer;
-      transition: all var(--duration-base);
+      transition: border-color var(--duration-base), background var(--duration-base);
       -webkit-tap-highlight-color: transparent;
     }
-    .theme-option:active {
-      transform: scale(0.97);
-    }
+    .theme-option:active { transform: scale(0.97); }
     .theme-option.is-selected {
       border-color: var(--accent-sage);
       background: var(--accent-sage-soft);
     }
     .theme-swatch {
-      width: 40px;
-      height: 40px;
+      width: 32px;
+      height: 32px;
       border-radius: 50%;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.10);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
     }
     .theme-label {
       font-size: 12px;
       font-weight: 500;
-      color: var(--text-body);
+      color: var(--text-secondary);
       letter-spacing: -0.01em;
     }
     .theme-option.is-selected .theme-label {
       color: var(--accent-sage-text);
       font-weight: 600;
-    }
-
-    .modal-actions {
-      display: flex;
-      gap: var(--space-2);
-      margin-top: var(--space-6);
     }
 
     /* 폰트 옵션 그리드 */
@@ -358,13 +350,13 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 7px;
-      padding: 14px 8px 12px;
+      gap: 5px;
+      padding: 10px 8px 8px;
       background: transparent;
       border: 1.5px solid var(--border-subtle);
       border-radius: var(--radius-md);
       cursor: pointer;
-      transition: all var(--duration-base);
+      transition: border-color var(--duration-base), background var(--duration-base);
       -webkit-tap-highlight-color: transparent;
     }
     .font-option:active { transform: scale(0.97); }
@@ -381,7 +373,7 @@
     .font-option__label {
       font-size: 12px;
       font-weight: 500;
-      color: var(--text-body);
+      color: var(--text-secondary);
       letter-spacing: -0.01em;
     }
     .font-option.is-selected .font-option__label {
@@ -389,7 +381,55 @@
       font-weight: 600;
     }
 
-    /* 세리프 폰트: 큰 제목 오버플로 방지 — 글자 폭이 더 넓어 줄바꿈/짤림 발생 */
+    /* 다른 기기 불러오기 아코디언 */
+    .restore-accordion__trigger {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      background: none;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      gap: var(--space-2);
+      min-height: 36px;
+    }
+    .restore-accordion__trigger .setting-label { margin-bottom: 0; }
+    .restore-accordion__chevron {
+      transition: transform var(--duration-base) var(--ease-out);
+      color: var(--text-secondary);
+      flex-shrink: 0;
+    }
+    .restore-accordion.is-open .restore-accordion__chevron {
+      transform: rotate(180deg);
+    }
+    .restore-accordion__body {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height var(--duration-slow) var(--ease-out),
+                  opacity var(--duration-base) var(--ease-out);
+      opacity: 0;
+    }
+    .restore-accordion.is-open .restore-accordion__body {
+      max-height: 220px;
+      opacity: 1;
+    }
+    .restore-accordion__desc {
+      font-size: var(--text-small);
+      color: var(--text-secondary);
+      margin: var(--space-3) 0;
+      line-height: 1.6;
+    }
+
+    /* 액션 버튼 */
+    .modal-actions {
+      display: flex;
+      gap: var(--space-2);
+      margin-top: var(--space-4);
+    }
+
+    /* 세리프 폰트: 큰 제목 오버플로 방지 */
     html[data-font-style="noto-serif"] .greeting-text { font-size: 28px; }
     html[data-font-style="noto-serif"] .today-title   { font-size: 25px; }
   </style>
@@ -460,11 +500,10 @@
   <!-- ========== 설정 모달 ========== -->
   <div class="modal-backdrop" id="settingsModal">
     <div class="modal-sheet">
+
+      <!-- 헤더 -->
       <div class="modal-top">
-        <div class="modal-top-left">
-          <h2 class="modal-title">설정</h2>
-          <p class="modal-desc">닉네임은 언제든지 바꿀 수 있어요</p>
-        </div>
+        <h2 class="modal-title">설정</h2>
         <div class="user-hash-badge" id="userHashBadge" style="display:none">
           <span id="userHashText"></span>
           <button class="hash-copy-btn" id="hashCopyBtn" title="복사" aria-label="해시 복사">
@@ -472,7 +511,9 @@
           </button>
         </div>
       </div>
+      <p class="modal-desc">닉네임은 언제든지 바꿀 수 있어요</p>
 
+      <!-- 닉네임 -->
       <div class="setting-item">
         <div class="setting-label">닉네임</div>
         <input
@@ -484,6 +525,7 @@
         >
       </div>
 
+      <!-- 배경 -->
       <div class="setting-item">
         <div class="setting-label">배경</div>
         <div class="theme-grid" id="themeGrid">
@@ -502,8 +544,10 @@
         </div>
       </div>
 
+      <!-- 폰트 (크기 + 스타일 통합) -->
       <div class="setting-item">
-        <div class="setting-label">폰트 크기</div>
+        <div class="setting-label">폰트</div>
+        <div class="setting-sub-label">크기</div>
         <div class="font-option-grid" id="fontSizeGrid">
           <button class="font-option" type="button" data-font-size="md" aria-label="기본 크기">
             <span class="font-option__preview" style="font-size: 16px;">가</span>
@@ -514,10 +558,7 @@
             <span class="font-option__label">크게</span>
           </button>
         </div>
-      </div>
-
-      <div class="setting-item">
-        <div class="setting-label">폰트 스타일</div>
+        <div class="setting-sub-label" style="margin-top: var(--space-3);">스타일</div>
         <div class="font-option-grid" id="fontStyleGrid">
           <button class="font-option" type="button" data-font-style="noto-serif" aria-label="세리프 폰트">
             <span class="font-option__preview" style="font-family: 'Noto Serif KR', serif;">가나다</span>
@@ -530,28 +571,38 @@
         </div>
       </div>
 
-      <div class="setting-item" style="margin-bottom: 0;">
-        <div class="setting-label">다른 기기에서 불러오기</div>
-        <p style="font-size: var(--text-small); color: var(--text-secondary); margin: 0 0 var(--space-3); line-height: 1.6;">
-          이전에 쓰던 해시를 입력하시면 묵상 기록을 불러올 수 있어요.<br>예: 어린양#1234
-        </p>
-        <div style="display:flex; gap: var(--space-3); align-items:center;">
-          <input
-            type="text"
-            class="input-field"
-            id="restoreHashInput"
-            placeholder="닉네임#1234"
-            autocomplete="off"
-            autocapitalize="off"
-            autocorrect="off"
-            spellcheck="false"
-            style="flex: 1; min-width: 0;"
-          >
-          <button class="btn btn-secondary" id="restoreHashBtn" type="button" style="white-space:nowrap; flex-shrink: 0;">불러오기</button>
+      <!-- 다른 기기에서 불러오기 (아코디언) -->
+      <div class="setting-item restore-accordion" style="margin-bottom: 0;">
+        <button class="restore-accordion__trigger" id="restoreToggleBtn" type="button" aria-expanded="false">
+          <span class="setting-label">다른 기기에서 불러오기</span>
+          <svg class="restore-accordion__chevron" width="18" height="18" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
+        </button>
+        <div class="restore-accordion__body" id="restoreAccordionBody">
+          <p class="restore-accordion__desc">
+            이전에 쓰던 해시를 입력하시면<br>묵상 기록을 불러올 수 있어요 (예: 어린양#1234)
+          </p>
+          <div style="display:flex; gap: var(--space-3); align-items:center;">
+            <input
+              type="text"
+              class="input-field"
+              id="restoreHashInput"
+              placeholder="닉네임#1234"
+              autocomplete="off"
+              autocapitalize="off"
+              autocorrect="off"
+              spellcheck="false"
+              style="flex: 1; min-width: 0;"
+            >
+            <button class="btn btn-secondary" id="restoreHashBtn" type="button" style="white-space:nowrap; flex-shrink: 0;">불러오기</button>
+          </div>
+          <div id="restoreStatus" style="font-size: var(--text-small); color: var(--text-secondary); margin-top: var(--space-2); min-height: 1.2em;"></div>
         </div>
-        <div id="restoreStatus" style="font-size: var(--text-small); color: var(--text-secondary); margin-top: var(--space-2); min-height: 1.4em;"></div>
       </div>
 
+      <!-- 액션 버튼 -->
       <div class="modal-actions">
         <button class="btn btn-secondary" id="cancelSettingsBtn">취소</button>
         <button class="btn btn-primary" id="saveSettingsBtn" style="flex: 1;">저장</button>
@@ -566,7 +617,6 @@
   <script>
     // ========== 초기화 ==========
     document.addEventListener('DOMContentLoaded', () => {
-      // iOS PWA에서 내부 스크롤 컨테이너 위치 복원 방지
       const appScroll = document.querySelector('.app-scroll');
       if (appScroll) appScroll.scrollTop = 0;
 
@@ -577,19 +627,14 @@
       setupFontSizeSelector();
       setupFontStyleSelector();
       setupEventListeners();
-
-      // 첫 방문 시 해시 미리 발급 (캐시 삭제 대비 — 묵상 완료 전이라도 서버에 박제)
       ensureHashSilently();
     });
 
     // ========== 해시 자동 발급 ==========
     async function ensureHashSilently() {
       if (typeof SupabaseSync === 'undefined' || !SupabaseSync.isConfigured()) return;
-      try {
-        await SupabaseSync.ensureUserHash();
-      } catch (e) {
-        console.warn('해시 자동 발급 실패 (무시):', e);
-      }
+      try { await SupabaseSync.ensureUserHash(); }
+      catch (e) { console.warn('해시 자동 발급 실패 (무시):', e); }
     }
 
     // ========== 인사말 렌더링 ==========
@@ -614,10 +659,9 @@
 
     // ========== 스트릭 렌더링 ==========
     function renderStreak() {
-      const streak   = Storage.getStreak();
-      const current  = streak.current ?? 0;
-      const total    = streak.totalCompleted ?? 0;
-
+      const streak  = Storage.getStreak();
+      const current = streak.current ?? 0;
+      const total   = streak.totalCompleted ?? 0;
       const streakEl = document.getElementById('streakCount');
       const totalEl  = document.getElementById('streakTotal');
       const sepEl    = document.querySelector('.streak-tab__sep');
@@ -639,7 +683,7 @@
 
     // ========== 오늘의 QT 로드 ==========
     async function loadTodayQT() {
-      const today = Common.todayISO();
+      const today   = Common.todayISO();
       const loading = document.getElementById('todayLoading');
       const content = document.getElementById('todayContent');
       const errorEl = document.getElementById('todayError');
@@ -649,122 +693,173 @@
         for (let i = 1; i <= 3; i++) {
           const d = new Date(new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' }));
           d.setDate(d.getDate() - i);
-          const fallbackDate = d.toLocaleDateString('sv-SE');
-          qt = await Common.loadJSON(`../data/qt/${fallbackDate}.json`);
+          qt = await Common.loadJSON(`../data/qt/${d.toLocaleDateString('sv-SE')}.json`);
           if (qt) break;
         }
       }
 
       loading.style.display = 'none';
-
-      if (!qt) {
-        errorEl.style.display = 'block';
-        return;
-      }
+      if (!qt) { errorEl.style.display = 'block'; return; }
 
       content.style.display = 'block';
-
-      // 이미 완료했는지 확인
-      const record = Storage.getDailyRecord(today);
-      const alreadyDone = record.completed;
-
-      document.getElementById('todayLabel').textContent = alreadyDone
-        ? '오늘의 말씀'
-        : '오늘의 말씀';
+      const alreadyDone = Storage.getDailyRecord(today).completed;
       document.getElementById('todayTitle').textContent = qt.title;
-      document.getElementById('todayRef').textContent = qt.scripture_ref;
+      document.getElementById('todayRef').textContent   = qt.scripture_ref;
 
       const startBtn = document.getElementById('startBtn');
-      if (alreadyDone) {
-        startBtn.textContent = '오늘의 묵상 다시 보기';
+      startBtn.textContent = alreadyDone ? '오늘의 묵상 다시 보기' : '묵상 시작하기';
+      startBtn.onclick = () => { window.location.href = 'qt/step-1-scripture.html'; };
+    }
+
+    // ========== 실시간 미리보기 — 테마별 CSS 변수 맵 ==========
+    const THEME_PREVIEW_VARS = {
+      default: {
+        '--bg-card':          '#FFFFFF',
+        '--bg-soft':          '#E8F0EA',
+        '--bg-input':         '#FAFAF7',
+        '--text-primary':     '#2D3A32',
+        '--text-secondary':   '#7A857E',
+        '--accent-sage':      '#5BA892',
+        '--accent-sage-dark': '#4A8F7C',
+        '--accent-sage-soft': '#E8F0EA',
+        '--accent-sage-text': '#4A8F7C',
+        '--border-subtle':    '#EEEBE2',
+        '--border-input':     '#C9CFC9',
+      },
+      rose: {
+        '--bg-card':          '#FFFAF7',
+        '--bg-soft':          '#F5D5C8',
+        '--bg-input':         '#FAEDE5',
+        '--text-primary':     '#3D2A25',
+        '--text-secondary':   '#8B7469',
+        '--accent-sage':      '#C27C65',
+        '--accent-sage-dark': '#A66348',
+        '--accent-sage-soft': '#F5D5C8',
+        '--accent-sage-text': '#9C5539',
+        '--border-subtle':    '#F0DED3',
+        '--border-input':     '#D8BEB0',
+      },
+      dark: {
+        '--bg-card':          '#25292A',
+        '--bg-soft':          '#2A3633',
+        '--bg-input':         '#22262A',
+        '--text-primary':     '#E8EDE8',
+        '--text-secondary':   '#9BA59E',
+        '--accent-sage':      '#6FB496',
+        '--accent-sage-dark': '#5FA083',
+        '--accent-sage-soft': '#2A3633',
+        '--accent-sage-text': '#8AC4A8',
+        '--border-subtle':    '#353A37',
+        '--border-input':     '#3F4540',
+      },
+    };
+
+    const PREVIEW_VAR_NAMES = [
+      '--bg-card', '--bg-soft', '--bg-input',
+      '--text-primary', '--text-secondary',
+      '--accent-sage', '--accent-sage-dark', '--accent-sage-soft', '--accent-sage-text',
+      '--border-subtle', '--border-input',
+      '--text-body', '--text-h2',
+    ];
+
+    // 모달 시트에 적용된 미리보기 인라인 스타일을 모두 제거
+    function clearModalPreview() {
+      const sheet = document.querySelector('#settingsModal .modal-sheet');
+      if (!sheet) return;
+      PREVIEW_VAR_NAMES.forEach(v => sheet.style.removeProperty(v));
+      sheet.style.removeProperty('font-family');
+    }
+
+    // staged 값을 모달 시트 자체에 즉시 반영 (메인 화면은 건드리지 않음)
+    function applyPreviewToModal(staged) {
+      const sheet = document.querySelector('#settingsModal .modal-sheet');
+      if (!sheet || !staged) return;
+
+      // 테마 색상
+      const vars = THEME_PREVIEW_VARS[staged.background] || THEME_PREVIEW_VARS['default'];
+      Object.entries(vars).forEach(([k, v]) => sheet.style.setProperty(k, v));
+
+      // 폰트 크기
+      if (staged.fontSize === 'lg-xl') {
+        sheet.style.setProperty('--text-body', '19.2px');
+        sheet.style.setProperty('--text-h2',   '22.5px');
       } else {
-        startBtn.textContent = '묵상 시작하기';
+        sheet.style.setProperty('--text-body', '16px');
+        sheet.style.setProperty('--text-h2',   '19px');
       }
 
-      startBtn.onclick = () => {
-        window.location.href = 'step-1-scripture.html';
-      };
+      // 폰트 스타일
+      sheet.style.fontFamily = staged.fontStyle === 'noto-serif'
+        ? "'Noto Serif KR', 'Nanum Myeongjo', serif"
+        : "'Pretendard Variable', 'Pretendard', -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif";
     }
 
     // ========== 설정 모달 staged 상태 ==========
-    // 옵션을 누르는 즉시 본문에 반영하지 않고, 저장 시점에 한꺼번에 반영
     let stagedSettings = null;
 
     function openSettingsModal() {
-      // 현재 저장값을 staged로 복사
       stagedSettings = {
         background: Storage.get('settings.background', 'default') || 'default',
-        fontSize:   Storage.get('settings.fontSize', 'md') || 'md',
-        fontStyle:  Storage.get('settings.fontStyle', 'noto-serif') || 'noto-serif',
+        fontSize:   Storage.get('settings.fontSize',   'md')      || 'md',
+        fontStyle:  Storage.get('settings.fontStyle',  'noto-serif') || 'noto-serif',
       };
-      // 셀렉터 UI를 staged 기준으로 다시 그림
       syncSelectorUI();
+      applyPreviewToModal(stagedSettings);
+
+      // 아코디언 닫힌 상태로 초기화
+      document.querySelector('.restore-accordion')?.classList.remove('is-open');
 
       document.getElementById('nameInput').value = Storage.getUserName();
       renderHashBadge();
       document.getElementById('settingsModal').classList.add('is-open');
     }
 
-    function closeSettingsModal({ revertVisualPreview = false } = {}) {
+    function closeSettingsModal() {
       const sheet = document.querySelector('#settingsModal .modal-sheet');
       if (sheet) sheet.style.transform = '';
       document.getElementById('settingsModal').classList.remove('is-open');
+      clearModalPreview();
       stagedSettings = null;
     }
 
-    // 현재 staged 값을 셀렉터 UI(테마/사이즈/스타일)에 반영 (DOM 본문은 건드리지 않음)
+    // staged 값을 셀렉터 UI에 반영 (본문은 건드리지 않음)
     function syncSelectorUI() {
       if (!stagedSettings) return;
-      document.querySelectorAll('#themeGrid .theme-option').forEach(o => {
-        o.classList.toggle('is-selected', o.dataset.theme === stagedSettings.background);
-      });
-      document.querySelectorAll('#fontSizeGrid .font-option').forEach(o => {
-        o.classList.toggle('is-selected', o.dataset.fontSize === stagedSettings.fontSize);
-      });
-      document.querySelectorAll('#fontStyleGrid .font-option').forEach(o => {
-        o.classList.toggle('is-selected', o.dataset.fontStyle === stagedSettings.fontStyle);
-      });
+      document.querySelectorAll('#themeGrid .theme-option').forEach(o =>
+        o.classList.toggle('is-selected', o.dataset.theme === stagedSettings.background));
+      document.querySelectorAll('#fontSizeGrid .font-option').forEach(o =>
+        o.classList.toggle('is-selected', o.dataset.fontSize === stagedSettings.fontSize));
+      document.querySelectorAll('#fontStyleGrid .font-option').forEach(o =>
+        o.classList.toggle('is-selected', o.dataset.fontStyle === stagedSettings.fontStyle));
     }
 
     // ========== 이벤트 리스너 ==========
     function setupEventListeners() {
-      // 스트릭 탭 → 묵상 달력으로 이동
       document.getElementById('streakTab').addEventListener('click', () => {
-        window.location.href = 'calendar.html';
+        window.location.href = 'history/calendar.html';
       });
 
-      // 설정 모달 열기
       document.getElementById('settingsBtn').addEventListener('click', openSettingsModal);
 
-      // 해시 복사 버튼
       document.getElementById('hashCopyBtn').addEventListener('click', () => {
         const text = document.getElementById('userHashText').textContent;
         navigator.clipboard.writeText(text).then(() => {
           const btn = document.getElementById('hashCopyBtn');
-          const COPY_ICON = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>';
-          const CHECK_ICON = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
-          btn.innerHTML = CHECK_ICON;
-          setTimeout(() => { btn.innerHTML = COPY_ICON; }, 1500);
+          const COPY  = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>';
+          const CHECK = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+          btn.innerHTML = CHECK;
+          setTimeout(() => { btn.innerHTML = COPY; }, 1500);
         });
       });
 
-      // 설정 취소 (staged 폐기)
-      document.getElementById('cancelSettingsBtn').addEventListener('click', () => {
-        closeSettingsModal();
-      });
+      document.getElementById('cancelSettingsBtn').addEventListener('click', closeSettingsModal);
 
-      // 설정 저장 (staged → Storage + 본문 반영)
       document.getElementById('saveSettingsBtn').addEventListener('click', () => {
-        const input = document.getElementById('nameInput');
+        const input   = document.getElementById('nameInput');
         const newName = input.value.trim();
-
-        if (!newName) {
-          input.focus();
-          return;
-        }
+        if (!newName) { input.focus(); return; }
 
         Storage.setUserName(newName);
-
         if (stagedSettings) {
           Storage.setSetting('background', stagedSettings.background);
           Storage.setSetting('fontSize',   stagedSettings.fontSize);
@@ -773,29 +868,29 @@
           document.documentElement.setAttribute('data-font-size', stagedSettings.fontSize);
           Common.applyFontStyle(stagedSettings.fontStyle);
         }
-
         closeSettingsModal();
         renderGreeting();
       });
 
-      // 백드롭 클릭으로 모달 닫기 (취소와 동일)
       document.getElementById('settingsModal').addEventListener('click', (e) => {
-        if (e.target.id === 'settingsModal') {
-          closeSettingsModal();
-        }
+        if (e.target.id === 'settingsModal') closeSettingsModal();
       });
 
-      // 모달 스와이프 다운 닫기
-      setupModalSwipeDown();
+      // 다른 기기 불러오기 아코디언 토글
+      document.getElementById('restoreToggleBtn').addEventListener('click', () => {
+        const acc = document.querySelector('.restore-accordion');
+        const expanded = acc.classList.toggle('is-open');
+        document.getElementById('restoreToggleBtn').setAttribute('aria-expanded', expanded);
+      });
 
-      // 아카이브로 이동
+      document.getElementById('restoreHashBtn').addEventListener('click', handleRestore);
+
       document.getElementById('archiveLink').addEventListener('click', (e) => {
         e.preventDefault();
-        window.location.href = 'archive.html';
+        window.location.href = 'history/archive.html';
       });
 
-      // 다른 기기에서 불러오기
-      document.getElementById('restoreHashBtn').addEventListener('click', handleRestore);
+      setupModalSwipeDown();
     }
 
     // ========== 모달 스와이프 다운 닫기 ==========
@@ -807,11 +902,8 @@
       const interactiveSelector = 'button, input, textarea, select, [role="button"], .font-option, .theme-option, .hash-copy-btn';
 
       sheet.addEventListener('pointerdown', (e) => {
-        // 옵션/버튼/입력 위에서는 드래그 시작 안 함
         if (e.target.closest(interactiveSelector)) return;
-        // 마우스의 경우 좌클릭만
         if (e.pointerType === 'mouse' && e.button !== 0) return;
-        // 시트 내부가 스크롤된 상태면 스와이프 닫기 비활성 (스크롤 먼저)
         if (sheet.scrollTop > 0) return;
         dragging = true;
         startY = e.clientY;
@@ -823,7 +915,7 @@
 
       sheet.addEventListener('pointermove', (e) => {
         if (!dragging || e.pointerId !== pointerId) return;
-        deltaY = Math.max(0, e.clientY - startY);  // 위쪽 드래그는 무시
+        deltaY = Math.max(0, e.clientY - startY);
         sheet.style.transform = `translateY(${deltaY}px)`;
       });
 
@@ -832,13 +924,10 @@
         dragging = false;
         sheet.classList.remove('is-dragging');
         try { sheet.releasePointerCapture(pointerId); } catch (_) {}
-
         const threshold = Math.max(100, sheet.offsetHeight * 0.25);
         if (deltaY > threshold) {
-          // 닫기 (취소와 동일: staged 폐기)
           closeSettingsModal();
         } else {
-          // 원위치로 복귀 (CSS transition으로 부드럽게)
           sheet.style.transform = '';
         }
         deltaY = 0;
@@ -851,48 +940,35 @@
 
     // ========== 해시로 기록 복원 ==========
     async function handleRestore() {
-      const input = document.getElementById('restoreHashInput');
+      const input  = document.getElementById('restoreHashInput');
       const status = document.getElementById('restoreStatus');
-      const btn = document.getElementById('restoreHashBtn');
-      const value = input.value.trim();
+      const btn    = document.getElementById('restoreHashBtn');
+      const value  = input.value.trim();
 
       status.style.color = 'var(--text-secondary)';
-
-      if (!value) {
-        status.textContent = '해시를 입력해주세요';
-        input.focus();
-        return;
-      }
+      if (!value) { status.textContent = '해시를 입력해주세요'; input.focus(); return; }
 
       if (typeof SupabaseSync === 'undefined' || !SupabaseSync.isConfigured()) {
-        status.textContent = '서버 연결이 설정되지 않았어요';
-        return;
+        status.textContent = '서버 연결이 설정되지 않았어요'; return;
       }
 
-      // 이미 본인 해시가 있으면 한 번 더 확인
       const existing = Storage.getUserHash();
       if (existing && existing !== value) {
         const yes = confirm(
-          `현재 기기에 저장된 해시(${existing})가 있어요.\n` +
-          `"${value}"의 기록으로 덮어쓰시겠어요?\n\n` +
-          `※ 현재 해시의 로컬 기록은 사라질 수 있어요.`
+          `현재 기기에 저장된 해시(${existing})가 있어요.\n"${value}"의 기록으로 덮어쓰시겠어요?\n\n※ 현재 해시의 로컬 기록은 사라질 수 있어요.`
         );
         if (!yes) return;
       }
 
       btn.disabled = true;
       status.textContent = '불러오는 중...';
-
       const result = await SupabaseSync.restoreFromHash(value);
-
       btn.disabled = false;
 
       if (!result.ok) {
         const msgs = {
-          empty:     '해시를 입력해주세요',
-          format:    '형식이 올바르지 않아요 (예: 어린양#1234)',
-          not_found: '해당 해시를 찾을 수 없어요',
-          network:   '네트워크 오류예요. 잠시 후 다시 시도해주세요',
+          empty: '해시를 입력해주세요', format: '형식이 올바르지 않아요 (예: 어린양#1234)',
+          not_found: '해당 해시를 찾을 수 없어요', network: '네트워크 오류예요. 잠시 후 다시 시도해주세요',
         };
         status.style.color = 'var(--text-secondary)';
         status.textContent = msgs[result.reason] || '불러오기에 실패했어요';
@@ -904,31 +980,26 @@
       setTimeout(() => window.location.reload(), 800);
     }
 
-    // ========== 테마 선택기 (staged: 본문에 반영하지 않고 staged에만 기록) ==========
+    // ========== 테마 선택기 ==========
     function setupThemeSelector() {
       const current = Storage.get('settings.background', 'default') || 'default';
       const options = document.querySelectorAll('#themeGrid .theme-option');
-
-      // 초기 표시: 저장값 기준
       options.forEach(opt => {
         if (opt.dataset.theme === current) opt.classList.add('is-selected');
-      });
-
-      options.forEach(opt => {
         opt.addEventListener('click', () => {
           if (!stagedSettings) return;
           stagedSettings.background = opt.dataset.theme;
           options.forEach(o => o.classList.remove('is-selected'));
           opt.classList.add('is-selected');
+          applyPreviewToModal(stagedSettings);
         });
       });
     }
 
-    // ========== 폰트 크기 선택기 (staged) ==========
+    // ========== 폰트 크기 선택기 ==========
     function setupFontSizeSelector() {
       const current = Storage.get('settings.fontSize', 'md') || 'md';
       const options = document.querySelectorAll('#fontSizeGrid .font-option');
-
       options.forEach(opt => {
         if (opt.dataset.fontSize === current) opt.classList.add('is-selected');
         opt.addEventListener('click', () => {
@@ -936,15 +1007,15 @@
           stagedSettings.fontSize = opt.dataset.fontSize;
           options.forEach(o => o.classList.remove('is-selected'));
           opt.classList.add('is-selected');
+          applyPreviewToModal(stagedSettings);
         });
       });
     }
 
-    // ========== 폰트 스타일 선택기 (staged) ==========
+    // ========== 폰트 스타일 선택기 ==========
     function setupFontStyleSelector() {
       const current = Storage.get('settings.fontStyle', 'noto-serif') || 'noto-serif';
       const options = document.querySelectorAll('#fontStyleGrid .font-option');
-
       options.forEach(opt => {
         if (opt.dataset.fontStyle === current) opt.classList.add('is-selected');
         opt.addEventListener('click', () => {
@@ -952,6 +1023,7 @@
           stagedSettings.fontStyle = opt.dataset.fontStyle;
           options.forEach(o => o.classList.remove('is-selected'));
           opt.classList.add('is-selected');
+          applyPreviewToModal(stagedSettings);
         });
       });
     }
