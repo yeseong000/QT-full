@@ -1,3 +1,6 @@
+/* Noto Serif KR — 세리프 설정 시 모든 페이지에서 사용 (Google Fonts, @import는 반드시 최상단) */
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;500;700&display=swap');
+
 /* ==========================================================================
    주만나 AI 큐티 - 공통 컴포넌트 CSS
    iPhone 14/15 Pro 최적화 · 모든 페이지에서 공유
