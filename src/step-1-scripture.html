@@ -180,6 +180,13 @@
       transform: translateX(-50%) translateY(0);
     }
 
+    /* FAB — 하이라이트 모드 활성화 상태 */
+    .fab.is-active {
+      background: var(--accent-sage);
+      color: #fff;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.22);
+    }
+
     /* FAB 툴팁 (app-container 내부 absolute) — 테마별 카드 톤 */
     .fab-tooltip {
       position: absolute;
@@ -264,7 +271,7 @@
 
    <!-- FAB 툴팁 (최초 1회만) -->
    <div class="fab-tooltip" id="fabTooltip">
-     구절을 탭해 하이라이트하고, 꾹 누르면 메모를 남길 수 있어요
+     아이콘을 탭해 하이라이트 모드를 켜고, 구절을 탭해보세요
    </div>
 
    <!-- 토스트 -->
@@ -378,9 +385,11 @@
         window.location.href = 'step-2-meditation.html';
       });
 
-      // FAB 클릭 → 도움말 토스트
+      // FAB 클릭 → 하이라이트 모드 토글
       document.getElementById('highlightFab').addEventListener('click', () => {
-        showToast('구절을 탭해 하이라이트해보세요');
+        highlightModeActive = !highlightModeActive;
+        document.getElementById('highlightFab').classList.toggle('is-active', highlightModeActive);
+        showToast(highlightModeActive ? '하이라이트 모드 켜짐 — 구절을 탭해보세요' : '하이라이트 모드 꺼짐');
       });
 
       setupHighlightInteractions();
@@ -391,6 +400,7 @@
     // ========================================================================
 
     let activeHighlightId = null;
+    let highlightModeActive = false;
 
     function setupHighlightInteractions() {
       const versesContainer = document.getElementById('versesContainer');
@@ -402,7 +412,7 @@
       // 하이라이트된 절 길게 누르기 → 메모 시트
       versesContainer.addEventListener('touchstart', (e) => {
         const verseLine = e.target.closest('.verse-line');
-        if (!verseLine || !verseLine.classList.contains('is-highlighted')) return;
+        if (!highlightModeActive || !verseLine || !verseLine.classList.contains('is-highlighted')) return;
         longPressTriggered = false;
         longPressTimer = setTimeout(() => {
           longPressTriggered = true;
@@ -414,9 +424,10 @@
       versesContainer.addEventListener('touchend', cancelLongPress);
       versesContainer.addEventListener('touchmove', cancelLongPress);
 
-      // 절 탭 → 하이라이트 토글
+      // 절 탭 → 하이라이트 토글 (하이라이트 모드일 때만)
       versesContainer.addEventListener('click', (e) => {
         if (longPressTriggered) { longPressTriggered = false; return; }
+        if (!highlightModeActive) return;
         const verseLine = e.target.closest('.verse-line');
         if (!verseLine) return;
         const verseNum = parseInt(verseLine.dataset.verse, 10);
