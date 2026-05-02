@@ -499,24 +499,43 @@ input, textarea {
 .modal-sheet {
   background: var(--bg-card);
   border-radius: var(--radius-xl) var(--radius-xl) 0 0;
-  padding: var(--space-6);
   width: 100%;
   max-width: var(--app-max-width);
-  padding-bottom: calc(var(--space-6) + env(safe-area-inset-bottom, 0));
+  max-height: 92svh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
   animation: slideUp var(--duration-slow) var(--ease-out);
-  /* 스와이프 다운 닫기를 위한 트랜지션 — 드래그 중엔 .is-dragging으로 끔 */
   transition: transform var(--duration-base) var(--ease-out);
-  touch-action: pan-y;
-  /* 화면보다 높아지면 스크롤로 처리 */
-  max-height: 90svh;
-  overflow-y: auto;
-  overscroll-behavior-y: contain;
-  -webkit-overflow-scrolling: touch;
 }
 .modal-sheet.is-dragging {
   transition: none;
   animation: none;
 }
+
+/* 드래그 핸들 (pill) — touch-action: none으로 핸들에서만 JS 제어 */
+.modal-drag-handle {
+  width: 36px;
+  height: 4px;
+  background: var(--border-chip);
+  border-radius: 2px;
+  margin: 10px auto 6px;
+  flex-shrink: 0;
+  cursor: grab;
+  touch-action: none;
+}
+
+/* 내부 스크롤 컨테이너 — 여기서만 스크롤 허용 */
+.modal-sheet__scroll {
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+  flex: 1;
+  min-height: 0;
+  padding: var(--space-4) var(--space-6) calc(var(--space-6) + env(safe-area-inset-bottom, 0));
+}
+
 /* 미리보기 칩의 inline font-family는 그대로 살아남도록 (세리프 미리보기 유지) */
 .modal-sheet .font-option__preview {
   font-family: revert;

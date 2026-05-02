@@ -501,112 +501,120 @@
   <div class="modal-backdrop" id="settingsModal">
     <div class="modal-sheet">
 
-      <!-- 헤더 -->
-      <div class="modal-top">
-        <h2 class="modal-title">설정</h2>
-        <div class="user-hash-badge" id="userHashBadge" style="display:none">
-          <span id="userHashText"></span>
-          <button class="hash-copy-btn" id="hashCopyBtn" title="복사" aria-label="해시 복사">
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-          </button>
-        </div>
-      </div>
-      <p class="modal-desc">닉네임은 언제든지 바꿀 수 있어요</p>
+      <!-- 드래그 핸들 (터치해서 아래로 내리면 닫힘) -->
+      <div class="modal-drag-handle"></div>
 
-      <!-- 닉네임 -->
-      <div class="setting-item">
-        <div class="setting-label">닉네임</div>
-        <input
-          type="text"
-          class="input-field"
-          id="nameInput"
-          placeholder="닉네임을 입력해주세요"
-          maxlength="20"
-        >
-      </div>
+      <!-- 내부 스크롤 영역 -->
+      <div class="modal-sheet__scroll">
 
-      <!-- 배경 -->
-      <div class="setting-item">
-        <div class="setting-label">배경</div>
-        <div class="theme-grid" id="themeGrid">
-          <button class="theme-option" type="button" data-theme="default" aria-label="기본 배경">
-            <div class="theme-swatch" style="background: #F0F4F2;"></div>
-            <div class="theme-label">기본</div>
-          </button>
-          <button class="theme-option" type="button" data-theme="rose" aria-label="로즈 배경">
-            <div class="theme-swatch" style="background: #FCF3EE;"></div>
-            <div class="theme-label">로즈</div>
-          </button>
-          <button class="theme-option" type="button" data-theme="dark" aria-label="다크 배경">
-            <div class="theme-swatch" style="background: #1A1D1B;"></div>
-            <div class="theme-label">다크</div>
-          </button>
-        </div>
-      </div>
-
-      <!-- 폰트 (크기 + 스타일 통합) -->
-      <div class="setting-item">
-        <div class="setting-label">폰트</div>
-        <div class="setting-sub-label">크기</div>
-        <div class="font-option-grid" id="fontSizeGrid">
-          <button class="font-option" type="button" data-font-size="md" aria-label="기본 크기">
-            <span class="font-option__preview" style="font-size: 16px;">가</span>
-            <span class="font-option__label">기본</span>
-          </button>
-          <button class="font-option" type="button" data-font-size="lg-xl" aria-label="큰 크기">
-            <span class="font-option__preview" style="font-size: 21px;">가</span>
-            <span class="font-option__label">크게</span>
-          </button>
-        </div>
-        <div class="setting-sub-label" style="margin-top: var(--space-3);">스타일</div>
-        <div class="font-option-grid" id="fontStyleGrid">
-          <button class="font-option" type="button" data-font-style="noto-serif" aria-label="세리프 폰트">
-            <span class="font-option__preview" style="font-family: 'Noto Serif KR', serif;">가나다</span>
-            <span class="font-option__label">세리프</span>
-          </button>
-          <button class="font-option" type="button" data-font-style="pretendard" aria-label="기본 폰트">
-            <span class="font-option__preview" style="font-family: 'Pretendard Variable', sans-serif;">가나다</span>
-            <span class="font-option__label">기본</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- 다른 기기에서 불러오기 (아코디언) -->
-      <div class="setting-item restore-accordion" style="margin-bottom: 0;">
-        <button class="restore-accordion__trigger" id="restoreToggleBtn" type="button" aria-expanded="false">
-          <span class="setting-label">다른 기기에서 불러오기</span>
-          <svg class="restore-accordion__chevron" width="18" height="18" viewBox="0 0 24 24" fill="none"
-               stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="6 9 12 15 18 9"/>
-          </svg>
-        </button>
-        <div class="restore-accordion__body" id="restoreAccordionBody">
-          <p class="restore-accordion__desc">
-            이전에 쓰던 해시를 입력하시면<br>묵상 기록을 불러올 수 있어요 (예: 어린양#1234)
-          </p>
-          <div style="display:flex; gap: var(--space-3); align-items:center;">
-            <input
-              type="text"
-              class="input-field"
-              id="restoreHashInput"
-              placeholder="닉네임#1234"
-              autocomplete="off"
-              autocapitalize="off"
-              autocorrect="off"
-              spellcheck="false"
-              style="flex: 1; min-width: 0;"
-            >
-            <button class="btn btn-secondary" id="restoreHashBtn" type="button" style="white-space:nowrap; flex-shrink: 0;">불러오기</button>
+        <!-- 헤더 -->
+        <div class="modal-top">
+          <h2 class="modal-title">설정</h2>
+          <div class="user-hash-badge" id="userHashBadge" style="display:none">
+            <span id="userHashText"></span>
+            <button class="hash-copy-btn" id="hashCopyBtn" title="복사" aria-label="해시 복사">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+            </button>
           </div>
-          <div id="restoreStatus" style="font-size: var(--text-small); color: var(--text-secondary); margin-top: var(--space-2); min-height: 1.2em;"></div>
         </div>
-      </div>
+        <p class="modal-desc">닉네임은 언제든지 바꿀 수 있어요</p>
 
-      <!-- 액션 버튼 -->
-      <div class="modal-actions">
-        <button class="btn btn-secondary" id="cancelSettingsBtn">취소</button>
-        <button class="btn btn-primary" id="saveSettingsBtn" style="flex: 1;">저장</button>
-      </div>
+        <!-- 닉네임 -->
+        <div class="setting-item">
+          <div class="setting-label">닉네임</div>
+          <input
+            type="text"
+            class="input-field"
+            id="nameInput"
+            placeholder="닉네임을 입력해주세요"
+            maxlength="20"
+          >
+        </div>
+
+        <!-- 배경 -->
+        <div class="setting-item">
+          <div class="setting-label">배경</div>
+          <div class="theme-grid" id="themeGrid">
+            <button class="theme-option" type="button" data-theme="default" aria-label="기본 배경">
+              <div class="theme-swatch" style="background: #F0F4F2;"></div>
+              <div class="theme-label">기본</div>
+            </button>
+            <button class="theme-option" type="button" data-theme="rose" aria-label="로즈 배경">
+              <div class="theme-swatch" style="background: #FCF3EE;"></div>
+              <div class="theme-label">로즈</div>
+            </button>
+            <button class="theme-option" type="button" data-theme="dark" aria-label="다크 배경">
+              <div class="theme-swatch" style="background: #1A1D1B;"></div>
+              <div class="theme-label">다크</div>
+            </button>
+          </div>
+        </div>
+
+        <!-- 폰트 (크기 + 스타일 통합) -->
+        <div class="setting-item">
+          <div class="setting-label">폰트</div>
+          <div class="setting-sub-label">크기</div>
+          <div class="font-option-grid" id="fontSizeGrid">
+            <button class="font-option" type="button" data-font-size="md" aria-label="기본 크기">
+              <span class="font-option__preview" style="font-size: 16px;">가</span>
+              <span class="font-option__label">기본</span>
+            </button>
+            <button class="font-option" type="button" data-font-size="lg-xl" aria-label="큰 크기">
+              <span class="font-option__preview" style="font-size: 21px;">가</span>
+              <span class="font-option__label">크게</span>
+            </button>
+          </div>
+          <div class="setting-sub-label" style="margin-top: var(--space-3);">스타일</div>
+          <div class="font-option-grid" id="fontStyleGrid">
+            <button class="font-option" type="button" data-font-style="noto-serif" aria-label="세리프 폰트">
+              <span class="font-option__preview" style="font-family: 'Noto Serif KR', serif;">가나다</span>
+              <span class="font-option__label">세리프</span>
+            </button>
+            <button class="font-option" type="button" data-font-style="pretendard" aria-label="기본 폰트">
+              <span class="font-option__preview" style="font-family: 'Pretendard Variable', sans-serif;">가나다</span>
+              <span class="font-option__label">기본</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 다른 기기에서 불러오기 (아코디언) -->
+        <div class="setting-item restore-accordion" style="margin-bottom: 0;">
+          <button class="restore-accordion__trigger" id="restoreToggleBtn" type="button" aria-expanded="false">
+            <span class="setting-label">다른 기기에서 불러오기</span>
+            <svg class="restore-accordion__chevron" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="6 9 12 15 18 9"/>
+            </svg>
+          </button>
+          <div class="restore-accordion__body" id="restoreAccordionBody">
+            <p class="restore-accordion__desc">
+              이전에 쓰던 해시를 입력하시면<br>묵상 기록을 불러올 수 있어요 (예: 어린양#1234)
+            </p>
+            <div style="display:flex; gap: var(--space-3); align-items:center;">
+              <input
+                type="text"
+                class="input-field"
+                id="restoreHashInput"
+                placeholder="닉네임#1234"
+                autocomplete="off"
+                autocapitalize="off"
+                autocorrect="off"
+                spellcheck="false"
+                style="flex: 1; min-width: 0;"
+              >
+              <button class="btn btn-secondary" id="restoreHashBtn" type="button" style="white-space:nowrap; flex-shrink: 0;">불러오기</button>
+            </div>
+            <div id="restoreStatus" style="font-size: var(--text-small); color: var(--text-secondary); margin-top: var(--space-2); min-height: 1.2em;"></div>
+          </div>
+        </div>
+
+        <!-- 액션 버튼 -->
+        <div class="modal-actions">
+          <button class="btn btn-secondary" id="cancelSettingsBtn">취소</button>
+          <button class="btn btn-primary" id="saveSettingsBtn" style="flex: 1;">저장</button>
+        </div>
+
+      </div><!-- /.modal-sheet__scroll -->
     </div>
   </div>
 
@@ -815,11 +823,15 @@
     }
 
     function closeSettingsModal() {
-      const sheet = document.querySelector('#settingsModal .modal-sheet');
-      if (sheet) sheet.style.transform = '';
       document.getElementById('settingsModal').classList.remove('is-open');
       clearModalPreview();
       stagedSettings = null;
+      // 모달이 숨겨진 뒤 transform/transition 초기화 (다음 열기 때 깔끔하게)
+      const sheet = document.querySelector('#settingsModal .modal-sheet');
+      if (sheet) {
+        sheet.style.transition = '';
+        sheet.style.transform = '';
+      }
     }
 
     // staged 값을 셀렉터 UI에 반영 (본문은 건드리지 않음)
@@ -895,47 +907,56 @@
 
     // ========== 모달 스와이프 다운 닫기 ==========
     function setupModalSwipeDown() {
-      const sheet = document.querySelector('#settingsModal .modal-sheet');
-      if (!sheet) return;
+      const sheet  = document.querySelector('#settingsModal .modal-sheet');
+      const handle = sheet?.querySelector('.modal-drag-handle');
+      if (!sheet || !handle) return;
 
-      let startY = 0, deltaY = 0, dragging = false, pointerId = null;
-      const interactiveSelector = 'button, input, textarea, select, [role="button"], .font-option, .theme-option, .hash-copy-btn';
+      let startY = 0, startTime = 0, deltaY = 0, dragging = false, pointerId = null;
 
-      sheet.addEventListener('pointerdown', (e) => {
-        if (e.target.closest(interactiveSelector)) return;
+      // 핸들에서만 드래그 시작 — touch-action: none이므로 브라우저 간섭 없음
+      handle.addEventListener('pointerdown', (e) => {
         if (e.pointerType === 'mouse' && e.button !== 0) return;
-        if (sheet.scrollTop > 0) return;
         dragging = true;
         startY = e.clientY;
+        startTime = Date.now();
         deltaY = 0;
         pointerId = e.pointerId;
         sheet.classList.add('is-dragging');
-        try { sheet.setPointerCapture(pointerId); } catch (_) {}
+        handle.setPointerCapture(e.pointerId);
       });
 
-      sheet.addEventListener('pointermove', (e) => {
+      handle.addEventListener('pointermove', (e) => {
         if (!dragging || e.pointerId !== pointerId) return;
         deltaY = Math.max(0, e.clientY - startY);
         sheet.style.transform = `translateY(${deltaY}px)`;
       });
 
       const endDrag = (e) => {
-        if (!dragging || (e && e.pointerId !== pointerId)) return;
+        if (!dragging || e.pointerId !== pointerId) return;
         dragging = false;
         sheet.classList.remove('is-dragging');
-        try { sheet.releasePointerCapture(pointerId); } catch (_) {}
-        const threshold = Math.max(100, sheet.offsetHeight * 0.25);
-        if (deltaY > threshold) {
-          closeSettingsModal();
+
+        const elapsed  = Math.max(1, Date.now() - startTime);
+        const velocity = deltaY / elapsed; // px/ms
+
+        if (deltaY > 80 || (velocity > 0.4 && deltaY > 20)) {
+          // 슬라이드 다운 후 닫기
+          sheet.style.transition = 'transform 280ms cubic-bezier(0.4, 0, 1, 1)';
+          sheet.style.transform  = 'translateY(110%)';
+          setTimeout(() => closeSettingsModal(), 285);
         } else {
-          sheet.style.transform = '';
+          // 제자리 복귀
+          sheet.style.transition = 'transform 240ms var(--ease-out)';
+          sheet.style.transform  = '';
+          sheet.addEventListener('transitionend', () => {
+            sheet.style.transition = '';
+          }, { once: true });
         }
-        deltaY = 0;
-        pointerId = null;
+        deltaY = 0; pointerId = null;
       };
 
-      sheet.addEventListener('pointerup', endDrag);
-      sheet.addEventListener('pointercancel', endDrag);
+      handle.addEventListener('pointerup',     endDrag);
+      handle.addEventListener('pointercancel', endDrag);
     }
 
     // ========== 해시로 기록 복원 ==========
