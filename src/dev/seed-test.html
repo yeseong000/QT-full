@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>테스트 데이터 주입 · 주만나 AI 큐티</title>
+  <link rel="stylesheet" href="../styles/design-tokens.css">
+  <link rel="stylesheet" href="../styles/common.css">
+  <style>
+    body { background: var(--bg-paper); }
+    .seed-wrap {
+      max-width: 400px;
+      margin: 48px auto;
+      padding: 24px;
+      background: var(--bg-card);
+      border-radius: var(--radius-lg);
+      font-family: var(--font-sans);
+    }
+    .seed-title {
+      font-size: var(--text-h1);
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 12px;
+    }
+    .seed-desc {
+      font-size: var(--text-body);
+      color: var(--text-body);
+      line-height: 1.6;
+      margin-bottom: 20px;
+    }
+    .seed-list {
+      background: var(--bg-soft);
+      border-radius: var(--radius-md);
+      padding: 14px 18px;
+      font-size: var(--text-small);
+      color: var(--text-body);
+      margin-bottom: 20px;
+    }
+    .seed-list li { margin: 4px 0; }
+    .seed-btn {
+      display: block;
+      width: 100%;
+      padding: 14px;
+      background: var(--accent-sage);
+      color: var(--text-on-accent);
+      border: 0;
+      border-radius: var(--radius-pill);
+      font-size: var(--text-body);
+      font-weight: 600;
+      cursor: pointer;
+      margin-bottom: 10px;
+    }
+    .seed-btn--secondary {
+      background: transparent;
+      color: var(--accent-sage);
+      border: 1px solid var(--border-chip);
+    }
+    .seed-status {
+      font-size: var(--text-small);
+      color: var(--accent-sage-text);
+      text-align: center;
+      margin-top: 8px;
+      min-height: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="seed-wrap">
+    <h1 class="seed-title">🧪 테스트 데이터 주입</h1>
+    <p class="seed-desc">
+      아래 날짜에 묵상을 완료한 상태로 만들어 캘린더에 표시되는지 확인합니다.
+    </p>
+    <ul class="seed-list">
+      <li>• 2026년 4월 1일 · 완료</li>
+      <li>• 2026년 4월 7일 · 완료</li>
+      <li>• 총 완료 횟수: 2회</li>
+    </ul>
+
+    <button class="seed-btn" id="seedBtn">데이터 주입 후 달력 열기</button>
+    <button class="seed-btn seed-btn--secondary" id="clearBtn">테스트 데이터 되돌리기</button>
+
+    <div class="seed-status" id="status"></div>
+  </div>
+
+  <script src="../scripts/storage.js"></script>
+  <script>
+    const DATES = ['2026-04-01', '2026-04-07'];
+    const statusEl = document.getElementById('status');
+
+    document.getElementById('seedBtn').addEventListener('click', () => {
+      DATES.forEach(date => {
+        Storage.setDailyRecord(date, { completed: true, progressStep: 5 });
+      });
+      Storage.set('streak.totalCompleted', DATES.length);
+      statusEl.textContent = '✓ 주입 완료, 달력으로 이동합니다...';
+      setTimeout(() => {
+        window.location.href = '../history/calendar.html';
+      }, 600);
+    });
+
+    document.getElementById('clearBtn').addEventListener('click', () => {
+      DATES.forEach(date => {
+        localStorage.removeItem(`records.${date}.completed`);
+        localStorage.removeItem(`records.${date}.progressStep`);
+      });
+      Storage.set('streak.totalCompleted', 0);
+      statusEl.textContent = '✓ 테스트 데이터 삭제 완료';
+    });
+  </script>
+</body>
+</html>

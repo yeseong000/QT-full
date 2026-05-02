@@ -14,8 +14,8 @@
   <title>말씀 · 주만나</title>
 
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.css">
-  <link rel="stylesheet" href="styles/design-tokens.css">
-  <link rel="stylesheet" href="styles/common.css">
+  <link rel="stylesheet" href="../styles/design-tokens.css">
+  <link rel="stylesheet" href="../styles/common.css">
 
   <style>
     /* ========== 1단계 전용 ========== */
@@ -311,8 +311,8 @@
   </div>
 
   <!-- Scripts -->
-  <script src="scripts/storage.js"></script>
-  <script src="scripts/common.js"></script>
+  <script src="../scripts/storage.js"></script>
+  <script src="../scripts/common.js"></script>
   <script>
     const TODAY = sessionStorage.getItem('qtDate') || Common.todayISO();
     const HAS_EXPLICIT_DATE = !!sessionStorage.getItem('qtDate');
@@ -329,13 +329,13 @@
 
     // ========== 말씀 로드 ==========
     async function loadScripture() {
-      let qt = await Common.loadJSON(`../data/qt/${TODAY}.json`);
+      let qt = await Common.loadJSON(`../../data/qt/${TODAY}.json`);
       if (!qt && !HAS_EXPLICIT_DATE) {
         for (let i = 1; i <= 3; i++) {
           const d = new Date(new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' }));
           d.setDate(d.getDate() - i);
           const fallbackDate = d.toLocaleDateString('sv-SE');
-          qt = await Common.loadJSON(`../data/qt/${fallbackDate}.json`);
+          qt = await Common.loadJSON(`../../data/qt/${fallbackDate}.json`);
           if (qt) break;
         }
       }
@@ -374,12 +374,12 @@
     function setupEventListeners() {
       // 닫기 → 홈
       document.getElementById('closeBtn').addEventListener('click', () => {
-        window.location.href = 'index.html';
+        window.location.href = '../index.html';
       });
 
       // 이전 → 홈
       document.getElementById('prevBtn').addEventListener('click', () => {
-        window.location.href = 'index.html';
+        window.location.href = '../index.html';
       });
 
       // 다음 → 2단계

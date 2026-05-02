@@ -14,8 +14,8 @@
   <title>묵상 기록 · 주만나</title>
 
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.css">
-  <link rel="stylesheet" href="styles/design-tokens.css">
-  <link rel="stylesheet" href="styles/common.css">
+  <link rel="stylesheet" href="../styles/design-tokens.css">
+  <link rel="stylesheet" href="../styles/common.css">
 
   <style>
     /* ========== 아카이브 전용 ========== */
@@ -368,8 +368,8 @@
   </div>
 
   <!-- Scripts -->
-  <script src="scripts/storage.js"></script>
-  <script src="scripts/common.js"></script>
+  <script src="../scripts/storage.js"></script>
+  <script src="../scripts/common.js"></script>
   <script>
     // 감정 칩 ID → {emoji, label}
     const EMOTION_MAP = {
@@ -386,7 +386,7 @@
 
     document.addEventListener('DOMContentLoaded', async () => {
       document.getElementById('backBtn').addEventListener('click', () => {
-        window.location.href = 'index.html';
+        window.location.href = '../index.html';
       });
       await renderArchive();
     });
@@ -416,8 +416,8 @@
       const entries = await Promise.all(dates.map(async (date) => {
         const record = Storage.getDailyRecord(date);
         const [qt, ai] = await Promise.all([
-          Common.loadJSON(`../data/qt/${date}.json`),
-          Common.loadJSON(`../data/ai/${date}.json`),
+          Common.loadJSON(`../../data/qt/${date}.json`),
+          Common.loadJSON(`../../data/ai/${date}.json`),
         ]);
         return { date, record, qt, ai };
       }));
@@ -620,7 +620,7 @@
     }
     function hookupEmptyStateButton() {
       const btn = document.getElementById('startTodayBtn');
-      if (btn) btn.addEventListener('click', () => { window.location.href = 'index.html'; });
+      if (btn) btn.addEventListener('click', () => { window.location.href = '../index.html'; });
     }
 
     function escapeHTML(str) {

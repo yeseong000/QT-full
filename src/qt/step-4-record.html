@@ -14,8 +14,8 @@
   <title>기록 · 주만나</title>
 
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.css">
-  <link rel="stylesheet" href="styles/design-tokens.css">
-  <link rel="stylesheet" href="styles/common.css">
+  <link rel="stylesheet" href="../styles/design-tokens.css">
+  <link rel="stylesheet" href="../styles/common.css">
 
   <style>
     /* ========== 4단계 전용 ========== */
@@ -288,9 +288,9 @@
   </div>
 
   <!-- Scripts -->
-  <script src="scripts/storage.js"></script>
-  <script src="scripts/common.js"></script>
-  <script src="scripts/supabase-sync.js"></script>
+  <script src="../scripts/storage.js"></script>
+  <script src="../scripts/common.js"></script>
+  <script src="../scripts/supabase-sync.js"></script>
   <script>
     const TODAY = sessionStorage.getItem('qtDate') || Common.todayISO();
 
@@ -414,7 +414,7 @@
     // ========== 오늘의 질문 (주만나 크롤링) ==========
     async function setupQuestions() {
       const container = document.getElementById('questionsContainer');
-      const data = await Common.loadJSON(`../data/qt/${TODAY}.json`);
+      const data = await Common.loadJSON(`../../data/qt/${TODAY}.json`);
       const questions = (data && Array.isArray(data.oryun_questions)) ? data.oryun_questions : [];
 
       if (questions.length === 0) {
@@ -455,7 +455,7 @@
     function setupEventListeners() {
       // 닫기 → 홈
       document.getElementById('closeBtn').addEventListener('click', () => {
-        window.location.href = 'index.html';
+        window.location.href = '../index.html';
       });
 
       // 이전 → 3단계

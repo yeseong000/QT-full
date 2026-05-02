@@ -14,8 +14,8 @@
   <title>묵상 · 주만나</title>
 
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.css">
-  <link rel="stylesheet" href="styles/design-tokens.css">
-  <link rel="stylesheet" href="styles/common.css">
+  <link rel="stylesheet" href="../styles/design-tokens.css">
+  <link rel="stylesheet" href="../styles/common.css">
 
   <style>
     /* ========== 2단계 전용 ========== */
@@ -381,21 +381,21 @@
   </div>
 
   <!-- Scripts -->
-  <script src="scripts/storage.js"></script>
-  <script src="scripts/common.js"></script>
+  <script src="../scripts/storage.js"></script>
+  <script src="../scripts/common.js"></script>
   <script>
     const TODAY = sessionStorage.getItem('qtDate') || Common.todayISO();
     const HAS_EXPLICIT_DATE = !!sessionStorage.getItem('qtDate');
 
     async function loadWithFallback(kind) {
       // kind: 'qt' or 'ai'
-      let data = await Common.loadJSON(`../data/${kind}/${TODAY}.json`);
+      let data = await Common.loadJSON(`../../data/${kind}/${TODAY}.json`);
       if (!data && !HAS_EXPLICIT_DATE) {
         for (let i = 1; i <= 3; i++) {
           const d = new Date(new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' }));
           d.setDate(d.getDate() - i);
           const fallbackDate = d.toLocaleDateString('sv-SE');
-          data = await Common.loadJSON(`../data/${kind}/${fallbackDate}.json`);
+          data = await Common.loadJSON(`../../data/${kind}/${fallbackDate}.json`);
           if (data) break;
         }
       }
@@ -567,7 +567,7 @@
     function setupEventListeners() {
       // 닫기 → 홈
       document.getElementById('closeBtn').addEventListener('click', () => {
-        window.location.href = 'index.html';
+        window.location.href = '../index.html';
       });
 
       // 이전 → 1단계

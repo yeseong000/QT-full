@@ -14,8 +14,8 @@
   <title>묵상 달력 · 주만나</title>
 
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.css">
-  <link rel="stylesheet" href="styles/design-tokens.css">
-  <link rel="stylesheet" href="styles/common.css">
+  <link rel="stylesheet" href="../styles/design-tokens.css">
+  <link rel="stylesheet" href="../styles/common.css">
 
   <style>
     /* ========== 달력 전용 ========== */
@@ -413,8 +413,8 @@
   </div>
 
   <!-- Scripts -->
-  <script src="scripts/storage.js"></script>
-  <script src="scripts/common.js"></script>
+  <script src="../scripts/storage.js"></script>
+  <script src="../scripts/common.js"></script>
   <script>
     const EMOTION_MAP = {
       gratitude: { emoji: '🙏', label: '감사' },
@@ -443,7 +443,7 @@
 
     document.addEventListener('DOMContentLoaded', () => {
       document.getElementById('backBtn').addEventListener('click', () => {
-        window.location.href = 'index.html';
+        window.location.href = '../index.html';
       });
       document.getElementById('prevMonthBtn').addEventListener('click', () => {
         viewMonth--;
@@ -569,7 +569,7 @@
 
       const record = Storage.getDailyRecord(date);
       const isCompleted = record.completed || record.progressStep === 5;
-      const qt = await Common.loadJSON(`../data/qt/${date}.json`);
+      const qt = await Common.loadJSON(`../../data/qt/${date}.json`);
 
       // JSON도 없고 기록도 없으면 미리보기 닫기
       if (!qt && !isCompleted) {
@@ -617,7 +617,7 @@
         startBtn.style.display = '';
         startBtn.onclick = () => {
           sessionStorage.setItem('qtDate', date);
-          window.location.href = 'step-1-scripture.html';
+          window.location.href = '../qt/step-1-scripture.html';
         };
       }
 
