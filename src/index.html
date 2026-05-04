@@ -33,206 +33,252 @@
   <style>
     /* ========== 홈 전용 스타일 ========== */
 
+    /* 시간대별 풀스크린 그라디언트 (.app-container 자체가 surface) */
+    .app-container[data-time-slot="dawn"] {
+      background: linear-gradient(180deg, #5C548A 0%, #B8A0BC 50%, #E5D0C0 100%);
+    }
+    .app-container[data-time-slot="morning"] {
+      background: linear-gradient(180deg, #F5E1DC 0%, #F8E8D6 50%, #EFE6CD 100%);
+    }
+    .app-container[data-time-slot="afternoon"] {
+      background: linear-gradient(180deg, #C5DDDF 0%, #E0E2D8 50%, #ECE3D2 100%);
+    }
+    .app-container[data-time-slot="evening"] {
+      background: linear-gradient(180deg, #5E5879 0%, #C7896A 60%, #F5C672 100%);
+    }
+    .app-container[data-time-slot="night"] {
+      background: linear-gradient(180deg, #0F1A35 0%, #1B2A4A 50%, #2A3A5C 100%);
+    }
+
+    /* 풀스크린 일러스트 (5개 SVG 중 시간대별로 1개만 표시) */
+    .hero-illustration {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      overflow: hidden;
+    }
+    .hero-illustration svg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: none;
+    }
+    .app-container[data-time-slot="dawn"]      .illust-dawn,
+    .app-container[data-time-slot="morning"]   .illust-morning,
+    .app-container[data-time-slot="afternoon"] .illust-afternoon,
+    .app-container[data-time-slot="evening"]   .illust-evening,
+    .app-container[data-time-slot="night"]     .illust-night {
+      display: block;
+    }
+
+    /* 콘텐츠는 일러스트 위에 layered */
+    .app-scroll {
+      position: relative;
+      z-index: 1;
+      background: transparent;
+    }
+
+    /* ---------- 홈 헤더 ---------- */
     .home-header {
       display: flex;
       align-items: center;
+      justify-content: space-between;
       gap: var(--space-3);
       margin-top: 0;
       margin-bottom: var(--space-4);
+      min-height: 44px;
     }
 
-    /* 스트릭 탭 (좌측, 넓게) */
-    .streak-tab {
-      flex: 1;
+    /* streak pill (작은 알약형, 0이면 hidden 속성으로 숨김) */
+    .streak-pill {
       display: inline-flex;
       align-items: center;
-      gap: 10px;
-      padding: 10px 16px;
-      min-height: 44px;
-      background: var(--accent-sage-soft);
-      border-radius: var(--radius-pill);
-      color: var(--accent-sage-text);
+      gap: 6px;
+      padding: 7px 14px;
+      min-height: 32px;
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #2D3A32;
       border: 0;
       cursor: pointer;
       -webkit-tap-highlight-color: transparent;
-      transition: transform var(--duration-fast),
-                  background var(--duration-base);
-      font-family: inherit;
+      transition: transform var(--duration-fast);
       letter-spacing: -0.01em;
+      font-family: inherit;
     }
-    .streak-tab:active {
-      transform: scale(0.98);
-    }
-    .streak-tab__emoji {
-      font-size: 18px;
-      line-height: 1;
-      flex-shrink: 0;
-    }
-    .streak-tab__text {
-      font-size: var(--text-small);
-      font-weight: 500;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .streak-tab__text strong {
-      font-weight: 700;
-      margin-right: 2px;
-    }
-    .streak-tab__sep {
-      opacity: 0.5;
-      margin: 0 4px;
+    .streak-pill:active { transform: scale(0.96); }
+    .streak-pill__leaf { font-size: 14px; line-height: 1; }
+    .streak-pill__count { font-weight: 700; margin-right: 1px; }
+    /* streak이 hidden이라도 헤더 우측 정렬을 위해 spacer */
+    .streak-pill[hidden] + .home-header__spacer { display: block; }
+    .home-header__spacer { display: none; flex: 1; }
+
+    /* 어두운 시간대(dawn/evening/night): 다크 pill */
+    .app-container[data-time-slot="dawn"]   .streak-pill,
+    .app-container[data-time-slot="evening"] .streak-pill,
+    .app-container[data-time-slot="night"]   .streak-pill {
+      background: rgba(0, 0, 0, 0.28);
+      color: #FFFFFF;
     }
 
+    /* 설정 버튼 (홈 전용: 투명, 어두운 시간대엔 흰색 톤) */
+    .home-header .icon-btn {
+      background: transparent;
+      color: var(--text-secondary);
+    }
+    .app-container[data-time-slot="dawn"]   .home-header .icon-btn,
+    .app-container[data-time-slot="evening"] .home-header .icon-btn,
+    .app-container[data-time-slot="night"]   .home-header .icon-btn {
+      color: rgba(255, 255, 255, 0.92);
+    }
+    .home-header .icon-btn:hover,
+    .home-header .icon-btn:active {
+      background: rgba(255, 255, 255, 0.18);
+      color: var(--text-primary);
+    }
+    .app-container[data-time-slot="dawn"]   .home-header .icon-btn:active,
+    .app-container[data-time-slot="evening"] .home-header .icon-btn:active,
+    .app-container[data-time-slot="night"]   .home-header .icon-btn:active {
+      background: rgba(255, 255, 255, 0.22);
+      color: #FFFFFF;
+    }
+
+    /* ---------- 인사말 (이모지/호칭 제거) ---------- */
     .greeting-section {
-      margin-top: var(--space-1);
-      margin-bottom: 28px;
+      margin-top: var(--space-2);
+      margin-bottom: var(--space-4);
     }
-
-    .greeting-emoji {
-      font-size: 40px;
-      margin-bottom: var(--space-2);
-      line-height: 1;
-    }
-
     .greeting-text {
       font-size: var(--text-hero);
       font-weight: 700;
       color: var(--text-primary);
       letter-spacing: -0.025em;
       line-height: 1.25;
-      margin-bottom: 0;
+      margin-bottom: var(--space-1);
     }
-
     .greeting-date {
       font-size: var(--text-caption);
-      color: #9BA69E;
+      color: var(--text-secondary);
       font-weight: 400;
-      margin-top: var(--space-1);
+      margin-top: 6px;
     }
-
-    /* ---------- 스트릭 카드 ---------- */
-    .streak-card {
-      background: linear-gradient(135deg, var(--accent-sage) 0%, var(--accent-sage-dark) 100%);
-      color: white;
-      border-radius: var(--radius-lg);
-      padding: var(--space-5) var(--space-6);
-      display: flex;
-      align-items: center;
-      gap: var(--space-4);
-      margin-bottom: var(--card-gap);
-      box-shadow: var(--shadow-button);
+    /* 어두운 시간대: 흰색 톤 + 부드러운 그림자 */
+    .app-container[data-time-slot="dawn"]   .greeting-text,
+    .app-container[data-time-slot="evening"] .greeting-text,
+    .app-container[data-time-slot="night"]   .greeting-text {
+      color: #FFFFFF;
+      text-shadow: 0 1px 8px rgba(0, 0, 0, 0.18);
     }
-    .streak-emoji {
-      font-size: 32px;
-      line-height: 1;
-    }
-    .streak-info { flex: 1; }
-    .streak-number {
-      font-size: var(--text-h1);
-      font-weight: 700;
-      line-height: 1.1;
-      letter-spacing: -0.02em;
-    }
-    .streak-label {
-      font-size: var(--text-small);
-      opacity: 0.9;
-      margin-top: 4px;
+    .app-container[data-time-slot="dawn"]   .greeting-date,
+    .app-container[data-time-slot="evening"] .greeting-date,
+    .app-container[data-time-slot="night"]   .greeting-date {
+      color: rgba(255, 255, 255, 0.78);
     }
 
     /* ---------- 오늘의 말씀 카드 ---------- */
     .today-card {
+      position: relative;
       background: var(--bg-card);
       border-radius: var(--radius-xl);
-      box-shadow: var(--shadow-float);
-      padding: calc(var(--space-8) * 1.2) var(--card-padding) var(--space-6);
-      margin-bottom: var(--card-gap);
+      box-shadow:
+        0 -2px 8px rgba(45, 58, 50, 0.04),
+        0 12px 32px rgba(45, 58, 50, 0.10);
+      padding: var(--space-6) var(--card-padding) var(--space-6);
+      /* 일러스트가 위쪽에 보이도록 카드를 아래로 밀어 살짝 걸치게 */
+      margin-top: 240px;
+      margin-bottom: var(--space-4);
       text-align: center;
       transition: transform var(--duration-base);
     }
-    .today-card:active {
-      transform: scale(0.99);
-    }
+    .today-card:active { transform: scale(0.99); }
 
-    .today-label {
-      font-size: var(--text-small);
-      font-weight: 600;
-      color: var(--accent-sage);
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      margin-bottom: var(--space-4);
+    /* 메타필 (⏱ 약 3분 소요) */
+    .today-meta {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-bottom: var(--space-3);
+      letter-spacing: -0.01em;
     }
     .today-title {
-      font-size: 28px;
+      font-size: 26px;
       font-weight: 700;
       color: var(--text-primary);
       letter-spacing: -0.02em;
-      line-height: 1.25;
-      margin-bottom: var(--space-3);
+      line-height: 1.3;
+      margin-bottom: var(--space-2);
     }
     .today-ref {
       font-size: var(--text-body);
       color: var(--text-secondary);
-      margin-bottom: 28px;
-    }
-    /* 완료 상태 배지 */
-    .completed-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 6px 14px;
-      background: var(--accent-sage-soft);
-      color: var(--accent-sage-dark);
-      border-radius: var(--radius-pill);
-      font-size: var(--text-caption);
-      font-weight: 600;
-      margin-bottom: var(--space-4);
+      margin-bottom: var(--space-5);
     }
 
-    /* ---------- 아카이브 링크 ---------- */
+    /* CTA 버튼 (시간대별 색상으로 자동 변경) */
+    .today-cta {
+      width: 100%;
+      letter-spacing: 0.01em;
+      font-size: 16px;
+      padding: 16px 32px;
+      transition: transform var(--duration-fast), background var(--duration-base);
+    }
+    .app-container[data-time-slot="dawn"]      .today-cta { background: #2D3A5C; }
+    .app-container[data-time-slot="morning"]   .today-cta { background: #4A3520; }
+    .app-container[data-time-slot="afternoon"] .today-cta { background: #2D4A5C; }
+    .app-container[data-time-slot="evening"]   .today-cta { background: #4A1F2E; }
+    .app-container[data-time-slot="night"]     .today-cta { background: #2D3658; }
+    .app-container[data-time-slot="dawn"]      .today-cta:hover { background: #1F2A45; }
+    .app-container[data-time-slot="morning"]   .today-cta:hover { background: #362517; }
+    .app-container[data-time-slot="afternoon"] .today-cta:hover { background: #1F3645; }
+    .app-container[data-time-slot="evening"]   .today-cta:hover { background: #361621; }
+    .app-container[data-time-slot="night"]     .today-cta:hover { background: #1F2645; }
+
+    /* ---------- 아카이브 링크 (총 묵상 0회면 hidden) ---------- */
     .archive-link {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 18px var(--space-5);
-      background: var(--bg-card);
-      border-radius: var(--radius-xl);
-      color: var(--text-body);
+      padding: 14px var(--space-5);
+      background: rgba(255, 255, 255, 0.7);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border-radius: var(--radius-lg);
+      color: var(--text-primary);
+      font-size: 14px;
       font-weight: 500;
       transition: background var(--duration-base);
     }
-    .archive-link:active {
-      background: var(--bg-soft);
-    }
+    .archive-link:active { background: rgba(255, 255, 255, 0.9); }
     .archive-link__arrow {
-      color: var(--accent-sage);
+      color: var(--text-secondary);
       display: flex;
       align-items: center;
     }
-
-    /* ---------- 설정 버튼: 보조 처리 ---------- */
-    .home-header .icon-btn {
-      background: transparent;
-      color: var(--text-secondary);
+    /* 어두운 시간대: 다크 archive */
+    .app-container[data-time-slot="dawn"]   .archive-link,
+    .app-container[data-time-slot="evening"] .archive-link,
+    .app-container[data-time-slot="night"]   .archive-link {
+      background: rgba(0, 0, 0, 0.25);
+      color: #FFFFFF;
     }
-    .home-header .icon-btn:hover,
-    .home-header .icon-btn:active {
-      background: var(--accent-sage-soft);
-      color: var(--accent-sage-text);
-    }
-
-    /* ---------- CTA 버튼 ---------- */
-    .today-cta {
-      width: 100%;
-      letter-spacing: 0.01em;
-      font-size: 17px;
-      padding: 17px 32px;
+    .app-container[data-time-slot="dawn"]   .archive-link__arrow,
+    .app-container[data-time-slot="evening"] .archive-link__arrow,
+    .app-container[data-time-slot="night"]   .archive-link__arrow {
+      color: rgba(255, 255, 255, 0.7);
     }
 
-    /* ---------- 로딩/에러 상태 ---------- */
+    /* ---------- 로딩/에러 ---------- */
     .loading, .error {
       text-align: center;
-      padding: var(--space-12) var(--space-4);
+      padding: var(--space-8) var(--space-4);
       color: var(--text-secondary);
     }
     .error { color: #C0392B; }
@@ -435,66 +481,280 @@
   </style>
 </head>
 <body>
-  <div class="app-container app-container--no-nav">
-   <main class="app-scroll">
+  <div class="app-container app-container--no-nav" id="appContainer">
 
-    <!-- 상단: 스트릭 탭 + 설정 버튼 -->
-    <header class="home-header">
-      <button class="streak-tab" id="streakTab" aria-label="묵상 기록 보기">
-        <span class="streak-tab__emoji">🌱</span>
-        <span class="streak-tab__text">
-          <strong id="streakCount">0일 연속</strong><span class="streak-tab__sep">·</span><span id="streakTotal">총 0회 완료</span>
-        </span>
-      </button>
-      <button class="icon-btn" id="settingsBtn" aria-label="설정">
-        <svg fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
-          <circle cx="12" cy="12" r="3"/>
-          <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/>
-        </svg>
-      </button>
-    </header>
+    <!-- 풀스크린 일러스트 (시간대별 1개만 표시) -->
+    <div class="hero-illustration" aria-hidden="true">
 
-    <!-- 인사말 -->
-    <section class="greeting-section">
-      <div class="greeting-emoji" id="greetingEmoji">☀️</div>
-      <h1 class="greeting-text" id="greetingText">좋은 아침이에요, 어린양님</h1>
-      <p class="greeting-date" id="greetingDate"></p>
-    </section>
+      <!-- 🌌 거룩한 새벽 (04~06시) -->
+      <svg class="illust-dawn" viewBox="0 0 393 852" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+        <!-- 별 -->
+        <g fill="#FFFFFF">
+          <circle cx="55" cy="80" r="1"/>
+          <circle cx="120" cy="55" r="1.4"/>
+          <circle cx="200" cy="75" r="0.9"/>
+          <circle cx="285" cy="60" r="1.1"/>
+          <circle cx="345" cy="100" r="0.9"/>
+          <circle cx="80" cy="145" r="0.9"/>
+          <circle cx="225" cy="125" r="1.2"/>
+          <circle cx="160" cy="100" r="0.7"/>
+          <circle cx="320" cy="160" r="0.8"/>
+        </g>
+        <!-- 떠오르는 해 (지평선 근처, glow) -->
+        <circle cx="240" cy="500" r="55" fill="#FFE0B0" opacity="0.22"/>
+        <circle cx="240" cy="500" r="40" fill="#FFE0B0" opacity="0.45"/>
+        <circle cx="240" cy="500" r="28" fill="#FFE7C0"/>
+        <!-- 분홍 구름 -->
+        <g fill="#D9A6B0">
+          <ellipse cx="80" cy="320" rx="34" ry="9"/>
+          <ellipse cx="105" cy="316" rx="22" ry="7"/>
+          <ellipse cx="285" cy="380" rx="38" ry="10"/>
+          <ellipse cx="315" cy="376" rx="24" ry="8"/>
+          <ellipse cx="170" cy="430" rx="28" ry="8"/>
+          <ellipse cx="190" cy="427" rx="18" ry="6"/>
+        </g>
+        <!-- 새 떼 -->
+        <g stroke="#5C548A" stroke-width="1.4" fill="none" stroke-linecap="round">
+          <path d="M165 360 q3 -2.5 6 0 q3 -2.5 6 0"/>
+          <path d="M195 372 q3 -2.5 6 0 q3 -2.5 6 0"/>
+          <path d="M222 358 q3 -2.5 6 0 q3 -2.5 6 0"/>
+        </g>
+        <!-- 산: 3겹 (라일락 → 보라) -->
+        <path d="M0 545 L60 485 L130 515 L210 465 L295 505 L360 475 L393 495 L393 700 L0 700 Z" fill="#A89DBE"/>
+        <path d="M0 580 L80 535 L160 565 L240 515 L320 560 L393 535 L393 720 L0 720 Z" fill="#8E80A8"/>
+        <path d="M0 625 L100 585 L195 615 L275 580 L355 615 L393 595 L393 740 L0 740 Z" fill="#6F6890"/>
+        <!-- 풀밭 영역 (베이지) -->
+        <rect x="0" y="700" width="393" height="152" fill="#E5D0C0"/>
+        <!-- 길 (S자 곡선) -->
+        <path d="M195 852 Q170 800 215 760 Q260 720 220 690" stroke="#C8B8A6" stroke-width="44" fill="none" stroke-linecap="round" opacity="0.95"/>
+        <!-- 나무 silhouette (좌측 하단) -->
+        <g fill="#2A3A4A">
+          <ellipse cx="60" cy="660" rx="11" ry="26"/>
+          <ellipse cx="86" cy="664" rx="9" ry="22"/>
+          <rect x="58" y="678" width="4" height="14"/>
+          <rect x="84" y="680" width="3" height="12"/>
+        </g>
+      </svg>
 
-    <!-- 오늘의 말씀 -->
-    <section class="today-card" id="todayCard">
-      <div class="loading" id="todayLoading">
-        <p>오늘의 말씀을 준비하고 있어요...</p>
-      </div>
-      <div id="todayContent" style="display: none;">
-        <div class="today-label" id="todayLabel">오늘의 말씀</div>
-        <h2 class="today-title" id="todayTitle">—</h2>
-        <p class="today-ref" id="todayRef">—</p>
-        <button class="btn btn-primary today-cta" id="startBtn">
-          묵상 시작하기
+      <!-- ☀️ 은혜로운 아침 (07~11시) -->
+      <svg class="illust-morning" viewBox="0 0 393 852" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+        <!-- 떠오르는 해 (오렌지) -->
+        <circle cx="280" cy="490" r="58" fill="#F4A968" opacity="0.20"/>
+        <circle cx="280" cy="490" r="42" fill="#F4A968" opacity="0.40"/>
+        <circle cx="280" cy="490" r="28" fill="#F8B978"/>
+        <!-- 핑크/오렌지 구름 -->
+        <g fill="#F7BCA0">
+          <ellipse cx="75" cy="280" rx="32" ry="8"/>
+          <ellipse cx="100" cy="276" rx="22" ry="7"/>
+          <ellipse cx="170" cy="340" rx="34" ry="9"/>
+          <ellipse cx="195" cy="336" rx="22" ry="7"/>
+          <ellipse cx="305" cy="380" rx="26" ry="7"/>
+        </g>
+        <!-- 새 떼 (작게) -->
+        <g stroke="#8B6B5A" stroke-width="1.4" fill="none" stroke-linecap="round">
+          <path d="M140 290 q3 -2.5 6 0 q3 -2.5 6 0"/>
+          <path d="M165 300 q3 -2.5 6 0 q3 -2.5 6 0"/>
+          <path d="M195 285 q3 -2.5 6 0 q3 -2.5 6 0"/>
+        </g>
+        <!-- 산: 3겹 그린 -->
+        <path d="M0 530 L70 470 L150 505 L230 460 L310 495 L393 470 L393 700 L0 700 Z" fill="#C4D2AE"/>
+        <path d="M0 575 L90 525 L170 555 L250 510 L330 555 L393 530 L393 720 L0 720 Z" fill="#95A87E"/>
+        <path d="M0 620 L110 575 L200 610 L290 575 L380 605 L393 595 L393 740 L0 740 Z" fill="#6B8254"/>
+        <!-- 풀밭 -->
+        <rect x="0" y="700" width="393" height="152" fill="#EFE6CD"/>
+        <!-- 길 -->
+        <path d="M195 852 Q170 800 215 760 Q260 720 220 690" stroke="#E5DAB8" stroke-width="44" fill="none" stroke-linecap="round"/>
+        <!-- 나무 (그린) -->
+        <g fill="#4A6B45">
+          <ellipse cx="60" cy="660" rx="12" ry="28"/>
+          <ellipse cx="88" cy="664" rx="10" ry="24"/>
+          <rect x="58" y="680" width="4" height="14"/>
+          <rect x="86" y="682" width="4" height="12"/>
+        </g>
+      </svg>
+
+      <!-- 🌤️ 평안한 오후 (12~17시) -->
+      <svg class="illust-afternoon" viewBox="0 0 393 852" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+        <!-- 노란 해 (우측 상단) -->
+        <circle cx="320" cy="240" r="42" fill="#F4C964" opacity="0.18"/>
+        <circle cx="320" cy="240" r="28" fill="#F4C964" opacity="0.38"/>
+        <circle cx="320" cy="240" r="20" fill="#F8D478"/>
+        <!-- 흰 구름 -->
+        <g fill="#FFFFFF">
+          <ellipse cx="80" cy="270" rx="32" ry="9"/>
+          <ellipse cx="108" cy="265" rx="22" ry="7"/>
+          <ellipse cx="160" cy="320" rx="26" ry="7"/>
+          <ellipse cx="180" cy="316" rx="18" ry="6"/>
+        </g>
+        <!-- 새 떼 -->
+        <g stroke="#6B7480" stroke-width="1.4" fill="none" stroke-linecap="round">
+          <path d="M210 310 q3 -2.5 6 0 q3 -2.5 6 0"/>
+          <path d="M235 318 q3 -2.5 6 0 q3 -2.5 6 0"/>
+          <path d="M260 308 q3 -2.5 6 0 q3 -2.5 6 0"/>
+        </g>
+        <!-- 산: 3겹 그린 -->
+        <path d="M0 540 L70 480 L150 515 L230 470 L310 505 L393 480 L393 700 L0 700 Z" fill="#C8D5B0"/>
+        <path d="M0 580 L90 530 L170 560 L250 515 L330 555 L393 535 L393 720 L0 720 Z" fill="#95A87E"/>
+        <path d="M0 625 L110 580 L200 615 L290 580 L380 610 L393 600 L393 740 L0 740 Z" fill="#6B8254"/>
+        <!-- 풀밭 (베이지) -->
+        <rect x="0" y="700" width="393" height="152" fill="#ECE3D2"/>
+        <!-- 길 -->
+        <path d="M195 852 Q170 800 215 760 Q260 720 220 690" stroke="#E5DAB8" stroke-width="44" fill="none" stroke-linecap="round"/>
+        <!-- 나무 -->
+        <g fill="#4A6B45">
+          <ellipse cx="60" cy="660" rx="12" ry="28"/>
+          <ellipse cx="88" cy="664" rx="10" ry="24"/>
+          <rect x="58" y="680" width="4" height="14"/>
+          <rect x="86" y="682" width="4" height="12"/>
+        </g>
+      </svg>
+
+      <!-- 🌅 온유한 저녁 (18~22시) -->
+      <svg class="illust-evening" viewBox="0 0 393 852" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+        <!-- 지는 해 (오렌지, 지평선) -->
+        <circle cx="285" cy="500" r="60" fill="#F4A04C" opacity="0.20"/>
+        <circle cx="285" cy="500" r="42" fill="#F4A04C" opacity="0.45"/>
+        <circle cx="285" cy="500" r="28" fill="#F8B868"/>
+        <!-- 테라핑크 구름 -->
+        <g fill="#C57A6A">
+          <ellipse cx="80" cy="320" rx="32" ry="9"/>
+          <ellipse cx="105" cy="316" rx="22" ry="7"/>
+          <ellipse cx="170" cy="380" rx="32" ry="9"/>
+          <ellipse cx="195" cy="376" rx="20" ry="7"/>
+          <ellipse cx="320" cy="380" rx="22" ry="7"/>
+        </g>
+        <!-- 새 떼 -->
+        <g stroke="#3F2E2E" stroke-width="1.4" fill="none" stroke-linecap="round">
+          <path d="M165 350 q3 -2.5 6 0 q3 -2.5 6 0"/>
+          <path d="M195 360 q3 -2.5 6 0 q3 -2.5 6 0"/>
+          <path d="M222 348 q3 -2.5 6 0 q3 -2.5 6 0"/>
+        </g>
+        <!-- 산: 3겹 (어두운 그린/와인) -->
+        <path d="M0 545 L60 485 L130 515 L210 465 L295 510 L360 480 L393 505 L393 700 L0 700 Z" fill="#5B7064"/>
+        <path d="M0 580 L80 535 L160 565 L240 520 L320 555 L393 535 L393 720 L0 720 Z" fill="#4D5C5C"/>
+        <path d="M0 625 L100 585 L195 615 L275 585 L355 615 L393 600 L393 740 L0 740 Z" fill="#3F4D4D"/>
+        <!-- 풀밭 (노을 베이지) -->
+        <rect x="0" y="700" width="393" height="152" fill="#F5C672"/>
+        <!-- 길 -->
+        <path d="M195 852 Q170 800 215 760 Q260 720 220 690" stroke="#E0CDA8" stroke-width="44" fill="none" stroke-linecap="round"/>
+        <!-- 나무 silhouette -->
+        <g fill="#2A3A3A">
+          <ellipse cx="60" cy="660" rx="12" ry="28"/>
+          <ellipse cx="88" cy="664" rx="10" ry="24"/>
+          <rect x="58" y="680" width="4" height="14"/>
+          <rect x="86" y="682" width="4" height="12"/>
+        </g>
+      </svg>
+
+      <!-- 🌙 고요한 밤 (23~03시) -->
+      <svg class="illust-night" viewBox="0 0 393 852" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+        <!-- 별 (다수) -->
+        <g fill="#FFFFFF">
+          <circle cx="40" cy="60" r="0.9"/>
+          <circle cx="110" cy="40" r="1.3"/>
+          <circle cx="170" cy="80" r="0.8"/>
+          <circle cx="245" cy="50" r="1"/>
+          <circle cx="310" cy="90" r="0.9"/>
+          <circle cx="355" cy="60" r="1.1"/>
+          <circle cx="80" cy="130" r="0.8"/>
+          <circle cx="200" cy="160" r="1"/>
+          <circle cx="280" cy="180" r="0.9"/>
+          <circle cx="135" cy="200" r="0.7"/>
+          <circle cx="60" cy="220" r="0.9"/>
+          <circle cx="335" cy="220" r="0.8"/>
+          <circle cx="220" cy="100" r="0.9"/>
+          <circle cx="370" cy="170" r="0.7"/>
+          <circle cx="25" cy="180" r="0.7"/>
+        </g>
+        <!-- 초승달 (우측 상단) -->
+        <g>
+          <circle cx="305" cy="260" r="32" fill="#F0E5B8" opacity="0.18"/>
+          <circle cx="305" cy="260" r="22" fill="#F0E5B8"/>
+          <circle cx="313" cy="254" r="20" fill="#1B2A4A"/>
+        </g>
+        <!-- 어두운 푸른 구름 -->
+        <g fill="#485670" opacity="0.85">
+          <ellipse cx="100" cy="380" rx="34" ry="9"/>
+          <ellipse cx="128" cy="376" rx="22" ry="7"/>
+          <ellipse cx="220" cy="430" rx="30" ry="8"/>
+          <ellipse cx="245" cy="425" rx="20" ry="6"/>
+        </g>
+        <!-- 산: 3겹 (진한 네이비) -->
+        <path d="M0 545 L60 485 L130 515 L210 465 L295 510 L360 480 L393 500 L393 700 L0 700 Z" fill="#3A4A65"/>
+        <path d="M0 580 L80 535 L160 565 L240 520 L320 555 L393 535 L393 720 L0 720 Z" fill="#2A3650"/>
+        <path d="M0 625 L100 585 L195 615 L275 585 L355 615 L393 605 L393 740 L0 740 Z" fill="#1A2538"/>
+        <!-- 풀밭 (어두운 청회색) -->
+        <rect x="0" y="700" width="393" height="152" fill="#2A3A5C"/>
+        <!-- 길 -->
+        <path d="M195 852 Q170 800 215 760 Q260 720 220 690" stroke="#6B7B95" stroke-width="44" fill="none" stroke-linecap="round" opacity="0.85"/>
+        <!-- 나무 (가장 어두운 silhouette) -->
+        <g fill="#0E1424">
+          <ellipse cx="60" cy="660" rx="12" ry="28"/>
+          <ellipse cx="88" cy="664" rx="10" ry="24"/>
+          <rect x="58" y="680" width="4" height="14"/>
+          <rect x="86" y="682" width="4" height="12"/>
+        </g>
+      </svg>
+
+    </div><!-- /.hero-illustration -->
+
+    <main class="app-scroll">
+
+      <!-- 상단: 스트릭 pill + 설정 -->
+      <header class="home-header">
+        <button class="streak-pill" id="streakTab" hidden aria-label="묵상 기록 보기">
+          <span class="streak-pill__leaf">🌱</span>
+          <span><strong class="streak-pill__count" id="streakCount">0</strong>일 연속</span>
         </button>
-      </div>
-      <div id="todayError" style="display: none;">
-        <div class="error">
-          <p>오늘의 말씀을 불러오지 못했어요 😢</p>
-          <p style="font-size: 13px; margin-top: 8px;">잠시 후 다시 시도해주세요.</p>
+        <div class="home-header__spacer" aria-hidden="true"></div>
+        <button class="icon-btn" id="settingsBtn" aria-label="설정">
+          <svg fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/>
+          </svg>
+        </button>
+      </header>
+
+      <!-- 인사말 (이모지/호칭 제거, 시간대별 자동 분기) -->
+      <section class="greeting-section">
+        <h1 class="greeting-text" id="greetingText">평안한 오후예요</h1>
+        <p class="greeting-date" id="greetingDate"></p>
+      </section>
+
+      <!-- 오늘의 말씀 -->
+      <section class="today-card" id="todayCard">
+        <div class="loading" id="todayLoading">
+          <p>오늘의 말씀을 준비하고 있어요...</p>
         </div>
-      </div>
-    </section>
+        <div id="todayContent" style="display: none;">
+          <div class="today-meta">⏱ 약 3분 소요</div>
+          <h2 class="today-title" id="todayTitle">—</h2>
+          <p class="today-ref" id="todayRef">—</p>
+          <button class="btn btn-primary today-cta" id="startBtn">
+            묵상 시작하기
+          </button>
+        </div>
+        <div id="todayError" style="display: none;">
+          <div class="error">
+            <p>오늘의 말씀을 불러오지 못했어요 😢</p>
+            <p style="font-size: 13px; margin-top: 8px;">잠시 후 다시 시도해주세요.</p>
+          </div>
+        </div>
+      </section>
 
-    <!-- 아카이브 링크 -->
-    <a href="#" class="archive-link" id="archiveLink">
-      <span>📖 지난 묵상 모아보기</span>
-      <span class="archive-link__arrow">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-             stroke="currentColor" stroke-width="1.75"
-             stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="9 18 15 12 9 6"/>
-        </svg>
-      </span>
-    </a>
+      <!-- 아카이브 링크 (총 묵상 0회면 hidden) -->
+      <a href="#" class="archive-link" id="archiveLink" hidden>
+        <span>📖 지난 묵상 모아보기</span>
+        <span class="archive-link__arrow">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="1.75"
+               stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="9 18 15 12 9 6"/>
+          </svg>
+        </span>
+      </a>
 
-   </main>
+    </main>
   </div>
 
   <!-- ========== 설정 모달 ========== -->
@@ -623,12 +883,35 @@
   <script src="scripts/common.js"></script>
   <script src="scripts/supabase-sync.js"></script>
   <script>
+    // ========== 시간대 판별 (PRD 명세) ==========
+    function getTimeSlot(hour) {
+      if (hour >= 4  && hour < 7)  return 'dawn';
+      if (hour >= 7  && hour < 12) return 'morning';
+      if (hour >= 12 && hour < 18) return 'afternoon';
+      if (hour >= 18 && hour < 23) return 'evening';
+      return 'night';
+    }
+
+    // 시간대별 인사말 (호칭 제외 — "어린양님" 표기 X)
+    const GREETINGS = {
+      dawn:      '거룩한 새벽이네요',
+      morning:   '은혜로운 아침이에요',
+      afternoon: '평안한 오후예요',
+      evening:   '온유한 저녁이네요',
+      night:     '고요한 밤입니다',
+    };
+
     // ========== 초기화 ==========
     document.addEventListener('DOMContentLoaded', () => {
       const appScroll = document.querySelector('.app-scroll');
       if (appScroll) appScroll.scrollTop = 0;
 
-      renderGreeting();
+      // 시간대를 .app-container의 data-time-slot에 적용
+      // (그라디언트 + 일러스트 + CTA 색상 + 텍스트 톤이 자동 분기됨)
+      const slot = getTimeSlot(new Date().getHours());
+      document.getElementById('appContainer').setAttribute('data-time-slot', slot);
+
+      renderGreeting(slot);
       renderStreak();
       loadTodayQT();
       setupThemeSelector();
@@ -645,11 +928,10 @@
       catch (e) { console.warn('해시 자동 발급 실패 (무시):', e); }
     }
 
-    // ========== 인사말 렌더링 ==========
-    function renderGreeting() {
-      const name = Storage.getUserName();
-      document.getElementById('greetingText').textContent = Common.getGreeting(name);
-      document.getElementById('greetingEmoji').textContent = Common.getTimeEmoji();
+    // ========== 인사말 렌더링 (이모지/호칭 없음) ==========
+    function renderGreeting(slot) {
+      const s = slot || getTimeSlot(new Date().getHours());
+      document.getElementById('greetingText').textContent = GREETINGS[s];
       document.getElementById('greetingDate').textContent = Common.formatKoreanDate();
     }
 
@@ -666,27 +948,23 @@
     }
 
     // ========== 스트릭 렌더링 ==========
+    // streak이 0이면 pill 완전히 숨김 (hidden 속성)
+    // 묵상 총 0회면 아카이브 링크 숨김
     function renderStreak() {
       const streak  = Storage.getStreak();
       const current = streak.current ?? 0;
       const total   = streak.totalCompleted ?? 0;
-      const streakEl = document.getElementById('streakCount');
-      const totalEl  = document.getElementById('streakTotal');
-      const sepEl    = document.querySelector('.streak-tab__sep');
 
-      if (total === 0) {
-        streakEl.textContent = '첫 묵상을 시작해볼까요';
-        sepEl.style.display  = 'none';
-        totalEl.textContent  = '';
-      } else if (current === 0) {
-        streakEl.textContent = '오늘 다시 시작해요';
-        sepEl.style.display  = 'none';
-        totalEl.textContent  = '';
+      const pill = document.getElementById('streakTab');
+      if (current === 0) {
+        pill.hidden = true;
       } else {
-        streakEl.textContent = `${current}일 연속`;
-        sepEl.style.display  = '';
-        totalEl.textContent  = `총 ${total}회 완료`;
+        pill.hidden = false;
+        document.getElementById('streakCount').textContent = current;
       }
+
+      const archive = document.getElementById('archiveLink');
+      archive.hidden = (total === 0);
     }
 
     // ========== 오늘의 QT 로드 ==========
