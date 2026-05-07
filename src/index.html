@@ -58,7 +58,9 @@
       flex: 1;
       min-height: 200px;
       background-size: cover;
-      background-position: top center;
+      /* PNG는 사용자가 illust-area에 맞춰 추출함. background-position은
+         미세한 상향 조정만 적용 (top → 25%로 살짝 시프트). 더/덜 필요시 % 조정. */
+      background-position: center 25%;
       background-repeat: no-repeat;
       /* 하단을 자연스럽게 fade out → 카드 위쪽과 부드럽게 연결 */
       mask-image: linear-gradient(to bottom,
