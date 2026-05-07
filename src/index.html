@@ -33,48 +33,43 @@
   <style>
     /* ========== 홈 전용 스타일 ========== */
 
-    /* 시간대별 fallback 그라디언트 (PNG 로드 전/일러스트 마스크 fade 영역의 배경) */
+    /* 시간대별 풀스크린 배경 PNG (가공 없음 — cover로 그대로 표시) +
+       PNG 로드 전/실패 시 fallback 그라디언트 색상 */
     .app-container[data-time-slot="dawn"] {
-      background: linear-gradient(180deg, #5C548A 0%, #B8A0BC 50%, #E5D0C0 100%);
+      background-color: #B8A0BC;
+      background-image: url('images/%EA%B1%B0%EB%A3%A9%ED%95%9C%20%EC%83%88%EB%B2%BD%20%EB%AA%A8%EB%B0%94%EC%9D%BC%20.png');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
     }
     .app-container[data-time-slot="morning"] {
-      background: linear-gradient(180deg, #F5E1DC 0%, #F8E8D6 50%, #EFE6CD 100%);
+      background-color: #F5E1DC;
+      background-image: url('images/%EC%9D%80%ED%98%9C%EB%A1%9C%EC%9A%B4%20%EC%95%84%EC%B9%A8%20%EB%AA%A8%EB%B0%94%EC%9D%BC%20.png');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
     }
     .app-container[data-time-slot="afternoon"] {
-      background: linear-gradient(180deg, #C5DDDF 0%, #E0E2D8 50%, #ECE3D2 100%);
+      background-color: #D8E0DC;
+      background-image: url('images/%ED%8F%89%EC%95%88%ED%95%9C%20%EC%98%A4%ED%9B%84%20%EB%AA%A8%EB%B0%94%EC%9D%BC.png');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
     }
     .app-container[data-time-slot="evening"] {
-      background: linear-gradient(180deg, #5E5879 0%, #C7896A 60%, #F5C672 100%);
+      background-color: #C7896A;
+      background-image: url('images/%EC%98%A8%EC%9C%A0%ED%95%9C%20%EC%A0%80%EB%85%81%20%EB%AA%A8%EB%B0%94%EC%9D%BC.png');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
     }
     .app-container[data-time-slot="night"] {
-      background: linear-gradient(180deg, #0F1A35 0%, #1B2A4A 50%, #2A3A5C 100%);
-    }
-
-    /* ---------- 일러스트 영역 (greeting과 카드 사이, flex:1로 남은 공간 차지) ---------- */
-    .illust-area {
-      /* page-padding-x(20px) + 약간 더 → 좌우 풀블리드 */
-      width: calc(100% + 44px);
-      margin: 0 -22px -10px;
-      flex: 1;
-      min-height: 200px;
+      background-color: #1B2A4A;
+      background-image: url('images/%EA%B3%A0%EC%9A%94%ED%95%9C%20%EB%B0%A4%20%EB%AA%A8%EB%B0%94%EC%9D%BC%20.png');
       background-size: cover;
-      /* PNG는 사용자가 illust-area에 맞춰 추출함. background-position은
-         미세한 상향 조정만 적용 (top → 25%로 살짝 시프트). 더/덜 필요시 % 조정. */
-      background-position: center 25%;
+      background-position: center;
       background-repeat: no-repeat;
-      /* 하단을 자연스럽게 fade out → 카드 위쪽과 부드럽게 연결 */
-      mask-image: linear-gradient(to bottom,
-        black 0%, black 70%,
-        rgba(0,0,0,0.6) 85%, transparent 100%);
-      -webkit-mask-image: linear-gradient(to bottom,
-        black 0%, black 70%,
-        rgba(0,0,0,0.6) 85%, transparent 100%);
     }
-    .app-container[data-time-slot="dawn"]      .illust-area { background-image: url('images/%EA%B1%B0%EB%A3%A9%ED%95%9C%20%EC%83%88%EB%B2%BD%20%EB%AA%A8%EB%B0%94%EC%9D%BC%20.png'); }
-    .app-container[data-time-slot="morning"]   .illust-area { background-image: url('images/%EC%9D%80%ED%98%9C%EB%A1%9C%EC%9A%B4%20%EC%95%84%EC%B9%A8%20%EB%AA%A8%EB%B0%94%EC%9D%BC%20.png'); }
-    .app-container[data-time-slot="afternoon"] .illust-area { background-image: url('images/%ED%8F%89%EC%95%88%ED%95%9C%20%EC%98%A4%ED%9B%84%20%EB%AA%A8%EB%B0%94%EC%9D%BC.png'); }
-    .app-container[data-time-slot="evening"]   .illust-area { background-image: url('images/%EC%98%A8%EC%9C%A0%ED%95%9C%20%EC%A0%80%EB%85%81%20%EB%AA%A8%EB%B0%94%EC%9D%BC.png'); }
-    .app-container[data-time-slot="night"]     .illust-area { background-image: url('images/%EA%B3%A0%EC%9A%94%ED%95%9C%20%EB%B0%A4%20%EB%AA%A8%EB%B0%94%EC%9D%BC%20.png'); }
 
     /* 콘텐츠는 PNG 배경 위에 layered + flex column으로 카드를 하단 안전 영역에 자동 정렬 */
     .app-scroll {
@@ -193,6 +188,9 @@
       border-radius: 22px;
       box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.04);
       padding: 22px;
+      /* margin-top: auto → flex column에 의해 카드가 하단 영역으로 자동 푸시됨.
+         일러스트가 카드 위 영역 가득히 보임. */
+      margin-top: auto;
       margin-bottom: 24px;
       /* 좌측 정렬 (meta/title/ref). CTA는 별도로 width 100% + 텍스트 중앙 */
       text-align: left;
@@ -492,9 +490,6 @@
         <h1 class="greeting-text" id="greetingText">평안한 오후예요</h1>
         <p class="greeting-date" id="greetingDate"></p>
       </section>
-
-      <!-- 일러스트 영역 (시간대별 PNG, 좌우 풀블리드, 하단 마스크 fade) -->
-      <div class="illust-area" aria-hidden="true"></div>
 
       <!-- 오늘의 말씀 -->
       <section class="today-card" id="todayCard">
