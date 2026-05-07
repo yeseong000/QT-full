@@ -106,7 +106,7 @@ def fetch_page(retries: int = 3) -> str:
 # ===== 파싱 =====
 def split_title_and_ref(line: str) -> tuple:
     """'회복으로 나아가라 룻기 1:15-22' → ('회복으로 나아가라', '룻기 1:15-22')"""
-    pattern = r"^(.+?)\s+([가-힣]+(?:상|하)?)\s+(\d+):(\d+[a-z]?)(?:[-~](\d+[a-z]?))?$"
+    pattern = r"^(.+?)\s+([가-힣]+(?:상|하)?)\s+(\d+):(\d+[a-z]?)(?:[-~](?:(\d+):)?(\d+[a-z]?))?$"
     m = re.match(pattern, line.strip())
     if not m:
         log(f"제목/구절 파싱 실패: {line}", "WARN")
@@ -116,21 +116,22 @@ def split_title_and_ref(line: str) -> tuple:
     book = m.group(2)
     chapter = m.group(3)
     v_start = m.group(4)
-    v_end = m.group(5)
+    end_ch = m.group(5)
+    v_end = m.group(6)
 
     ref = f"{book} {chapter}:{v_start}"
     if v_end:
-        ref += f"-{v_end}"
+        ref += f"-{end_ch}:{v_end}" if end_ch else f"-{v_end}"
     return title, ref
 
 
 def parse_scripture_ref(ref: str) -> dict:
     """'룻기 1:15-22' → {book, chapter, start, end}"""
-    m = re.match(r"([가-힣]+(?:상|하)?)\s+(\d+):(\d+[a-z]?)(?:[-~](\d+[a-z]?))?", ref)
+    m = re.match(r"([가-힣]+(?:상|하)?)\s+(\d+):(\d+[a-z]?)(?:[-~](?:(\d+):)?(\d+[a-z]?))?", ref)
     if not m:
         return {"book": "", "chapter": 0, "start": 0, "end": 0}
     start_raw = m.group(3)
-    end_raw = m.group(4) if m.group(4) else m.group(3)
+    end_raw = m.group(5) if m.group(5) else m.group(3)
     return {
         "book": m.group(1),
         "chapter": int(m.group(2)),
