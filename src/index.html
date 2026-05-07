@@ -33,45 +33,46 @@
   <style>
     /* ========== 홈 전용 스타일 ========== */
 
-    /* 시간대별 풀스크린 배경 PNG (사용자 제작 일러스트, 그대로 사용) +
-       PNG 로드 전/실패 시 fallback 그라디언트 색상 */
+    /* 시간대별 fallback 그라디언트 (PNG 로드 전/일러스트 마스크 fade 영역의 배경) */
     .app-container[data-time-slot="dawn"] {
-      background-color: #B8A0BC;
-      background-image:
-        linear-gradient(180deg, rgba(92,84,138,0) 70%, rgba(229,208,192,0.0) 100%),
-        url('images/%EA%B1%B0%EB%A3%A9%ED%95%9C%20%EC%83%88%EB%B2%BD%20%EB%AA%A8%EB%B0%94%EC%9D%BC%20.png');
-      background-size: cover;
-      background-position: center top;
-      background-repeat: no-repeat;
+      background: linear-gradient(180deg, #5C548A 0%, #B8A0BC 50%, #E5D0C0 100%);
     }
     .app-container[data-time-slot="morning"] {
-      background-color: #F5E1DC;
-      background-image: url('images/%EC%9D%80%ED%98%9C%EB%A1%9C%EC%9A%B4%20%EC%95%84%EC%B9%A8%20%EB%AA%A8%EB%B0%94%EC%9D%BC%20.png');
-      background-size: cover;
-      background-position: center top;
-      background-repeat: no-repeat;
+      background: linear-gradient(180deg, #F5E1DC 0%, #F8E8D6 50%, #EFE6CD 100%);
     }
     .app-container[data-time-slot="afternoon"] {
-      background-color: #D8E0DC;
-      background-image: url('images/%ED%8F%89%EC%95%88%ED%95%9C%20%EC%98%A4%ED%9B%84%20%EB%AA%A8%EB%B0%94%EC%9D%BC.png');
-      background-size: cover;
-      background-position: center top;
-      background-repeat: no-repeat;
+      background: linear-gradient(180deg, #C5DDDF 0%, #E0E2D8 50%, #ECE3D2 100%);
     }
     .app-container[data-time-slot="evening"] {
-      background-color: #C7896A;
-      background-image: url('images/%EC%98%A8%EC%9C%A0%ED%95%9C%20%EC%A0%80%EB%85%81%20%EB%AA%A8%EB%B0%94%EC%9D%BC.png');
-      background-size: cover;
-      background-position: center top;
-      background-repeat: no-repeat;
+      background: linear-gradient(180deg, #5E5879 0%, #C7896A 60%, #F5C672 100%);
     }
     .app-container[data-time-slot="night"] {
-      background-color: #1B2A4A;
-      background-image: url('images/%EA%B3%A0%EC%9A%94%ED%95%9C%20%EB%B0%A4%20%EB%AA%A8%EB%B0%94%EC%9D%BC%20.png');
-      background-size: cover;
-      background-position: center top;
-      background-repeat: no-repeat;
+      background: linear-gradient(180deg, #0F1A35 0%, #1B2A4A 50%, #2A3A5C 100%);
     }
+
+    /* ---------- 일러스트 영역 (greeting과 카드 사이, flex:1로 남은 공간 차지) ---------- */
+    .illust-area {
+      /* page-padding-x(20px) + 약간 더 → 좌우 풀블리드 */
+      width: calc(100% + 44px);
+      margin: 0 -22px -10px;
+      flex: 1;
+      min-height: 200px;
+      background-size: cover;
+      background-position: top center;
+      background-repeat: no-repeat;
+      /* 하단을 자연스럽게 fade out → 카드 위쪽과 부드럽게 연결 */
+      mask-image: linear-gradient(to bottom,
+        black 0%, black 70%,
+        rgba(0,0,0,0.6) 85%, transparent 100%);
+      -webkit-mask-image: linear-gradient(to bottom,
+        black 0%, black 70%,
+        rgba(0,0,0,0.6) 85%, transparent 100%);
+    }
+    .app-container[data-time-slot="dawn"]      .illust-area { background-image: url('images/%EA%B1%B0%EB%A3%A9%ED%95%9C%20%EC%83%88%EB%B2%BD%20%EB%AA%A8%EB%B0%94%EC%9D%BC%20.png'); }
+    .app-container[data-time-slot="morning"]   .illust-area { background-image: url('images/%EC%9D%80%ED%98%9C%EB%A1%9C%EC%9A%B4%20%EC%95%84%EC%B9%A8%20%EB%AA%A8%EB%B0%94%EC%9D%BC%20.png'); }
+    .app-container[data-time-slot="afternoon"] .illust-area { background-image: url('images/%ED%8F%89%EC%95%88%ED%95%9C%20%EC%98%A4%ED%9B%84%20%EB%AA%A8%EB%B0%94%EC%9D%BC.png'); }
+    .app-container[data-time-slot="evening"]   .illust-area { background-image: url('images/%EC%98%A8%EC%9C%A0%ED%95%9C%20%EC%A0%80%EB%85%81%20%EB%AA%A8%EB%B0%94%EC%9D%BC.png'); }
+    .app-container[data-time-slot="night"]     .illust-area { background-image: url('images/%EA%B3%A0%EC%9A%94%ED%95%9C%20%EB%B0%A4%20%EB%AA%A8%EB%B0%94%EC%9D%BC%20.png'); }
 
     /* 콘텐츠는 PNG 배경 위에 layered + flex column으로 카드를 하단 안전 영역에 자동 정렬 */
     .app-scroll {
@@ -187,18 +188,10 @@
     .today-card {
       position: relative;
       background: var(--bg-card);
-      border-radius: var(--radius-xl);
-      box-shadow:
-        0 -2px 8px rgba(45, 58, 50, 0.04),
-        0 12px 32px rgba(45, 58, 50, 0.10);
-      /* 카드 위아래 padding 18px (이전 24px → 더 컴팩트) */
-      padding: 18px 18px;
-      /* margin-top: auto → flex column에 의해 카드가 하단 영역으로 자동 푸시됨.
-         PNG 가이드의 "하단 카드 UI 안전 영역(약 27%)"에 자연스럽게 정렬되어
-         일러스트의 메인 안전 영역(태양·구름·산·길)을 가리지 않음.
-         짧은 화면에선 콘텐츠가 자연 흐름으로 쌓이며 스크롤로 보임. */
-      margin-top: auto;
-      margin-bottom: var(--space-4);
+      border-radius: 22px;
+      box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.04);
+      padding: 22px;
+      margin-bottom: 24px;
       /* 좌측 정렬 (meta/title/ref). CTA는 별도로 width 100% + 텍스트 중앙 */
       text-align: left;
       transition: transform var(--duration-base);
@@ -212,16 +205,16 @@
       gap: 4px;
       font-size: 12px;
       color: var(--text-secondary);
-      margin-bottom: 10px;
+      margin-bottom: 12px;
       letter-spacing: -0.01em;
     }
-    /* verse 텍스트 — 2줄 최대 + 줄임표 처리 */
+    /* verse 텍스트 — 2줄 보장 (formatVerse + line-clamp fallback) */
     .today-title {
-      font-size: 22px;
+      font-size: 18px;
       font-weight: 700;
       color: var(--text-primary);
       letter-spacing: -0.02em;
-      line-height: 1.35;
+      line-height: 1.4;
       margin-bottom: 6px;
       display: -webkit-box;
       -webkit-line-clamp: 2;
@@ -233,8 +226,8 @@
     .today-ref {
       font-size: var(--text-body);
       color: var(--text-secondary);
-      line-height: 1.35;
-      margin-bottom: 14px;
+      line-height: 1.4;
+      margin-bottom: 16px;
     }
 
     /* CTA 버튼 (시간대별 색상으로 자동 변경) */
@@ -242,7 +235,7 @@
       width: 100%;
       letter-spacing: 0.01em;
       font-size: 16px;
-      padding: 13px 32px;
+      padding: 14px 32px;
       text-align: center;
       transition: transform var(--duration-fast), background var(--duration-base);
     }
@@ -463,7 +456,7 @@
 
     /* 세리프 폰트: 큰 제목 오버플로 방지 */
     html[data-font-style="noto-serif"] .greeting-text { font-size: 28px; }
-    html[data-font-style="noto-serif"] .today-title   { font-size: 25px; }
+    html[data-font-style="noto-serif"] .today-title   { font-size: 18px; }
   </style>
 </head>
 <body>
@@ -497,6 +490,9 @@
         <h1 class="greeting-text" id="greetingText">평안한 오후예요</h1>
         <p class="greeting-date" id="greetingDate"></p>
       </section>
+
+      <!-- 일러스트 영역 (시간대별 PNG, 좌우 풀블리드, 하단 마스크 fade) -->
+      <div class="illust-area" aria-hidden="true"></div>
 
       <!-- 오늘의 말씀 -->
       <section class="today-card" id="todayCard">
@@ -666,6 +662,27 @@
       night:     '고요한 밤입니다',
     };
 
+    /**
+     * verse 텍스트를 항상 2줄로 보이도록 처리
+     * - 짧은 텍스트(≤12자): 둘째 줄에 빈 칸을 추가해 2줄 영역 확보
+     * - 긴 텍스트(>12자): 중간 띄어쓰기 위치에서 줄바꿈
+     * - line-clamp: 2가 fallback으로 작동하므로 3줄 이상은 자동 절단
+     */
+    function formatVerse(text) {
+      if (!text) return '';
+      const safe = text.replace(/[<>&]/g, ch => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[ch]));
+      const maxPerLine = 12;
+      if (safe.length <= maxPerLine) {
+        return safe + '<br>&nbsp;';
+      }
+      const mid = Math.floor(safe.length / 2);
+      const breakPoint = safe.lastIndexOf(' ', mid);
+      if (breakPoint > 0) {
+        return safe.slice(0, breakPoint) + '<br>' + safe.slice(breakPoint + 1);
+      }
+      return safe;
+    }
+
     // ========== 초기화 ==========
     document.addEventListener('DOMContentLoaded', () => {
       const appScroll = document.querySelector('.app-scroll');
@@ -754,7 +771,8 @@
 
       content.style.display = 'block';
       const alreadyDone = Storage.getDailyRecord(today).completed;
-      document.getElementById('todayTitle').textContent = qt.title;
+      // verse 텍스트를 항상 2줄로 보이게 처리 (XSS 회피: formatVerse 내부에서 escape)
+      document.getElementById('todayTitle').innerHTML = formatVerse(qt.title);
       document.getElementById('todayRef').textContent   = qt.scripture_ref;
 
       const startBtn = document.getElementById('startBtn');
