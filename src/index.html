@@ -117,9 +117,9 @@
     .streak-pill:active { transform: scale(0.96); }
     .streak-pill__leaf { font-size: 14px; line-height: 1; }
     .streak-pill__count { font-weight: 700; margin-right: 1px; }
-    /* streak이 hidden이라도 헤더 우측 정렬을 위해 spacer */
-    .streak-pill[hidden] + .home-header__spacer { display: block; }
-    .home-header__spacer { display: none; flex: 1; }
+    /* spacer: streak-pill과 우측 아이콘 그룹(archive + settings) 사이 공간을 항상 차지
+       → streak이 hidden일 때나 보일 때나 동일하게 우측 정렬 유지 */
+    .home-header__spacer { flex: 1; }
 
     /* 어두운 시간대(dawn/evening/night): 다크 pill */
     .app-container[data-time-slot="dawn"]   .streak-pill,
@@ -191,14 +191,16 @@
       box-shadow:
         0 -2px 8px rgba(45, 58, 50, 0.04),
         0 12px 32px rgba(45, 58, 50, 0.10);
-      padding: var(--space-6) var(--card-padding) var(--space-6);
+      /* 카드 위아래 padding 18px (이전 24px → 더 컴팩트) */
+      padding: 18px 18px;
       /* margin-top: auto → flex column에 의해 카드가 하단 영역으로 자동 푸시됨.
          PNG 가이드의 "하단 카드 UI 안전 영역(약 27%)"에 자연스럽게 정렬되어
          일러스트의 메인 안전 영역(태양·구름·산·길)을 가리지 않음.
          짧은 화면에선 콘텐츠가 자연 흐름으로 쌓이며 스크롤로 보임. */
       margin-top: auto;
       margin-bottom: var(--space-4);
-      text-align: center;
+      /* 좌측 정렬 (meta/title/ref). CTA는 별도로 width 100% + 텍스트 중앙 */
+      text-align: left;
       transition: transform var(--duration-base);
     }
     .today-card:active { transform: scale(0.99); }
@@ -210,21 +212,29 @@
       gap: 4px;
       font-size: 12px;
       color: var(--text-secondary);
-      margin-bottom: var(--space-3);
+      margin-bottom: 10px;
       letter-spacing: -0.01em;
     }
+    /* verse 텍스트 — 2줄 최대 + 줄임표 처리 */
     .today-title {
-      font-size: 26px;
+      font-size: 22px;
       font-weight: 700;
       color: var(--text-primary);
       letter-spacing: -0.02em;
-      line-height: 1.3;
-      margin-bottom: var(--space-2);
+      line-height: 1.35;
+      margin-bottom: 6px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      word-break: keep-all;
     }
     .today-ref {
       font-size: var(--text-body);
       color: var(--text-secondary);
-      margin-bottom: var(--space-5);
+      line-height: 1.35;
+      margin-bottom: 14px;
     }
 
     /* CTA 버튼 (시간대별 색상으로 자동 변경) */
@@ -232,7 +242,8 @@
       width: 100%;
       letter-spacing: 0.01em;
       font-size: 16px;
-      padding: 16px 32px;
+      padding: 13px 32px;
+      text-align: center;
       transition: transform var(--duration-fast), background var(--duration-base);
     }
     .app-container[data-time-slot="dawn"]      .today-cta { background: #2D3A5C; }
@@ -246,39 +257,9 @@
     .app-container[data-time-slot="evening"]   .today-cta:hover { background: #361621; }
     .app-container[data-time-slot="night"]     .today-cta:hover { background: #1F2645; }
 
-    /* ---------- 아카이브 링크 (총 묵상 0회면 hidden) ---------- */
-    .archive-link {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 14px var(--space-5);
-      background: rgba(255, 255, 255, 0.7);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-      border-radius: var(--radius-lg);
-      color: var(--text-primary);
-      font-size: 14px;
-      font-weight: 500;
-      transition: background var(--duration-base);
-    }
-    .archive-link:active { background: rgba(255, 255, 255, 0.9); }
-    .archive-link__arrow {
-      color: var(--text-secondary);
-      display: flex;
-      align-items: center;
-    }
-    /* 어두운 시간대: 다크 archive */
-    .app-container[data-time-slot="dawn"]   .archive-link,
-    .app-container[data-time-slot="evening"] .archive-link,
-    .app-container[data-time-slot="night"]   .archive-link {
-      background: rgba(0, 0, 0, 0.25);
-      color: #FFFFFF;
-    }
-    .app-container[data-time-slot="dawn"]   .archive-link__arrow,
-    .app-container[data-time-slot="evening"] .archive-link__arrow,
-    .app-container[data-time-slot="night"]   .archive-link__arrow {
-      color: rgba(255, 255, 255, 0.7);
-    }
+    /* ---------- 아카이브 아이콘 버튼 (헤더 우측, 묵상 0회면 hidden) ---------- */
+    /* .icon-btn 클래스 재사용 → 별도 스타일 거의 불필요 */
+    #archiveLink[hidden] { display: none; }
 
     /* ---------- 로딩/에러 ---------- */
     .loading, .error {
@@ -490,13 +471,19 @@
 
     <main class="app-scroll">
 
-      <!-- 상단: 스트릭 pill + 설정 -->
+      <!-- 상단: 스트릭 pill + 아카이브(묵상 0회면 숨김) + 설정 -->
       <header class="home-header">
         <button class="streak-pill" id="streakTab" hidden aria-label="묵상 기록 보기">
           <span class="streak-pill__leaf">🌱</span>
           <span><strong class="streak-pill__count" id="streakCount">0</strong>일 연속</span>
         </button>
         <div class="home-header__spacer" aria-hidden="true"></div>
+        <button class="icon-btn" id="archiveLink" hidden aria-label="지난 묵상 모아보기">
+          <svg fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+            <path d="M2 4a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16a2 2 0 0 0-2-2H2z"/>
+            <path d="M22 4a2 2 0 0 0-2-2h-6a2 2 0 0 0-2 2v16a2 2 0 0 1 2-2h8z"/>
+          </svg>
+        </button>
         <button class="icon-btn" id="settingsBtn" aria-label="설정">
           <svg fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
             <circle cx="12" cy="12" r="3"/>
@@ -531,18 +518,6 @@
           </div>
         </div>
       </section>
-
-      <!-- 아카이브 링크 (총 묵상 0회면 hidden) -->
-      <a href="#" class="archive-link" id="archiveLink" hidden>
-        <span>📖 지난 묵상 모아보기</span>
-        <span class="archive-link__arrow">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-               stroke="currentColor" stroke-width="1.75"
-               stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="9 18 15 12 9 6"/>
-          </svg>
-        </span>
-      </a>
 
     </main>
   </div>
