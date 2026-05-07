@@ -73,11 +73,13 @@
       background-repeat: no-repeat;
     }
 
-    /* 콘텐츠는 PNG 배경 위에 layered */
+    /* 콘텐츠는 PNG 배경 위에 layered + flex column으로 카드를 하단 안전 영역에 자동 정렬 */
     .app-scroll {
       position: relative;
       z-index: 1;
       background: transparent;
+      display: flex;
+      flex-direction: column;
     }
 
     /* ---------- 홈 헤더 ---------- */
@@ -190,8 +192,11 @@
         0 -2px 8px rgba(45, 58, 50, 0.04),
         0 12px 32px rgba(45, 58, 50, 0.10);
       padding: var(--space-6) var(--card-padding) var(--space-6);
-      /* 일러스트가 위쪽에 보이도록 카드를 아래로 밀어 살짝 걸치게 */
-      margin-top: 240px;
+      /* margin-top: auto → flex column에 의해 카드가 하단 영역으로 자동 푸시됨.
+         PNG 가이드의 "하단 카드 UI 안전 영역(약 27%)"에 자연스럽게 정렬되어
+         일러스트의 메인 안전 영역(태양·구름·산·길)을 가리지 않음.
+         짧은 화면에선 콘텐츠가 자연 흐름으로 쌓이며 스크롤로 보임. */
+      margin-top: auto;
       margin-bottom: var(--space-4);
       text-align: center;
       transition: transform var(--duration-base);
