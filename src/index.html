@@ -33,6 +33,14 @@
   <style>
     /* ========== 홈 전용 스타일 ========== */
 
+    /* 모바일 viewport height 안정화 — iOS Safari의 주소창 hide/show로 인한
+       100dvh 변동 문제 해결. JS가 window.innerHeight를 측정해 --app-vh로
+       설정하면 첫 로드부터 정확한 viewport 크기 적용 → 카드가 처음부터
+       하단 정렬된 상태로 보임 (스크롤 액션 불필요) */
+    .app-container {
+      height: var(--app-vh, 100dvh);
+    }
+
     /* 시간대별 배경 (3-layer):
        - layer 2 (PNG): center -130px → 화면 위로 약 15% 시프트
        - layer 3 (fallback gradient): PNG 없는 영역 채움
@@ -656,6 +664,23 @@
   </div>
 
   <!-- ========== Scripts ========== -->
+  <script>
+    // ========== 모바일 viewport height 안정화 (즉시 실행) ==========
+    // iOS Safari의 100dvh가 첫 로드 시 주소창 포함된 큰 값으로 잡혀
+    // 콘텐츠가 viewport 밖으로 나가는 문제 해결.
+    // window.innerHeight는 첫 로드부터 정확한 visible viewport를 반환.
+    (function () {
+      function setAppVh() {
+        document.documentElement.style.setProperty(
+          '--app-vh',
+          window.innerHeight + 'px'
+        );
+      }
+      setAppVh();
+      window.addEventListener('resize', setAppVh, { passive: true });
+      window.addEventListener('orientationchange', setAppVh);
+    })();
+  </script>
   <script src="scripts/storage.js"></script>
   <script src="scripts/common.js"></script>
   <script src="scripts/supabase-sync.js"></script>
