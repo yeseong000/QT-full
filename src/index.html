@@ -34,14 +34,15 @@
     /* ========== 홈 전용 스타일 ========== */
 
     /* 시간대별 배경 (3-layer):
-       - layer 2 (PNG): center -130px → 화면 높이의 약 15% 위로 시프트
-                        (PNG 상단 15%는 화면 밖으로 나가고 화면 0~85% 영역에 PNG 표시)
-       - layer 3 (fallback gradient): PNG가 없는 화면 하단 15%를 자연스럽게 채움
-       - layer 1 (페이드): PNG와 fallback 그라디언트 사이를 부드럽게 연결 */
+       - layer 2 (PNG): center -130px → 화면 위로 약 15% 시프트
+       - layer 3 (fallback gradient): PNG 없는 영역 채움
+       - layer 1 (단순 2-stop linear 페이드): 위쪽 45%는 완전 투명(PNG 그대로),
+         45%~100% 55% 폭에서 매끈하게 색상 alpha 0 → 1로 보간
+         (multi-stop의 alpha 점프로 인한 끊김 제거) */
     .app-container[data-time-slot="dawn"] {
       background-color: #E5D0C0;
       background-image:
-        linear-gradient(to bottom, transparent 80%, #E5D0C0 90%),
+        linear-gradient(to bottom, rgba(229, 208, 192, 0) 45%, rgba(229, 208, 192, 1) 100%),
         url('images/%EA%B1%B0%EB%A3%A9%ED%95%9C%20%EC%83%88%EB%B2%BD%20%EB%AA%A8%EB%B0%94%EC%9D%BC%20.png'),
         linear-gradient(180deg, #5C548A 0%, #B8A0BC 50%, #E5D0C0 100%);
       background-size: 100% 100%, cover, 100% 100%;
@@ -51,7 +52,7 @@
     .app-container[data-time-slot="morning"] {
       background-color: #EFE6CD;
       background-image:
-        linear-gradient(to bottom, transparent 80%, #EFE6CD 90%),
+        linear-gradient(to bottom, rgba(239, 230, 205, 0) 45%, rgba(239, 230, 205, 1) 100%),
         url('images/%EC%9D%80%ED%98%9C%EB%A1%9C%EC%9A%B4%20%EC%95%84%EC%B9%A8%20%EB%AA%A8%EB%B0%94%EC%9D%BC%20.png'),
         linear-gradient(180deg, #F5E1DC 0%, #F8E8D6 50%, #EFE6CD 100%);
       background-size: 100% 100%, cover, 100% 100%;
@@ -61,7 +62,7 @@
     .app-container[data-time-slot="afternoon"] {
       background-color: #ECE3D2;
       background-image:
-        linear-gradient(to bottom, transparent 80%, #ECE3D2 90%),
+        linear-gradient(to bottom, rgba(236, 227, 210, 0) 45%, rgba(236, 227, 210, 1) 100%),
         url('images/%ED%8F%89%EC%95%88%ED%95%9C%20%EC%98%A4%ED%9B%84%20%EB%AA%A8%EB%B0%94%EC%9D%BC.png'),
         linear-gradient(180deg, #C5DDDF 0%, #E0E2D8 50%, #ECE3D2 100%);
       background-size: 100% 100%, cover, 100% 100%;
@@ -71,7 +72,7 @@
     .app-container[data-time-slot="evening"] {
       background-color: #F5C672;
       background-image:
-        linear-gradient(to bottom, transparent 80%, #F5C672 90%),
+        linear-gradient(to bottom, rgba(245, 198, 114, 0) 45%, rgba(245, 198, 114, 1) 100%),
         url('images/%EC%98%A8%EC%9C%A0%ED%95%9C%20%EC%A0%80%EB%85%81%20%EB%AA%A8%EB%B0%94%EC%9D%BC.png'),
         linear-gradient(180deg, #5E5879 0%, #C7896A 60%, #F5C672 100%);
       background-size: 100% 100%, cover, 100% 100%;
@@ -81,7 +82,7 @@
     .app-container[data-time-slot="night"] {
       background-color: #2A3A5C;
       background-image:
-        linear-gradient(to bottom, transparent 80%, #2A3A5C 90%),
+        linear-gradient(to bottom, rgba(42, 58, 92, 0) 45%, rgba(42, 58, 92, 1) 100%),
         url('images/%EA%B3%A0%EC%9A%94%ED%95%9C%20%EB%B0%A4%20%EB%AA%A8%EB%B0%94%EC%9D%BC%20.png'),
         linear-gradient(180deg, #0F1A35 0%, #1B2A4A 50%, #2A3A5C 100%);
       background-size: 100% 100%, cover, 100% 100%;
