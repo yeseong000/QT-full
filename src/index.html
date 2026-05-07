@@ -33,47 +33,47 @@
   <style>
     /* ========== 홈 전용 스타일 ========== */
 
-    /* 시간대별 풀스크린 그라디언트 (.app-container 자체가 surface) */
+    /* 시간대별 풀스크린 배경 PNG (사용자 제작 일러스트, 그대로 사용) +
+       PNG 로드 전/실패 시 fallback 그라디언트 색상 */
     .app-container[data-time-slot="dawn"] {
-      background: linear-gradient(180deg, #5C548A 0%, #B8A0BC 50%, #E5D0C0 100%);
+      background-color: #B8A0BC;
+      background-image:
+        linear-gradient(180deg, rgba(92,84,138,0) 70%, rgba(229,208,192,0.0) 100%),
+        url('images/%EA%B1%B0%EB%A3%A9%ED%95%9C%20%EC%83%88%EB%B2%BD%20%EB%AA%A8%EB%B0%94%EC%9D%BC%20.png');
+      background-size: cover;
+      background-position: center top;
+      background-repeat: no-repeat;
     }
     .app-container[data-time-slot="morning"] {
-      background: linear-gradient(180deg, #F5E1DC 0%, #F8E8D6 50%, #EFE6CD 100%);
+      background-color: #F5E1DC;
+      background-image: url('images/%EC%9D%80%ED%98%9C%EB%A1%9C%EC%9A%B4%20%EC%95%84%EC%B9%A8%20%EB%AA%A8%EB%B0%94%EC%9D%BC%20.png');
+      background-size: cover;
+      background-position: center top;
+      background-repeat: no-repeat;
     }
     .app-container[data-time-slot="afternoon"] {
-      background: linear-gradient(180deg, #C5DDDF 0%, #E0E2D8 50%, #ECE3D2 100%);
+      background-color: #D8E0DC;
+      background-image: url('images/%ED%8F%89%EC%95%88%ED%95%9C%20%EC%98%A4%ED%9B%84%20%EB%AA%A8%EB%B0%94%EC%9D%BC.png');
+      background-size: cover;
+      background-position: center top;
+      background-repeat: no-repeat;
     }
     .app-container[data-time-slot="evening"] {
-      background: linear-gradient(180deg, #5E5879 0%, #C7896A 60%, #F5C672 100%);
+      background-color: #C7896A;
+      background-image: url('images/%EC%98%A8%EC%9C%A0%ED%95%9C%20%EC%A0%80%EB%85%81%20%EB%AA%A8%EB%B0%94%EC%9D%BC.png');
+      background-size: cover;
+      background-position: center top;
+      background-repeat: no-repeat;
     }
     .app-container[data-time-slot="night"] {
-      background: linear-gradient(180deg, #0F1A35 0%, #1B2A4A 50%, #2A3A5C 100%);
+      background-color: #1B2A4A;
+      background-image: url('images/%EA%B3%A0%EC%9A%94%ED%95%9C%20%EB%B0%A4%20%EB%AA%A8%EB%B0%94%EC%9D%BC%20.png');
+      background-size: cover;
+      background-position: center top;
+      background-repeat: no-repeat;
     }
 
-    /* 풀스크린 일러스트 (5개 SVG 중 시간대별로 1개만 표시) */
-    .hero-illustration {
-      position: absolute;
-      inset: 0;
-      z-index: 0;
-      pointer-events: none;
-      overflow: hidden;
-    }
-    .hero-illustration svg {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      display: none;
-    }
-    .app-container[data-time-slot="dawn"]      .illust-dawn,
-    .app-container[data-time-slot="morning"]   .illust-morning,
-    .app-container[data-time-slot="afternoon"] .illust-afternoon,
-    .app-container[data-time-slot="evening"]   .illust-evening,
-    .app-container[data-time-slot="night"]     .illust-night {
-      display: block;
-    }
-
-    /* 콘텐츠는 일러스트 위에 layered */
+    /* 콘텐츠는 PNG 배경 위에 layered */
     .app-scroll {
       position: relative;
       z-index: 1;
@@ -482,221 +482,6 @@
 </head>
 <body>
   <div class="app-container app-container--no-nav" id="appContainer">
-
-    <!-- 풀스크린 일러스트 (시간대별 1개만 표시) -->
-    <div class="hero-illustration" aria-hidden="true">
-
-      <!-- 🌌 거룩한 새벽 (04~06시) -->
-      <svg class="illust-dawn" viewBox="0 0 393 852" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
-        <!-- 별 -->
-        <g fill="#FFFFFF">
-          <circle cx="55" cy="80" r="1"/>
-          <circle cx="120" cy="55" r="1.4"/>
-          <circle cx="200" cy="75" r="0.9"/>
-          <circle cx="285" cy="60" r="1.1"/>
-          <circle cx="345" cy="100" r="0.9"/>
-          <circle cx="80" cy="145" r="0.9"/>
-          <circle cx="225" cy="125" r="1.2"/>
-          <circle cx="160" cy="100" r="0.7"/>
-          <circle cx="320" cy="160" r="0.8"/>
-        </g>
-        <!-- 떠오르는 해 (지평선 근처, glow) -->
-        <circle cx="240" cy="500" r="55" fill="#FFE0B0" opacity="0.22"/>
-        <circle cx="240" cy="500" r="40" fill="#FFE0B0" opacity="0.45"/>
-        <circle cx="240" cy="500" r="28" fill="#FFE7C0"/>
-        <!-- 분홍 구름 -->
-        <g fill="#D9A6B0">
-          <ellipse cx="80" cy="320" rx="34" ry="9"/>
-          <ellipse cx="105" cy="316" rx="22" ry="7"/>
-          <ellipse cx="285" cy="380" rx="38" ry="10"/>
-          <ellipse cx="315" cy="376" rx="24" ry="8"/>
-          <ellipse cx="170" cy="430" rx="28" ry="8"/>
-          <ellipse cx="190" cy="427" rx="18" ry="6"/>
-        </g>
-        <!-- 새 떼 -->
-        <g stroke="#5C548A" stroke-width="1.4" fill="none" stroke-linecap="round">
-          <path d="M165 360 q3 -2.5 6 0 q3 -2.5 6 0"/>
-          <path d="M195 372 q3 -2.5 6 0 q3 -2.5 6 0"/>
-          <path d="M222 358 q3 -2.5 6 0 q3 -2.5 6 0"/>
-        </g>
-        <!-- 산: 3겹 (라일락 → 보라) -->
-        <path d="M0 545 L60 485 L130 515 L210 465 L295 505 L360 475 L393 495 L393 700 L0 700 Z" fill="#A89DBE"/>
-        <path d="M0 580 L80 535 L160 565 L240 515 L320 560 L393 535 L393 720 L0 720 Z" fill="#8E80A8"/>
-        <path d="M0 625 L100 585 L195 615 L275 580 L355 615 L393 595 L393 740 L0 740 Z" fill="#6F6890"/>
-        <!-- 풀밭 영역 (베이지) -->
-        <rect x="0" y="700" width="393" height="152" fill="#E5D0C0"/>
-        <!-- 길 (S자 곡선) -->
-        <path d="M195 852 Q170 800 215 760 Q260 720 220 690" stroke="#C8B8A6" stroke-width="44" fill="none" stroke-linecap="round" opacity="0.95"/>
-        <!-- 나무 silhouette (좌측 하단) -->
-        <g fill="#2A3A4A">
-          <ellipse cx="60" cy="660" rx="11" ry="26"/>
-          <ellipse cx="86" cy="664" rx="9" ry="22"/>
-          <rect x="58" y="678" width="4" height="14"/>
-          <rect x="84" y="680" width="3" height="12"/>
-        </g>
-      </svg>
-
-      <!-- ☀️ 은혜로운 아침 (07~11시) -->
-      <svg class="illust-morning" viewBox="0 0 393 852" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
-        <!-- 떠오르는 해 (오렌지) -->
-        <circle cx="280" cy="490" r="58" fill="#F4A968" opacity="0.20"/>
-        <circle cx="280" cy="490" r="42" fill="#F4A968" opacity="0.40"/>
-        <circle cx="280" cy="490" r="28" fill="#F8B978"/>
-        <!-- 핑크/오렌지 구름 -->
-        <g fill="#F7BCA0">
-          <ellipse cx="75" cy="280" rx="32" ry="8"/>
-          <ellipse cx="100" cy="276" rx="22" ry="7"/>
-          <ellipse cx="170" cy="340" rx="34" ry="9"/>
-          <ellipse cx="195" cy="336" rx="22" ry="7"/>
-          <ellipse cx="305" cy="380" rx="26" ry="7"/>
-        </g>
-        <!-- 새 떼 (작게) -->
-        <g stroke="#8B6B5A" stroke-width="1.4" fill="none" stroke-linecap="round">
-          <path d="M140 290 q3 -2.5 6 0 q3 -2.5 6 0"/>
-          <path d="M165 300 q3 -2.5 6 0 q3 -2.5 6 0"/>
-          <path d="M195 285 q3 -2.5 6 0 q3 -2.5 6 0"/>
-        </g>
-        <!-- 산: 3겹 그린 -->
-        <path d="M0 530 L70 470 L150 505 L230 460 L310 495 L393 470 L393 700 L0 700 Z" fill="#C4D2AE"/>
-        <path d="M0 575 L90 525 L170 555 L250 510 L330 555 L393 530 L393 720 L0 720 Z" fill="#95A87E"/>
-        <path d="M0 620 L110 575 L200 610 L290 575 L380 605 L393 595 L393 740 L0 740 Z" fill="#6B8254"/>
-        <!-- 풀밭 -->
-        <rect x="0" y="700" width="393" height="152" fill="#EFE6CD"/>
-        <!-- 길 -->
-        <path d="M195 852 Q170 800 215 760 Q260 720 220 690" stroke="#E5DAB8" stroke-width="44" fill="none" stroke-linecap="round"/>
-        <!-- 나무 (그린) -->
-        <g fill="#4A6B45">
-          <ellipse cx="60" cy="660" rx="12" ry="28"/>
-          <ellipse cx="88" cy="664" rx="10" ry="24"/>
-          <rect x="58" y="680" width="4" height="14"/>
-          <rect x="86" y="682" width="4" height="12"/>
-        </g>
-      </svg>
-
-      <!-- 🌤️ 평안한 오후 (12~17시) -->
-      <svg class="illust-afternoon" viewBox="0 0 393 852" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
-        <!-- 노란 해 (우측 상단) -->
-        <circle cx="320" cy="240" r="42" fill="#F4C964" opacity="0.18"/>
-        <circle cx="320" cy="240" r="28" fill="#F4C964" opacity="0.38"/>
-        <circle cx="320" cy="240" r="20" fill="#F8D478"/>
-        <!-- 흰 구름 -->
-        <g fill="#FFFFFF">
-          <ellipse cx="80" cy="270" rx="32" ry="9"/>
-          <ellipse cx="108" cy="265" rx="22" ry="7"/>
-          <ellipse cx="160" cy="320" rx="26" ry="7"/>
-          <ellipse cx="180" cy="316" rx="18" ry="6"/>
-        </g>
-        <!-- 새 떼 -->
-        <g stroke="#6B7480" stroke-width="1.4" fill="none" stroke-linecap="round">
-          <path d="M210 310 q3 -2.5 6 0 q3 -2.5 6 0"/>
-          <path d="M235 318 q3 -2.5 6 0 q3 -2.5 6 0"/>
-          <path d="M260 308 q3 -2.5 6 0 q3 -2.5 6 0"/>
-        </g>
-        <!-- 산: 3겹 그린 -->
-        <path d="M0 540 L70 480 L150 515 L230 470 L310 505 L393 480 L393 700 L0 700 Z" fill="#C8D5B0"/>
-        <path d="M0 580 L90 530 L170 560 L250 515 L330 555 L393 535 L393 720 L0 720 Z" fill="#95A87E"/>
-        <path d="M0 625 L110 580 L200 615 L290 580 L380 610 L393 600 L393 740 L0 740 Z" fill="#6B8254"/>
-        <!-- 풀밭 (베이지) -->
-        <rect x="0" y="700" width="393" height="152" fill="#ECE3D2"/>
-        <!-- 길 -->
-        <path d="M195 852 Q170 800 215 760 Q260 720 220 690" stroke="#E5DAB8" stroke-width="44" fill="none" stroke-linecap="round"/>
-        <!-- 나무 -->
-        <g fill="#4A6B45">
-          <ellipse cx="60" cy="660" rx="12" ry="28"/>
-          <ellipse cx="88" cy="664" rx="10" ry="24"/>
-          <rect x="58" y="680" width="4" height="14"/>
-          <rect x="86" y="682" width="4" height="12"/>
-        </g>
-      </svg>
-
-      <!-- 🌅 온유한 저녁 (18~22시) -->
-      <svg class="illust-evening" viewBox="0 0 393 852" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
-        <!-- 지는 해 (오렌지, 지평선) -->
-        <circle cx="285" cy="500" r="60" fill="#F4A04C" opacity="0.20"/>
-        <circle cx="285" cy="500" r="42" fill="#F4A04C" opacity="0.45"/>
-        <circle cx="285" cy="500" r="28" fill="#F8B868"/>
-        <!-- 테라핑크 구름 -->
-        <g fill="#C57A6A">
-          <ellipse cx="80" cy="320" rx="32" ry="9"/>
-          <ellipse cx="105" cy="316" rx="22" ry="7"/>
-          <ellipse cx="170" cy="380" rx="32" ry="9"/>
-          <ellipse cx="195" cy="376" rx="20" ry="7"/>
-          <ellipse cx="320" cy="380" rx="22" ry="7"/>
-        </g>
-        <!-- 새 떼 -->
-        <g stroke="#3F2E2E" stroke-width="1.4" fill="none" stroke-linecap="round">
-          <path d="M165 350 q3 -2.5 6 0 q3 -2.5 6 0"/>
-          <path d="M195 360 q3 -2.5 6 0 q3 -2.5 6 0"/>
-          <path d="M222 348 q3 -2.5 6 0 q3 -2.5 6 0"/>
-        </g>
-        <!-- 산: 3겹 (어두운 그린/와인) -->
-        <path d="M0 545 L60 485 L130 515 L210 465 L295 510 L360 480 L393 505 L393 700 L0 700 Z" fill="#5B7064"/>
-        <path d="M0 580 L80 535 L160 565 L240 520 L320 555 L393 535 L393 720 L0 720 Z" fill="#4D5C5C"/>
-        <path d="M0 625 L100 585 L195 615 L275 585 L355 615 L393 600 L393 740 L0 740 Z" fill="#3F4D4D"/>
-        <!-- 풀밭 (노을 베이지) -->
-        <rect x="0" y="700" width="393" height="152" fill="#F5C672"/>
-        <!-- 길 -->
-        <path d="M195 852 Q170 800 215 760 Q260 720 220 690" stroke="#E0CDA8" stroke-width="44" fill="none" stroke-linecap="round"/>
-        <!-- 나무 silhouette -->
-        <g fill="#2A3A3A">
-          <ellipse cx="60" cy="660" rx="12" ry="28"/>
-          <ellipse cx="88" cy="664" rx="10" ry="24"/>
-          <rect x="58" y="680" width="4" height="14"/>
-          <rect x="86" y="682" width="4" height="12"/>
-        </g>
-      </svg>
-
-      <!-- 🌙 고요한 밤 (23~03시) -->
-      <svg class="illust-night" viewBox="0 0 393 852" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
-        <!-- 별 (다수) -->
-        <g fill="#FFFFFF">
-          <circle cx="40" cy="60" r="0.9"/>
-          <circle cx="110" cy="40" r="1.3"/>
-          <circle cx="170" cy="80" r="0.8"/>
-          <circle cx="245" cy="50" r="1"/>
-          <circle cx="310" cy="90" r="0.9"/>
-          <circle cx="355" cy="60" r="1.1"/>
-          <circle cx="80" cy="130" r="0.8"/>
-          <circle cx="200" cy="160" r="1"/>
-          <circle cx="280" cy="180" r="0.9"/>
-          <circle cx="135" cy="200" r="0.7"/>
-          <circle cx="60" cy="220" r="0.9"/>
-          <circle cx="335" cy="220" r="0.8"/>
-          <circle cx="220" cy="100" r="0.9"/>
-          <circle cx="370" cy="170" r="0.7"/>
-          <circle cx="25" cy="180" r="0.7"/>
-        </g>
-        <!-- 초승달 (우측 상단) -->
-        <g>
-          <circle cx="305" cy="260" r="32" fill="#F0E5B8" opacity="0.18"/>
-          <circle cx="305" cy="260" r="22" fill="#F0E5B8"/>
-          <circle cx="313" cy="254" r="20" fill="#1B2A4A"/>
-        </g>
-        <!-- 어두운 푸른 구름 -->
-        <g fill="#485670" opacity="0.85">
-          <ellipse cx="100" cy="380" rx="34" ry="9"/>
-          <ellipse cx="128" cy="376" rx="22" ry="7"/>
-          <ellipse cx="220" cy="430" rx="30" ry="8"/>
-          <ellipse cx="245" cy="425" rx="20" ry="6"/>
-        </g>
-        <!-- 산: 3겹 (진한 네이비) -->
-        <path d="M0 545 L60 485 L130 515 L210 465 L295 510 L360 480 L393 500 L393 700 L0 700 Z" fill="#3A4A65"/>
-        <path d="M0 580 L80 535 L160 565 L240 520 L320 555 L393 535 L393 720 L0 720 Z" fill="#2A3650"/>
-        <path d="M0 625 L100 585 L195 615 L275 585 L355 615 L393 605 L393 740 L0 740 Z" fill="#1A2538"/>
-        <!-- 풀밭 (어두운 청회색) -->
-        <rect x="0" y="700" width="393" height="152" fill="#2A3A5C"/>
-        <!-- 길 -->
-        <path d="M195 852 Q170 800 215 760 Q260 720 220 690" stroke="#6B7B95" stroke-width="44" fill="none" stroke-linecap="round" opacity="0.85"/>
-        <!-- 나무 (가장 어두운 silhouette) -->
-        <g fill="#0E1424">
-          <ellipse cx="60" cy="660" rx="12" ry="28"/>
-          <ellipse cx="88" cy="664" rx="10" ry="24"/>
-          <rect x="58" y="680" width="4" height="14"/>
-          <rect x="86" y="682" width="4" height="12"/>
-        </g>
-      </svg>
-
-    </div><!-- /.hero-illustration -->
 
     <main class="app-scroll">
 
