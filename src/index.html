@@ -33,59 +33,59 @@
   <style>
     /* ========== 홈 전용 스타일 ========== */
 
-    /* 시간대별 배경:
-       layer 1 (top): 하단 페이드 — PNG 하단을 fallback 색으로 자연 전환
-       layer 2 (mid): PNG (top center, cover) — 위쪽 정렬
-       layer 3 (bot): fallback 그라디언트 (PNG 미로드 시 + 페이드 끝 색)
-       각 시간대의 페이드 끝 색은 그 시간대 그라디언트의 마지막 색과 매칭 */
+    /* 시간대별 배경 (3-layer):
+       - layer 2 (PNG): center -130px → 화면 높이의 약 15% 위로 시프트
+                        (PNG 상단 15%는 화면 밖으로 나가고 화면 0~85% 영역에 PNG 표시)
+       - layer 3 (fallback gradient): PNG가 없는 화면 하단 15%를 자연스럽게 채움
+       - layer 1 (페이드): PNG와 fallback 그라디언트 사이를 부드럽게 연결 */
     .app-container[data-time-slot="dawn"] {
       background-color: #E5D0C0;
       background-image:
-        linear-gradient(to bottom, transparent 65%, #E5D0C0 95%),
+        linear-gradient(to bottom, transparent 80%, #E5D0C0 90%),
         url('images/%EA%B1%B0%EB%A3%A9%ED%95%9C%20%EC%83%88%EB%B2%BD%20%EB%AA%A8%EB%B0%94%EC%9D%BC%20.png'),
         linear-gradient(180deg, #5C548A 0%, #B8A0BC 50%, #E5D0C0 100%);
       background-size: 100% 100%, cover, 100% 100%;
-      background-position: center, top center, center;
+      background-position: center, center -130px, center;
       background-repeat: no-repeat;
     }
     .app-container[data-time-slot="morning"] {
       background-color: #EFE6CD;
       background-image:
-        linear-gradient(to bottom, transparent 65%, #EFE6CD 95%),
+        linear-gradient(to bottom, transparent 80%, #EFE6CD 90%),
         url('images/%EC%9D%80%ED%98%9C%EB%A1%9C%EC%9A%B4%20%EC%95%84%EC%B9%A8%20%EB%AA%A8%EB%B0%94%EC%9D%BC%20.png'),
         linear-gradient(180deg, #F5E1DC 0%, #F8E8D6 50%, #EFE6CD 100%);
       background-size: 100% 100%, cover, 100% 100%;
-      background-position: center, top center, center;
+      background-position: center, center -130px, center;
       background-repeat: no-repeat;
     }
     .app-container[data-time-slot="afternoon"] {
       background-color: #ECE3D2;
       background-image:
-        linear-gradient(to bottom, transparent 65%, #ECE3D2 95%),
+        linear-gradient(to bottom, transparent 80%, #ECE3D2 90%),
         url('images/%ED%8F%89%EC%95%88%ED%95%9C%20%EC%98%A4%ED%9B%84%20%EB%AA%A8%EB%B0%94%EC%9D%BC.png'),
         linear-gradient(180deg, #C5DDDF 0%, #E0E2D8 50%, #ECE3D2 100%);
       background-size: 100% 100%, cover, 100% 100%;
-      background-position: center, top center, center;
+      background-position: center, center -130px, center;
       background-repeat: no-repeat;
     }
     .app-container[data-time-slot="evening"] {
       background-color: #F5C672;
       background-image:
-        linear-gradient(to bottom, transparent 65%, #F5C672 95%),
+        linear-gradient(to bottom, transparent 80%, #F5C672 90%),
         url('images/%EC%98%A8%EC%9C%A0%ED%95%9C%20%EC%A0%80%EB%85%81%20%EB%AA%A8%EB%B0%94%EC%9D%BC.png'),
         linear-gradient(180deg, #5E5879 0%, #C7896A 60%, #F5C672 100%);
       background-size: 100% 100%, cover, 100% 100%;
-      background-position: center, top center, center;
+      background-position: center, center -130px, center;
       background-repeat: no-repeat;
     }
     .app-container[data-time-slot="night"] {
       background-color: #2A3A5C;
       background-image:
-        linear-gradient(to bottom, transparent 65%, #2A3A5C 95%),
+        linear-gradient(to bottom, transparent 80%, #2A3A5C 90%),
         url('images/%EA%B3%A0%EC%9A%94%ED%95%9C%20%EB%B0%A4%20%EB%AA%A8%EB%B0%94%EC%9D%BC%20.png'),
         linear-gradient(180deg, #0F1A35 0%, #1B2A4A 50%, #2A3A5C 100%);
       background-size: 100% 100%, cover, 100% 100%;
-      background-position: center, top center, center;
+      background-position: center, center -130px, center;
       background-repeat: no-repeat;
     }
 
