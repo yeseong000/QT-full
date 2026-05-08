@@ -6,6 +6,16 @@
       "source": "/",
       "destination": "/src/index.html",
       "statusCode": 302
+    },
+    {
+      "source": "/src/history/archive.html",
+      "destination": "/src/history/calendar.html",
+      "permanent": true
+    },
+    {
+      "source": "/src/history/archive",
+      "destination": "/src/history/calendar.html",
+      "permanent": true
     }
   ],
   "headers": [

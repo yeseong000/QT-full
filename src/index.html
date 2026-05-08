@@ -7,12 +7,7 @@
 
   <!-- iOS PWA (홈 화면에 추가 시 앱처럼 동작) -->
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <!-- black-translucent: status bar 영역을 투명하게 두고 webview가 그 영역까지
-       그리도록 함. 그러면 PNG 일러스트가 Dynamic Island 주변까지 자연스럽게
-       이어져 단색 status bar가 만든 색 경계 문제가 사라짐.
-       (.app-scroll의 padding-top: env(safe-area-inset-top)이 콘텐츠를 자동으로
-       Dynamic Island 아래로 밀어내므로 헤더가 가려지지 않음) -->
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="주만나 AI">
   <meta name="format-detection" content="telephone=no">
 
@@ -35,18 +30,17 @@
   <link rel="stylesheet" href="styles/design-tokens.css">
   <link rel="stylesheet" href="styles/common.css">
 
-  <!-- 레이아웃 모드 (CSSOM 적용 전 실행되어야 첫 페인트부터 정확) -->
+  <!-- 레이아웃 모드 토글 (CSSOM 적용 전 실행되어야 첫 페인트부터 정확) -->
   <script>
-    // 기본은 항상 adaptive. URL ?mode=letterbox 일 때만 letterbox로 일회성 전환.
-    // (이전엔 localStorage에 저장해 매 로드 자동 복원했지만, letterbox로 잠기는
-    //  부작용이 있어 영구화 폐지. 기존 저장값도 정리.)
+    // 레이아웃 모드: URL ?mode=adaptive|letterbox 또는 localStorage 저장값, 기본 adaptive
     (function () {
       try {
         var params = new URLSearchParams(location.search);
-        var mode = params.get('mode');
+        var stored = localStorage.getItem('layoutMode');
+        var mode = params.get('mode') || stored || 'adaptive';
         if (mode !== 'adaptive' && mode !== 'letterbox') mode = 'adaptive';
         document.documentElement.setAttribute('data-layout-mode', mode);
-        try { localStorage.removeItem('layoutMode'); } catch (e) {}
+        localStorage.setItem('layoutMode', mode);
       } catch (e) { /* SSR/private mode 등 */ }
     })();
   </script>
@@ -55,64 +49,59 @@
     /* ========== 홈 전용 스타일 ========== */
 
     /* 시간대별 배경 (3-layer):
-       - layer B (bottom fade): 카드 위에서 ground 색으로 페이드, 카드와 부드럽게 이어짐
-       - layer C (PNG): cover + center var(--illust-shift)로 위쪽 시프트
-       - layer D (fallback gradient): PNG 안 채우는 영역의 안전판
-       (이전 layer A top fade는 시간대별 sky 색이 일러스트 ground 색과 충돌해 제거) */
-    .app-container {
-      /* PNG 위쪽 시프트 (픽셀 고정값으로 복구 — svh 호환성 이슈 회피) */
-      --illust-shift: -130px;
-      /* 하단 페이드 시작점 (카드 위쪽과 부드럽게 이어짐) */
-      --fade-start: 42%;
-    }
+       - layer 2 (PNG): center -130px → 화면 위로 약 15% 시프트
+       - layer 3 (fallback gradient): PNG 없는 영역 채움
+       - layer 1 (단순 2-stop linear 페이드): 위쪽 45%는 완전 투명(PNG 그대로),
+         45%~100% 55% 폭에서 매끈하게 색상 alpha 0 → 1로 보간
+         (multi-stop의 alpha 점프로 인한 끊김 제거) */
     .app-container[data-time-slot="dawn"] {
       background-color: #E5D0C0;
       background-image:
-        linear-gradient(to bottom, rgba(229, 208, 192, 0) var(--fade-start), rgba(229, 208, 192, 1) 100%),
+        linear-gradient(to bottom, rgba(229, 208, 192, 0) 45%, rgba(229, 208, 192, 1) 100%),
         url('images/%EA%B1%B0%EB%A3%A9%ED%95%9C%20%EC%83%88%EB%B2%BD%20%EB%AA%A8%EB%B0%94%EC%9D%BC%20.png'),
         linear-gradient(180deg, #5C548A 0%, #B8A0BC 50%, #E5D0C0 100%);
       background-size: 100% 100%, cover, 100% 100%;
-      background-position: center, center var(--illust-shift), center;
+      background-position: center, center -130px, center;
       background-repeat: no-repeat;
     }
     .app-container[data-time-slot="morning"] {
       background-color: #EFE6CD;
       background-image:
-        linear-gradient(to bottom, rgba(239, 230, 205, 0) var(--fade-start), rgba(239, 230, 205, 1) 100%),
+        linear-gradient(to bottom, rgba(239, 230, 205, 0) 45%, rgba(239, 230, 205, 1) 100%),
         url('images/%EC%9D%80%ED%98%9C%EB%A1%9C%EC%9A%B4%20%EC%95%84%EC%B9%A8%20%EB%AA%A8%EB%B0%94%EC%9D%BC%20.png'),
         linear-gradient(180deg, #F5E1DC 0%, #F8E8D6 50%, #EFE6CD 100%);
       background-size: 100% 100%, cover, 100% 100%;
-      background-position: center, center var(--illust-shift), center;
+      background-position: center, center -130px, center;
       background-repeat: no-repeat;
     }
     .app-container[data-time-slot="afternoon"] {
       background-color: #ECE3D2;
       background-image:
-        linear-gradient(to bottom, rgba(236, 227, 210, 0) var(--fade-start), rgba(236, 227, 210, 1) 100%),
+        linear-gradient(to bottom, rgba(236, 227, 210, 0) 45%, rgba(236, 227, 210, 1) 100%),
         url('images/%ED%8F%89%EC%95%88%ED%95%9C%20%EC%98%A4%ED%9B%84%20%EB%AA%A8%EB%B0%94%EC%9D%BC.png'),
         linear-gradient(180deg, #C5DDDF 0%, #E0E2D8 50%, #ECE3D2 100%);
       background-size: 100% 100%, cover, 100% 100%;
-      background-position: center, center var(--illust-shift), center;
+      background-position: center, center -130px, center;
       background-repeat: no-repeat;
     }
     .app-container[data-time-slot="evening"] {
       background-color: #F5C672;
       background-image:
-        linear-gradient(to bottom, rgba(245, 198, 114, 0) var(--fade-start), rgba(245, 198, 114, 1) 100%),
+        linear-gradient(to bottom, rgba(245, 198, 114, 0) 45%, rgba(245, 198, 114, 1) 100%),
         url('images/%EC%98%A8%EC%9C%A0%ED%95%9C%20%EC%A0%80%EB%85%81%20%EB%AA%A8%EB%B0%94%EC%9D%BC.png'),
         linear-gradient(180deg, #5E5879 0%, #C7896A 60%, #F5C672 100%);
       background-size: 100% 100%, cover, 100% 100%;
-      background-position: center, center var(--illust-shift), center;
+      background-position: center, center -130px, center;
       background-repeat: no-repeat;
     }
     .app-container[data-time-slot="night"] {
       background-color: #2A3A5C;
       background-image:
-        linear-gradient(to bottom, rgba(42, 58, 92, 0) var(--fade-start), rgba(42, 58, 92, 1) 100%),
+        linear-gradient(to bottom, rgba(42, 58, 92, 0) 45%, rgba(42, 58, 92, 1) 100%),
         url('images/%EA%B3%A0%EC%9A%94%ED%95%9C%20%EB%B0%A4%20%EB%AA%A8%EB%B0%94%EC%9D%BC%20.png'),
         linear-gradient(180deg, #0F1A35 0%, #1B2A4A 50%, #2A3A5C 100%);
       background-size: 100% 100%, cover, 100% 100%;
-      background-position: center, center var(--illust-shift), center;
+      background-position: center, center -130px, center;
       background-repeat: no-repeat;
     }
 
@@ -136,19 +125,19 @@
       min-height: 44px;
     }
 
-    /* streak pill (작은 알약형, 0이면 hidden 속성으로 숨김) */
-    .streak-pill {
+    /* date pill (날짜 + N회 완료 알약, 항상 표시) */
+    .date-pill {
       display: inline-flex;
       align-items: center;
-      gap: 6px;
+      gap: 7px;
       padding: 7px 14px;
       min-height: 32px;
       background: rgba(255, 255, 255, 0.85);
       backdrop-filter: blur(8px);
       -webkit-backdrop-filter: blur(8px);
       border-radius: 999px;
-      font-size: 13px;
-      font-weight: 600;
+      font-size: 12.5px;
+      font-weight: 500;
       color: #2D3A32;
       border: 0;
       cursor: pointer;
@@ -156,18 +145,18 @@
       transition: transform var(--duration-fast);
       letter-spacing: -0.01em;
       font-family: inherit;
+      white-space: nowrap;
     }
-    .streak-pill:active { transform: scale(0.96); }
-    .streak-pill__leaf { font-size: 14px; line-height: 1; }
-    .streak-pill__count { font-weight: 700; margin-right: 1px; }
-    /* spacer: streak-pill과 우측 아이콘 그룹(archive + settings) 사이 공간을 항상 차지
-       → streak이 hidden일 때나 보일 때나 동일하게 우측 정렬 유지 */
+    .date-pill:active { transform: scale(0.96); }
+    .date-pill__sep { opacity: 0.5; }
+    .date-pill__count { font-weight: 600; }
+    /* spacer: date-pill과 우측 아이콘 그룹(qr + settings) 사이 공간을 항상 차지 */
     .home-header__spacer { flex: 1; }
 
     /* 어두운 시간대(dawn/evening/night): 다크 pill */
-    .app-container[data-time-slot="dawn"]   .streak-pill,
-    .app-container[data-time-slot="evening"] .streak-pill,
-    .app-container[data-time-slot="night"]   .streak-pill {
+    .app-container[data-time-slot="dawn"]   .date-pill,
+    .app-container[data-time-slot="evening"] .date-pill,
+    .app-container[data-time-slot="night"]   .date-pill {
       background: rgba(0, 0, 0, 0.28);
       color: #FFFFFF;
     }
@@ -207,23 +196,12 @@
       line-height: 1.25;
       margin-bottom: var(--space-1);
     }
-    .greeting-date {
-      font-size: var(--text-caption);
-      color: var(--text-secondary);
-      font-weight: 400;
-      margin-top: 6px;
-    }
     /* 어두운 시간대: 흰색 톤 + 부드러운 그림자 */
     .app-container[data-time-slot="dawn"]   .greeting-text,
     .app-container[data-time-slot="evening"] .greeting-text,
     .app-container[data-time-slot="night"]   .greeting-text {
       color: #FFFFFF;
       text-shadow: 0 1px 8px rgba(0, 0, 0, 0.18);
-    }
-    .app-container[data-time-slot="dawn"]   .greeting-date,
-    .app-container[data-time-slot="evening"] .greeting-date,
-    .app-container[data-time-slot="night"]   .greeting-date {
-      color: rgba(255, 255, 255, 0.78);
     }
 
     /* ---------- 오늘의 말씀 카드 ---------- */
@@ -294,10 +272,6 @@
     .app-container[data-time-slot="afternoon"] .today-cta:hover { background: #1F3645; }
     .app-container[data-time-slot="evening"]   .today-cta:hover { background: #361621; }
     .app-container[data-time-slot="night"]     .today-cta:hover { background: #1F2645; }
-
-    /* ---------- 아카이브 아이콘 버튼 (헤더 우측, 묵상 0회면 hidden) ---------- */
-    /* .icon-btn 클래스 재사용 → 별도 스타일 거의 불필요 */
-    #archiveLink[hidden] { display: none; }
 
     /* ---------- 로딩/에러 ---------- */
     .loading, .error {
@@ -372,7 +346,7 @@
     /* 테마 선택 그리드 */
     .theme-grid {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(2, 1fr);
       gap: 8px;
     }
     .theme-option {
@@ -499,6 +473,73 @@
       margin-top: var(--space-4);
     }
 
+    /* ---------- QR 공유 모달 ---------- */
+    .qr-modal-content {
+      text-align: center;
+      padding: 8px 0 4px;
+    }
+    .qr-modal__title {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text-primary);
+      letter-spacing: -0.02em;
+      margin: 0 0 6px;
+    }
+    .qr-modal__desc {
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin: 0 0 24px;
+      line-height: 1.5;
+    }
+    .qr-card {
+      width: 240px;
+      height: 240px;
+      margin: 0 auto 20px;
+      background: #FFFFFF;
+      border: 0.5px solid rgba(0, 0, 0, 0.08);
+      border-radius: 16px;
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-sizing: border-box;
+    }
+    .qr-card svg { display: block; width: 100%; height: 100%; }
+    .qr-url-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 14px;
+      background: var(--bg-paper);
+      border-radius: 12px;
+      max-width: 280px;
+      margin: 0 auto;
+    }
+    .qr-url-text {
+      flex: 1;
+      font-size: 13.5px;
+      color: var(--text-primary);
+      font-family: 'SF Mono', Menlo, monospace;
+      letter-spacing: -0.01em;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      text-align: left;
+    }
+    .qr-copy-btn {
+      background: transparent;
+      border: 0;
+      color: var(--accent-sage-text, #5BA892);
+      font-size: 13px;
+      font-weight: 600;
+      padding: 4px 8px;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      flex-shrink: 0;
+      font-family: inherit;
+    }
+    .qr-copy-btn:active { opacity: 0.6; }
+
     /* 세리프 폰트: 큰 제목 오버플로 방지 */
     html[data-font-style="noto-serif"] .greeting-text { font-size: 28px; }
     html[data-font-style="noto-serif"] .today-title   { font-size: 18px; }
@@ -515,12 +556,8 @@
          흰 띠 제거: html은 ground 단색, body는 sky→ground 그라디언트, theme-color는
          JS에서 sky 색으로 동적 변경(meta tag) — 3중 매핑 */
     @media (max-width: 480px) {
-      /* html 자체에도 sky→ground 그라디언트를 적용해야 상단 overscroll bounce는
-         sky 색, 하단 overscroll bounce는 ground 색으로 다르게 보임. 단색 ground만
-         쓰면 위/아래 모두 ground 색으로 잠겨 단조로워짐. */
       html[data-layout-mode="adaptive"] {
         background-color: var(--ground-color, var(--bg-paper));
-        background-image: var(--time-bg, none);
       }
       html[data-layout-mode="adaptive"] body {
         background: var(--time-bg, var(--bg-paper));
@@ -574,17 +611,18 @@
 
     <main class="app-scroll">
 
-      <!-- 상단: 스트릭 pill + 아카이브(묵상 0회면 숨김) + 설정 -->
+      <!-- 상단: 날짜+N회완료 알약 + QR 공유 + 설정 -->
       <header class="home-header">
-        <button class="streak-pill" id="streakTab" hidden aria-label="묵상 기록 보기">
-          <span class="streak-pill__leaf">🌱</span>
-          <span><strong class="streak-pill__count" id="streakCount">0</strong>일 연속</span>
+        <button class="date-pill" id="datePill" aria-label="묵상 달력 보기">
+          <span id="datePillText">—</span>
         </button>
         <div class="home-header__spacer" aria-hidden="true"></div>
-        <button class="icon-btn" id="archiveLink" hidden aria-label="지난 묵상 모아보기">
+        <button class="icon-btn" id="qrShareBtn" aria-label="QR로 공유">
           <svg fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
-            <path d="M2 4a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16a2 2 0 0 0-2-2H2z"/>
-            <path d="M22 4a2 2 0 0 0-2-2h-6a2 2 0 0 0-2 2v16a2 2 0 0 1 2-2h8z"/>
+            <rect x="3" y="3" width="7" height="7" rx="1"/>
+            <rect x="14" y="3" width="7" height="7" rx="1"/>
+            <rect x="3" y="14" width="7" height="7" rx="1"/>
+            <path d="M14 14h3v3h-3z M20 14v3 M14 20h3 M20 20v.01"/>
           </svg>
         </button>
         <button class="icon-btn" id="settingsBtn" aria-label="설정">
@@ -595,10 +633,9 @@
         </button>
       </header>
 
-      <!-- 인사말 (이모지/호칭 제거, 시간대별 자동 분기) -->
+      <!-- 인사말 (이모지/호칭 제거, 시간대별 자동 분기, 날짜는 상단 알약으로 이동) -->
       <section class="greeting-section">
         <h1 class="greeting-text" id="greetingText">평안한 오후예요</h1>
-        <p class="greeting-date" id="greetingDate"></p>
       </section>
 
       <!-- 오늘의 말씀 -->
@@ -666,10 +703,6 @@
             <button class="theme-option" type="button" data-theme="default" aria-label="기본 배경">
               <div class="theme-swatch" style="background: #F0F4F2;"></div>
               <div class="theme-label">기본</div>
-            </button>
-            <button class="theme-option" type="button" data-theme="rose" aria-label="로즈 배경">
-              <div class="theme-swatch" style="background: #FCF3EE;"></div>
-              <div class="theme-label">로즈</div>
             </button>
             <button class="theme-option" type="button" data-theme="dark" aria-label="다크 배경">
               <div class="theme-swatch" style="background: #1A1D1B;"></div>
@@ -746,17 +779,38 @@
     </div>
   </div>
 
+  <!-- ========== QR 공유 모달 ========== -->
+  <div class="modal-backdrop" id="qrModal">
+    <div class="modal-sheet">
+      <div class="modal-drag-handle"></div>
+      <div class="modal-sheet__scroll">
+        <div class="qr-modal-content">
+          <h2 class="qr-modal__title">큐티 묵상</h2>
+          <p class="qr-modal__desc">QR을 스캔하면 사이트로 이동해요.</p>
+          <div class="qr-card" id="qrCard">
+            <!-- QR SVG는 JS에서 동적 생성 -->
+          </div>
+          <div class="qr-url-row">
+            <span class="qr-url-text" id="qrUrlText">—</span>
+            <button class="qr-copy-btn" id="qrCopyBtn" type="button">복사</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- ========== Scripts ========== -->
   <script src="scripts/storage.js"></script>
   <script src="scripts/common.js"></script>
   <script src="scripts/supabase-sync.js"></script>
+  <script src="scripts/qr.js"></script>
   <script>
     // ========== 시간대 판별 (PRD 명세) ==========
     function getTimeSlot(hour) {
       if (hour >= 4  && hour < 7)  return 'dawn';
       if (hour >= 7  && hour < 12) return 'morning';
-      if (hour >= 12 && hour < 18) return 'afternoon';
-      if (hour >= 18 && hour < 23) return 'evening';
+      if (hour >= 12 && hour < 17) return 'afternoon';
+      if (hour >= 17 && hour < 22) return 'evening';
       return 'night';
     }
 
@@ -800,16 +854,12 @@
       const slot = getTimeSlot(new Date().getHours());
       document.getElementById('appContainer').setAttribute('data-time-slot', slot);
 
-      // 시간대별 sky(위)·ground(아래) 색 — 시스템 영역 흰 띠 제거의 단일 출처
+      // 시간대별 sky(위)·ground(아래) 색 — PWA standalone 시스템 영역 흰 띠 제거의 단일 출처
       // sky : Dynamic Island 주변 status bar (theme-color로 OS 그림) + letterbox 띠
       // ground: 홈바 아래 / 하단 overscroll bounce (html background-color로 노출)
-      // sky 값은 일러스트 PNG의 row 0(가장 위, 가장 옅은 sky 색) 직접 샘플링.
-      // PNG는 위→아래로 갈수록 색이 진해지는(채도 높아지는) 그라디언트가 있어,
-      // 가운데 row를 쓰면 status bar가 너무 진해 보임. row 0의 옅은 색을 써야
-      // "하늘이 위로 더 이어지는" 자연스러운 느낌이 남.
       const SKY_COLOR = {
-        dawn: '#5B5E93', morning: '#E1CFCB', afternoon: '#D1E2EC',
-        evening: '#BFA4A5', night: '#041B46',
+        dawn: '#5C548A', morning: '#F5E1DC', afternoon: '#C5DDDF',
+        evening: '#5E5879', night: '#0F1A35',
       };
       const GROUND_COLOR = {
         dawn: '#E5D0C0', morning: '#EFE6CD', afternoon: '#ECE3D2',
@@ -817,27 +867,24 @@
       };
       document.documentElement.style.setProperty('--sky-color', SKY_COLOR[slot] || '');
       document.documentElement.style.setProperty('--ground-color', GROUND_COLOR[slot] || '');
-      // letterbox 모드 띠 색상은 sky 톤과 동일
       document.documentElement.style.setProperty('--letterbox-bg', SKY_COLOR[slot] || '');
 
-      // PWA standalone에서 body 그라디언트는 보이는 영역만 채움.
-      // OS가 그리는 status bar 위쪽 영역은 theme-color meta로만 색이 결정됨 → 동적 변경 필수.
+      // PWA standalone에서 OS가 그리는 status bar 위쪽 영역은 theme-color meta로만 색이 결정됨
       const themeColorMeta = document.querySelector('meta[name="theme-color"]');
       if (themeColorMeta) themeColorMeta.setAttribute('content', SKY_COLOR[slot] || '#F0F4F2');
 
-      // 배경 그라디언트 (sky[row 0] → ground) — html과 body에 동일 적용.
-      // SKY_COLOR/GROUND_COLOR로부터 자동 합성해 출처 일원화.
-      const sky = SKY_COLOR[slot];
-      const ground = GROUND_COLOR[slot];
-      if (sky && ground) {
-        document.documentElement.style.setProperty(
-          '--time-bg',
-          `linear-gradient(180deg, ${sky} 0%, ${ground} 100%)`
-        );
-      }
+      // body 배경 그라디언트 (sky → ground)
+      const TIME_BG_GRADIENT = {
+        dawn:      'linear-gradient(180deg, #5C548A 0%, #E5D0C0 100%)',
+        morning:   'linear-gradient(180deg, #F5E1DC 0%, #EFE6CD 100%)',
+        afternoon: 'linear-gradient(180deg, #C5DDDF 0%, #ECE3D2 100%)',
+        evening:   'linear-gradient(180deg, #5E5879 0%, #F5C672 100%)',
+        night:     'linear-gradient(180deg, #0F1A35 0%, #2A3A5C 100%)',
+      };
+      document.documentElement.style.setProperty('--time-bg', TIME_BG_GRADIENT[slot] || '');
 
       renderGreeting(slot);
-      renderStreak();
+      renderDatePill();
       loadTodayQT();
       setupThemeSelector();
       setupFontSizeSelector();
@@ -853,11 +900,10 @@
       catch (e) { console.warn('해시 자동 발급 실패 (무시):', e); }
     }
 
-    // ========== 인사말 렌더링 (이모지/호칭 없음) ==========
+    // ========== 인사말 렌더링 (이모지/호칭 없음, 날짜는 헤더 알약으로 이동) ==========
     function renderGreeting(slot) {
       const s = slot || getTimeSlot(new Date().getHours());
       document.getElementById('greetingText').textContent = GREETINGS[s];
-      document.getElementById('greetingDate').textContent = Common.formatKoreanDate();
     }
 
     // ========== 해시 배지 렌더링 ==========
@@ -872,24 +918,33 @@
       }
     }
 
-    // ========== 스트릭 렌더링 ==========
-    // streak이 0이면 pill 완전히 숨김 (hidden 속성)
-    // 묵상 총 0회면 아카이브 링크 숨김
-    function renderStreak() {
-      const streak  = Storage.getStreak();
-      const current = streak.current ?? 0;
-      const total   = streak.totalCompleted ?? 0;
-
-      const pill = document.getElementById('streakTab');
-      if (current === 0) {
-        pill.hidden = true;
-      } else {
-        pill.hidden = false;
-        document.getElementById('streakCount').textContent = current;
+    // ========== 날짜 알약 렌더링 ==========
+    // 형식: "26년 5월 8일 (금)"  또는  "26년 5월 8일 (금) · 12회 완료"
+    // 0회 완료일 때는 "·N회 완료" 부분을 숨김 (첫 사용자 부담 제거)
+    function renderDatePill() {
+      // Storage 미로드(미리보기 등)나 데이터 이슈 시에도 헤더는 항상 표시
+      let total = 0;
+      try {
+        if (typeof Storage !== 'undefined' && typeof Storage.getStreak === 'function') {
+          const streak = Storage.getStreak();
+          total = streak.totalCompleted ?? 0;
+        }
+      } catch (e) {
+        console.warn('renderDatePill: Storage 접근 실패, 0회로 폴백', e);
       }
 
-      const archive = document.getElementById('archiveLink');
-      archive.hidden = (total === 0);
+      const now    = new Date();
+      const yy     = String(now.getFullYear()).slice(2);
+      const month  = now.getMonth() + 1;
+      const day    = now.getDate();
+      const wd     = ['일','월','화','수','목','금','토'][now.getDay()];
+
+      const dateText = `${yy}년 ${month}월 ${day}일 (${wd})`;
+      const text = (total > 0)
+        ? `${dateText} <span class="date-pill__sep">·</span> <span class="date-pill__count">${total}회</span> 완료`
+        : dateText;
+
+      document.getElementById('datePillText').innerHTML = text;
     }
 
     // ========== 오늘의 QT 로드 ==========
@@ -937,19 +992,6 @@
         '--accent-sage-text': '#4A8F7C',
         '--border-subtle':    '#EEEBE2',
         '--border-input':     '#C9CFC9',
-      },
-      rose: {
-        '--bg-card':          '#FFFAF7',
-        '--bg-soft':          '#F5D5C8',
-        '--bg-input':         '#FAEDE5',
-        '--text-primary':     '#3D2A25',
-        '--text-secondary':   '#8B7469',
-        '--accent-sage':      '#C27C65',
-        '--accent-sage-dark': '#A66348',
-        '--accent-sage-soft': '#F5D5C8',
-        '--accent-sage-text': '#9C5539',
-        '--border-subtle':    '#F0DED3',
-        '--border-input':     '#D8BEB0',
       },
       dark: {
         '--bg-card':          '#25292A',
@@ -1038,6 +1080,37 @@
       }
     }
 
+    // ========== QR 모달 ==========
+    // 공유 URL은 og:url 메타 태그에서 가져옴 (단일 진실 공급원)
+    function getShareUrl() {
+      const og = document.querySelector('meta[property="og:url"]');
+      return (og && og.content) ? og.content : window.location.origin;
+    }
+
+    function openQrModal() {
+      const url = getShareUrl();
+      // URL 텍스트는 사용자에게 보일 때 'https://' 접두어 제거 (모바일 가독성)
+      const displayUrl = url.replace(/^https?:\/\//, '');
+      document.getElementById('qrUrlText').textContent = displayUrl;
+
+      // QR SVG 생성 (qr.js의 글로벌 QRCode)
+      if (typeof QRCode !== 'undefined' && QRCode.toSVG) {
+        const svg = QRCode.toSVG(url, { size: 240, margin: 0 });
+        document.getElementById('qrCard').innerHTML = svg;
+      }
+
+      document.getElementById('qrModal').classList.add('is-open');
+    }
+
+    function closeQrModal() {
+      document.getElementById('qrModal').classList.remove('is-open');
+      const sheet = document.querySelector('#qrModal .modal-sheet');
+      if (sheet) {
+        sheet.style.transition = '';
+        sheet.style.transform = '';
+      }
+    }
+
     // staged 값을 셀렉터 UI에 반영 (본문은 건드리지 않음)
     function syncSelectorUI() {
       if (!stagedSettings) return;
@@ -1051,9 +1124,11 @@
 
     // ========== 이벤트 리스너 ==========
     function setupEventListeners() {
-      document.getElementById('streakTab').addEventListener('click', () => {
+      document.getElementById('datePill').addEventListener('click', () => {
         window.location.href = 'history/calendar.html';
       });
+
+      document.getElementById('qrShareBtn').addEventListener('click', openQrModal);
 
       document.getElementById('settingsBtn').addEventListener('click', openSettingsModal);
 
@@ -1101,12 +1176,24 @@
 
       document.getElementById('restoreHashBtn').addEventListener('click', handleRestore);
 
-      document.getElementById('archiveLink').addEventListener('click', (e) => {
-        e.preventDefault();
-        window.location.href = 'history/archive.html';
+      // QR 모달 닫기 (백드롭 클릭)
+      document.getElementById('qrModal').addEventListener('click', (e) => {
+        if (e.target.id === 'qrModal') closeQrModal();
+      });
+
+      // QR URL 복사
+      document.getElementById('qrCopyBtn').addEventListener('click', () => {
+        const text = document.getElementById('qrUrlText').textContent;
+        navigator.clipboard.writeText(text).then(() => {
+          const btn = document.getElementById('qrCopyBtn');
+          const orig = btn.textContent;
+          btn.textContent = '복사됨';
+          setTimeout(() => { btn.textContent = orig; }, 1500);
+        });
       });
 
       setupModalSwipeDown();
+      setupQrModalSwipeDown();
     }
 
     // ========== 모달 스와이프 다운 닫기 ==========
@@ -1150,6 +1237,57 @@
           setTimeout(() => closeSettingsModal(), 285);
         } else {
           // 제자리 복귀
+          sheet.style.transition = 'transform 240ms var(--ease-out)';
+          sheet.style.transform  = '';
+          sheet.addEventListener('transitionend', () => {
+            sheet.style.transition = '';
+          }, { once: true });
+        }
+        deltaY = 0; pointerId = null;
+      };
+
+      handle.addEventListener('pointerup',     endDrag);
+      handle.addEventListener('pointercancel', endDrag);
+    }
+
+    // ========== QR 모달 스와이프 다운 닫기 ==========
+    function setupQrModalSwipeDown() {
+      const sheet  = document.querySelector('#qrModal .modal-sheet');
+      const handle = sheet?.querySelector('.modal-drag-handle');
+      if (!sheet || !handle) return;
+
+      let startY = 0, startTime = 0, deltaY = 0, dragging = false, pointerId = null;
+
+      handle.addEventListener('pointerdown', (e) => {
+        if (e.pointerType === 'mouse' && e.button !== 0) return;
+        dragging = true;
+        startY = e.clientY;
+        startTime = Date.now();
+        deltaY = 0;
+        pointerId = e.pointerId;
+        sheet.classList.add('is-dragging');
+        handle.setPointerCapture(e.pointerId);
+      });
+
+      handle.addEventListener('pointermove', (e) => {
+        if (!dragging || e.pointerId !== pointerId) return;
+        deltaY = Math.max(0, e.clientY - startY);
+        sheet.style.transform = `translateY(${deltaY}px)`;
+      });
+
+      const endDrag = (e) => {
+        if (!dragging || e.pointerId !== pointerId) return;
+        dragging = false;
+        sheet.classList.remove('is-dragging');
+
+        const elapsed  = Math.max(1, Date.now() - startTime);
+        const velocity = deltaY / elapsed;
+
+        if (deltaY > 80 || (velocity > 0.4 && deltaY > 20)) {
+          sheet.style.transition = 'transform 280ms cubic-bezier(0.4, 0, 1, 1)';
+          sheet.style.transform  = 'translateY(110%)';
+          setTimeout(() => closeQrModal(), 285);
+        } else {
           sheet.style.transition = 'transform 240ms var(--ease-out)';
           sheet.style.transform  = '';
           sheet.addEventListener('transitionend', () => {

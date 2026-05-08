@@ -95,7 +95,6 @@
     "nickname_label": "닉네임",
     "background_label": "배경",
     "theme_default": "기본",
-    "theme_rose": "로즈",
     "theme_dark": "다크",
     "language_label": "언어"
   },
