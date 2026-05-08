@@ -510,8 +510,12 @@
          흰 띠 제거: html은 ground 단색, body는 sky→ground 그라디언트, theme-color는
          JS에서 sky 색으로 동적 변경(meta tag) — 3중 매핑 */
     @media (max-width: 480px) {
+      /* html 자체에도 sky→ground 그라디언트를 적용해야 상단 overscroll bounce는
+         sky 색, 하단 overscroll bounce는 ground 색으로 다르게 보임. 단색 ground만
+         쓰면 위/아래 모두 ground 색으로 잠겨 단조로워짐. */
       html[data-layout-mode="adaptive"] {
         background-color: var(--ground-color, var(--bg-paper));
+        background-image: var(--time-bg, none);
       }
       html[data-layout-mode="adaptive"] body {
         background: var(--time-bg, var(--bg-paper));
@@ -816,15 +820,16 @@
       const themeColorMeta = document.querySelector('meta[name="theme-color"]');
       if (themeColorMeta) themeColorMeta.setAttribute('content', SKY_COLOR[slot] || '#F0F4F2');
 
-      // body 배경 그라디언트 (sky → ground)
-      const TIME_BG_GRADIENT = {
-        dawn:      'linear-gradient(180deg, #5C548A 0%, #E5D0C0 100%)',
-        morning:   'linear-gradient(180deg, #F5E1DC 0%, #EFE6CD 100%)',
-        afternoon: 'linear-gradient(180deg, #C5DDDF 0%, #ECE3D2 100%)',
-        evening:   'linear-gradient(180deg, #5E5879 0%, #F5C672 100%)',
-        night:     'linear-gradient(180deg, #0F1A35 0%, #2A3A5C 100%)',
-      };
-      document.documentElement.style.setProperty('--time-bg', TIME_BG_GRADIENT[slot] || '');
+      // 배경 그라디언트 (sky[row 0] → ground) — html과 body에 동일 적용.
+      // SKY_COLOR/GROUND_COLOR로부터 자동 합성해 출처 일원화.
+      const sky = SKY_COLOR[slot];
+      const ground = GROUND_COLOR[slot];
+      if (sky && ground) {
+        document.documentElement.style.setProperty(
+          '--time-bg',
+          `linear-gradient(180deg, ${sky} 0%, ${ground} 100%)`
+        );
+      }
 
       renderGreeting(slot);
       renderStreak();
