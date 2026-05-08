@@ -513,12 +513,16 @@
     /* ---------- 접근 A: 풀스크린 적응형 (기본) ----------
        - 컨테이너 height는 common.css의 100dvh 그대로 사용 (동적 viewport 자동 추적)
        - 카드는 PC와 동일하게 margin-top: auto로 하단 자동 정렬
-       - body 배경을 시간대 그라디언트로 채움 → PWA의 시스템 영역
-         (Dynamic Island 위, 홈바 아래, overscroll bounce 시 보이는 영역)이
-         흰색이 아니라 일러스트 끝 색과 자연스럽게 이어짐 */
+       - PWA standalone 시스템 영역(Dynamic Island 위/홈바 아래/overscroll bounce)
+         흰 띠 제거: html은 ground 단색, body는 sky→ground 그라디언트, theme-color는
+         JS에서 sky 색으로 동적 변경(meta tag) — 3중 매핑 */
     @media (max-width: 480px) {
+      html[data-layout-mode="adaptive"] {
+        background-color: var(--ground-color, var(--bg-paper));
+      }
       html[data-layout-mode="adaptive"] body {
         background: var(--time-bg, var(--bg-paper));
+        background-color: var(--ground-color, var(--bg-paper));
       }
       html[data-layout-mode="adaptive"] #appContainer .today-card {
         margin-top: auto;
@@ -794,16 +798,28 @@
       const slot = getTimeSlot(new Date().getHours());
       document.getElementById('appContainer').setAttribute('data-time-slot', slot);
 
-      // letterbox 모드 띠 색상: 일러스트 위쪽(하늘) 톤과 매치 → 띠가 자연스럽게 이어짐
-      const LETTERBOX_BG = {
+      // 시간대별 sky(위)·ground(아래) 색 — 시스템 영역 흰 띠 제거의 단일 출처
+      // sky : Dynamic Island 주변 status bar (theme-color로 OS 그림) + letterbox 띠
+      // ground: 홈바 아래 / 하단 overscroll bounce (html background-color로 노출)
+      const SKY_COLOR = {
         dawn: '#5C548A', morning: '#F5E1DC', afternoon: '#C5DDDF',
         evening: '#5E5879', night: '#0F1A35',
       };
-      document.documentElement.style.setProperty('--letterbox-bg', LETTERBOX_BG[slot] || '');
+      const GROUND_COLOR = {
+        dawn: '#E5D0C0', morning: '#EFE6CD', afternoon: '#ECE3D2',
+        evening: '#F5C672', night: '#2A3A5C',
+      };
+      document.documentElement.style.setProperty('--sky-color', SKY_COLOR[slot] || '');
+      document.documentElement.style.setProperty('--ground-color', GROUND_COLOR[slot] || '');
+      // letterbox 모드 띠 색상은 sky 톤과 동일
+      document.documentElement.style.setProperty('--letterbox-bg', SKY_COLOR[slot] || '');
 
-      // PWA standalone 모드의 시스템 영역(Dynamic Island 위쪽 / 홈바 아래쪽 / overscroll bounce)
-      // 에 노출되는 body 배경을 시간대 매칭 그라디언트로 채움 (위=sky, 아래=ground)
-      // → letterbox 모드에서 띠가 시간대 색으로 이어진 원리를 adaptive 모드에도 적용
+      // PWA standalone에서 body 그라디언트는 보이는 영역만 채움.
+      // OS가 그리는 status bar 위쪽 영역은 theme-color meta로만 색이 결정됨 → 동적 변경 필수.
+      const themeColorMeta = document.querySelector('meta[name="theme-color"]');
+      if (themeColorMeta) themeColorMeta.setAttribute('content', SKY_COLOR[slot] || '#F0F4F2');
+
+      // body 배경 그라디언트 (sky → ground)
       const TIME_BG_GRADIENT = {
         dawn:      'linear-gradient(180deg, #5C548A 0%, #E5D0C0 100%)',
         morning:   'linear-gradient(180deg, #F5E1DC 0%, #EFE6CD 100%)',
