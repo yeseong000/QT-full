@@ -474,6 +474,24 @@
       font-size: var(--text-small);
       line-height: 1.6;
     }
+
+    /* ==========================================================
+       PC/iPad 컴팩트: 미리보기 카드 max-height (한 화면 안 유지)
+       ========================================================== */
+    @media (min-width: 768px) {
+      .preview-card.is-visible {
+        max-height: 60vh;
+        overflow-y: auto;
+      }
+      .streak-hero {
+        margin-bottom: var(--space-3);
+      }
+    }
+    @media (min-width: 1024px) {
+      .preview-card.is-visible {
+        max-height: 55vh;
+      }
+    }
   </style>
 </head>
 <body>

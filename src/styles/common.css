@@ -122,7 +122,7 @@ input, textarea {
   body {
     background: #D9E3DF;   /* 카드 바깥 배경 */
     min-height: 100vh;
-    padding: 40px 20px;
+    padding: min(40px, 2.5vh) 20px;    /* 작은 뷰포트일 때 외곽 패딩 자동 축소 */
     display: flex;
     align-items: center;
     justify-content: center;
@@ -131,13 +131,13 @@ input, textarea {
   .app-container {
     width: 430px;
     max-width: 430px;
-    height: 932px;
-    min-height: 932px;
-    max-height: 90vh;                  /* 화면 작을 때 대응 */
-    border-radius: var(--radius-xl);   /* 클린 카드 모서리 (iPhone radius 제거) */
+    height: min(932px, 95vh);          /* 뷰포트 95% 안으로 자동 압축 */
+    min-height: 0;                      /* 페이지 외부 스크롤 방지 */
+    max-height: 95vh;
+    border-radius: var(--radius-xl);   /* 클린 카드 모서리 */
     background: var(--bg-paper);
     overflow: hidden;
-    box-shadow: 0 16px 50px rgba(0, 0, 0, 0.18);  /* 부드러운 드롭 섀도우만 */
+    box-shadow: 0 16px 50px rgba(0, 0, 0, 0.18);
     padding: 0;
   }
 
@@ -200,17 +200,17 @@ input, textarea {
    ------------------------------------------------------------------ */
 @media (min-width: 768px) {
   body {
-    padding: 60px 40px;
+    padding: min(60px, 3vh) 40px;
   }
   .app-container {
     width: 600px;
     max-width: 600px;
-    height: 1280px;
-    min-height: 1280px;
+    height: min(1280px, 95vh);
+    min-height: 0;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.20);
   }
 
-  /* 폰트 토큰 ramp — design-tokens.css의 lg/lg-xl 정의보다 specificity 낮으므로
+  /* 폰트/spacing 토큰 ramp — design-tokens.css의 lg/lg-xl 정의보다 specificity 낮으므로
      md 사용자에게만 적용됨 (의도한 동작) */
   :root,
   html[data-font-size="md"] {
@@ -221,7 +221,11 @@ input, textarea {
     --text-body: 17px;
     --text-small: 15px;
     --text-caption: 13px;
-    --card-padding: 28px;
+    /* 컴팩트 spacing — 콘텐츠를 한 화면에 더 잘 들어가게 */
+    --card-padding: 20px;
+    --card-gap: 18px;
+    --page-padding-top: 16px;
+    --page-padding-bottom: 80px;
   }
 
   /* 터치/클릭 영역 한 단계 확대 */
@@ -239,6 +243,33 @@ input, textarea {
     width: 56px;
     height: 56px;
   }
+
+  /* ----------------------------------------------------------
+     Step-2 (묵상) 페이지 전용 2칼럼 그리드
+     - 풀폭: top-bar / page-title / scripture-toggle (sticky 유지)
+     - 좌측: 책 맥락
+     - 우측: 핵심 요약 + 인물 + 해설 (자동 stack)
+     ---------------------------------------------------------- */
+  [data-qt-step="meditation"] .app-scroll {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    column-gap: var(--card-gap);
+    row-gap: var(--card-gap);
+    align-content: start;
+  }
+  [data-qt-step="meditation"] .top-bar,
+  [data-qt-step="meditation"] .page-title,
+  [data-qt-step="meditation"] .scripture-toggle {
+    grid-column: 1 / -1;
+  }
+  [data-qt-step="meditation"] #bookContextCard {
+    grid-column: 1 / 2;
+  }
+  [data-qt-step="meditation"] #summaryCard,
+  [data-qt-step="meditation"] #charactersCard,
+  [data-qt-step="meditation"] #commentaryCard {
+    grid-column: 2 / 3;
+  }
 }
 
 /* ------------------------------------------------------------------
@@ -247,13 +278,13 @@ input, textarea {
    ------------------------------------------------------------------ */
 @media (min-width: 1024px) {
   body {
-    padding: 80px 60px;
+    padding: min(80px, 4vh) 60px;
   }
   .app-container {
     width: 720px;
     max-width: 720px;
-    height: 1480px;
-    min-height: 1480px;
+    height: min(1480px, 95vh);
+    min-height: 0;
     box-shadow: 0 24px 70px rgba(0, 0, 0, 0.22);
   }
 
@@ -266,7 +297,11 @@ input, textarea {
     --text-body: 18px;
     --text-small: 15px;
     --text-caption: 13px;
-    --card-padding: 32px;
+    /* 더 컴팩트 spacing (대형 화면) */
+    --card-padding: 18px;
+    --card-gap: 16px;
+    --page-padding-top: 18px;
+    --page-padding-bottom: 60px;
   }
 
   .icon-btn {
