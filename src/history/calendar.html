@@ -26,7 +26,7 @@
        - layer 2 (.bg-overlay): 시간대별 색상 오버레이로 가독성 확보 */
     .app-container { position: relative; }
     .bg-blur {
-      position: fixed;
+      position: absolute;
       inset: -30px;
       z-index: -2;
       background-size: cover;
@@ -37,7 +37,7 @@
       pointer-events: none;
     }
     .bg-overlay {
-      position: fixed;
+      position: absolute;
       inset: 0;
       z-index: -1;
       pointer-events: none;

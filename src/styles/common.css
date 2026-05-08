@@ -113,12 +113,14 @@ input, textarea {
 }
 
 /* ------------------------------------------------------------------
-   💻 PC에서 iPhone 프레임처럼 렌더링
-   (481px 이상 = PC/태블릿 환경)
+   💻 디바이스별 가운데 집중 카드 (하드웨어 외관 없는 클린 카드)
+   - 481px+ : PC / 작은 창 — 430×932
+   - 768px+ : iPad Mini portrait — 600×1280
+   - 1024px+: iPad Pro / 대형 데스크톱 — 720×1480
    ------------------------------------------------------------------ */
 @media (min-width: 481px) {
   body {
-    background: #D9E3DF;   /* 프레임 바깥 배경 */
+    background: #D9E3DF;   /* 카드 바깥 배경 */
     min-height: 100vh;
     padding: 40px 20px;
     display: flex;
@@ -127,57 +129,32 @@ input, textarea {
   }
 
   .app-container {
-    width: 393px;                      /* iPhone 14/15 Pro 실제 폭 */
-    max-width: 393px;
-    height: 852px;                     /* iPhone 14/15 Pro 실제 높이 */
-    min-height: 852px;
-    max-height: 90vh;                  /* PC 화면 작을 때 대응 */
-    border-radius: var(--iphone-frame-radius);
+    width: 430px;
+    max-width: 430px;
+    height: 932px;
+    min-height: 932px;
+    max-height: 90vh;                  /* 화면 작을 때 대응 */
+    border-radius: var(--radius-xl);   /* 클린 카드 모서리 (iPhone radius 제거) */
     background: var(--bg-paper);
-    overflow: hidden;                  /* 내부 .app-scroll이 스크롤 담당 */
-    box-shadow:
-      0 0 0 12px #1a1a1a,              /* 검정 베젤 */
-      0 20px 60px rgba(0, 0, 0, 0.25); /* 드롭 섀도우 */
-    padding: 0;                        /* 패딩은 .app-scroll로 이동 */
+    overflow: hidden;
+    box-shadow: 0 16px 50px rgba(0, 0, 0, 0.18);  /* 부드러운 드롭 섀도우만 */
+    padding: 0;
   }
 
-  /* PC 프레임에서 스크롤 영역 padding 재정의 (다이나믹 아일랜드 영역 고려) */
-  .app-scroll {
-    padding:
-      calc(var(--page-padding-top) + 54px)
-      var(--page-padding-x)
-      var(--space-6);
-  }
-
-  /* PC 프레임의 다이나믹 아일랜드 시뮬레이션 */
-  .app-container::before {
-    content: '';
-    position: absolute;
-    top: 12px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 120px;
-    height: 36px;
-    background: #1a1a1a;
-    border-radius: 20px;
-    z-index: 1000;
-    pointer-events: none;
-  }
-
-  /* PC 프레임 안 하단 네비: 홈바 영역 확보 + 프레임 하단 모서리 맞춤 */
+  /* 하단 네비: 카드 하단 모서리 맞춤 (홈바 시뮬레이션 제거) */
   .bottom-nav {
-    padding-bottom: calc(16px + 34px);
-    border-radius: 0 0 var(--iphone-frame-radius) var(--iphone-frame-radius);
+    padding-bottom: 16px;
+    border-radius: 0 0 var(--radius-xl) var(--radius-xl);
   }
 
-  /* FAB은 app-container 내부 absolute (bottom-nav 위) */
+  /* FAB: 단순 nav 위 위치 (홈바 영역 제거) */
   .fab {
-    bottom: calc(16px + 34px + 72px);  /* 홈바 + nav + 여유 */
+    bottom: calc(16px + 72px);
   }
 
   .modal-backdrop {
     position: absolute;
-    border-radius: var(--iphone-frame-radius);
+    border-radius: var(--radius-xl);
     overflow: hidden;
   }
 
@@ -214,6 +191,97 @@ input, textarea {
   .app-scroll.is-scrolling::-webkit-scrollbar-thumb,
   .scripture-toggle__body.is-scrolling::-webkit-scrollbar-thumb {
     background: rgba(45, 58, 50, 0.28);
+  }
+}
+
+/* ------------------------------------------------------------------
+   📱 768px+: iPad Mini portrait 대응 (600×1280, 부드러운 섀도우만)
+   - 폰트/컴포넌트도 한 단계 ramp (md 사용자에게만 — lg/lg-xl는 design-tokens 우선)
+   ------------------------------------------------------------------ */
+@media (min-width: 768px) {
+  body {
+    padding: 60px 40px;
+  }
+  .app-container {
+    width: 600px;
+    max-width: 600px;
+    height: 1280px;
+    min-height: 1280px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.20);
+  }
+
+  /* 폰트 토큰 ramp — design-tokens.css의 lg/lg-xl 정의보다 specificity 낮으므로
+     md 사용자에게만 적용됨 (의도한 동작) */
+  :root,
+  html[data-font-size="md"] {
+    --text-hero: 32px;
+    --text-h1: 25px;
+    --text-h2: 20px;
+    --text-scripture: 18px;
+    --text-body: 17px;
+    --text-small: 15px;
+    --text-caption: 13px;
+    --card-padding: 28px;
+  }
+
+  /* 터치/클릭 영역 한 단계 확대 */
+  .icon-btn {
+    width: 48px;
+    height: 48px;
+  }
+  .btn {
+    min-height: 48px;
+  }
+  .bottom-nav {
+    padding: 16px 24px;
+  }
+  .fab {
+    width: 56px;
+    height: 56px;
+  }
+}
+
+/* ------------------------------------------------------------------
+   💻 1024px+: iPad Pro / 대형 데스크톱 대응 (720×1480, 부드러운 섀도우만)
+   - 폰트/컴포넌트도 두 단계 ramp (md 사용자에게만)
+   ------------------------------------------------------------------ */
+@media (min-width: 1024px) {
+  body {
+    padding: 80px 60px;
+  }
+  .app-container {
+    width: 720px;
+    max-width: 720px;
+    height: 1480px;
+    min-height: 1480px;
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.22);
+  }
+
+  :root,
+  html[data-font-size="md"] {
+    --text-hero: 34px;
+    --text-h1: 27px;
+    --text-h2: 22px;
+    --text-scripture: 19px;
+    --text-body: 18px;
+    --text-small: 15px;
+    --text-caption: 13px;
+    --card-padding: 32px;
+  }
+
+  .icon-btn {
+    width: 52px;
+    height: 52px;
+  }
+  .btn {
+    min-height: 52px;
+  }
+  .bottom-nav {
+    padding: 18px 28px;
+  }
+  .fab {
+    width: 60px;
+    height: 60px;
   }
 }
 
@@ -534,11 +602,6 @@ input, textarea {
   flex: 1;
   min-height: 0;
   padding: var(--space-4) var(--space-6) calc(var(--space-6) + env(safe-area-inset-bottom, 0));
-}
-
-/* 미리보기 칩의 inline font-family는 그대로 살아남도록 (세리프 미리보기 유지) */
-.modal-sheet .font-option__preview {
-  font-family: revert;
 }
 
 @keyframes slideUp {
