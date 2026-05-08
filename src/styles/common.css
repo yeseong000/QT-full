@@ -121,7 +121,9 @@ input, textarea {
 @media (min-width: 481px) {
   body {
     background: #D9E3DF;   /* 카드 바깥 배경 */
-    min-height: 100vh;
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;                  /* 외부(페이지) 스크롤 완전 차단 */
     padding: min(40px, 2.5vh) 20px;    /* 작은 뷰포트일 때 외곽 패딩 자동 축소 */
     display: flex;
     align-items: center;
@@ -161,6 +163,16 @@ input, textarea {
   .modal-sheet {
     max-width: 100%;
     border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  }
+
+  /* 481+ 폰트 한 단계 ramp (md 사용자에게만) */
+  :root,
+  html[data-font-size="md"] {
+    --text-hero: 32px;
+    --text-h1: 25px;
+    --text-h2: 20px;
+    --text-scripture: 18px;
+    --text-body: 17px;
   }
 
   /* iOS overlay 느낌의 자동 숨김 스크롤바 (PC 프레임 전용) */
@@ -214,13 +226,13 @@ input, textarea {
      md 사용자에게만 적용됨 (의도한 동작) */
   :root,
   html[data-font-size="md"] {
-    --text-hero: 34px;
-    --text-h1: 26px;
-    --text-h2: 22px;
-    --text-scripture: 19px;
-    --text-body: 18px;
-    --text-small: 15px;
-    --text-caption: 13px;
+    --text-hero: 36px;
+    --text-h1: 28px;
+    --text-h2: 23px;
+    --text-scripture: 20px;
+    --text-body: 19px;
+    --text-small: 16px;
+    --text-caption: 14px;
     --card-padding: 28px;
     --card-gap: 24px;
     --page-padding-top: 20px;
@@ -246,12 +258,15 @@ input, textarea {
   /* ----------------------------------------------------------
      Step-2 (묵상) 페이지 전용 2칼럼 그리드 — 좌·우 균형
      - 풀폭: top-bar / page-title / scripture-toggle (sticky 유지)
-     - 좌측: 책 맥락 + 구절 깊이 들여다보기 (해설)
-     - 우측: 핵심 요약 + 말씀 속 인물들
+     - 좌측 위: 구절 깊이 들여다보기 (해설)
+     - 우측 위: 핵심 요약
+     - 좌측 아래: 책 맥락
+     - 우측 아래: 말씀 속 인물들
      ---------------------------------------------------------- */
   [data-qt-step="meditation"] .app-scroll {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-auto-flow: row dense;
     column-gap: var(--card-gap);
     row-gap: var(--card-gap);
     align-content: start;
@@ -261,13 +276,23 @@ input, textarea {
   [data-qt-step="meditation"] .scripture-toggle {
     grid-column: 1 / -1;
   }
-  [data-qt-step="meditation"] #bookContextCard,
+  /* 좌측 칼럼 — 구절 해설 위, 책 맥락 아래 */
   [data-qt-step="meditation"] #commentaryCard {
     grid-column: 1 / 2;
+    grid-row: 4;
   }
-  [data-qt-step="meditation"] #summaryCard,
+  [data-qt-step="meditation"] #bookContextCard {
+    grid-column: 1 / 2;
+    grid-row: 5;
+  }
+  /* 우측 칼럼 — 핵심 요약 위, 인물 아래 */
+  [data-qt-step="meditation"] #summaryCard {
+    grid-column: 2 / 3;
+    grid-row: 4;
+  }
   [data-qt-step="meditation"] #charactersCard {
     grid-column: 2 / 3;
+    grid-row: 5;
   }
 }
 
@@ -289,13 +314,13 @@ input, textarea {
 
   :root,
   html[data-font-size="md"] {
-    --text-hero: 38px;
-    --text-h1: 30px;
-    --text-h2: 24px;
-    --text-scripture: 20px;
-    --text-body: 20px;
-    --text-small: 16px;
-    --text-caption: 14px;
+    --text-hero: 42px;
+    --text-h1: 32px;
+    --text-h2: 26px;
+    --text-scripture: 22px;
+    --text-body: 22px;
+    --text-small: 18px;
+    --text-caption: 15px;
     --card-padding: 32px;
     --card-gap: 28px;
     --page-padding-top: 24px;
