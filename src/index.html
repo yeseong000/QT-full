@@ -71,65 +71,73 @@
   <style>
     /* ========== 홈 전용 스타일 ========== */
 
-    /* 시간대별 배경 (3-layer):
-       - layer 2 (PNG): center var(--illust-shift) → 화면 비율 기반 위로 시프트
-       - layer 3 (fallback gradient): PNG 없는 영역 채움
-       - layer 1 (단순 2-stop linear 페이드): 위쪽 var(--fade-start)는 완전 투명(PNG 그대로),
-         이후 100%까지 색상 alpha 0 → 1로 보간 (multi-stop의 alpha 점프 제거) */
+    /* 시간대별 배경 (4-layer):
+       - layer A (top fade): PNG 위쪽 잘림 영역을 sky 색으로 자연스럽게 채움 (NEW)
+       - layer B (bottom fade): 카드 위에서 살구색으로 페이드, 카드와 부드럽게 이어짐
+       - layer C (PNG): cover + center var(--illust-shift)로 위쪽 시프트
+       - layer D (fallback gradient): PNG 안 채우는 영역의 안전판
+       PNG 비율과 viewport 비율이 안 맞을 때 layer D만으로는 끊김이 보일 수 있어 layer A로 보강 */
     .app-container {
-      /* 일러스트 위쪽 시프트: 화면 높이의 14% (852px 기준 ≈ -119px, 기존 -130px와 유사) */
-      --illust-shift: -14svh;
-      /* 페이드 시작점: 카드 위쪽과 자연스럽게 이어지도록 */
+      /* PNG 위쪽 시프트 (픽셀 고정값으로 복구 — svh 호환성 이슈 회피) */
+      --illust-shift: -130px;
+      /* 하단 페이드 시작점 (카드 위쪽과 부드럽게 이어짐) */
       --fade-start: 42%;
+      /* 상단 페이드 끝점 (이 지점부터 PNG가 그대로 보임) */
+      --sky-fade-end: 18%;
     }
     .app-container[data-time-slot="dawn"] {
       background-color: #E5D0C0;
       background-image:
+        linear-gradient(to bottom, rgba(92, 84, 138, 1) 0%, rgba(92, 84, 138, 0) var(--sky-fade-end)),
         linear-gradient(to bottom, rgba(229, 208, 192, 0) var(--fade-start), rgba(229, 208, 192, 1) 100%),
         url('images/%EA%B1%B0%EB%A3%A9%ED%95%9C%20%EC%83%88%EB%B2%BD%20%EB%AA%A8%EB%B0%94%EC%9D%BC%20.png'),
         linear-gradient(180deg, #5C548A 0%, #B8A0BC 50%, #E5D0C0 100%);
-      background-size: 100% 100%, cover, 100% 100%;
-      background-position: center, center var(--illust-shift), center;
+      background-size: 100% 100%, 100% 100%, cover, 100% 100%;
+      background-position: center, center, center var(--illust-shift), center;
       background-repeat: no-repeat;
     }
     .app-container[data-time-slot="morning"] {
       background-color: #EFE6CD;
       background-image:
+        linear-gradient(to bottom, rgba(245, 225, 220, 1) 0%, rgba(245, 225, 220, 0) var(--sky-fade-end)),
         linear-gradient(to bottom, rgba(239, 230, 205, 0) var(--fade-start), rgba(239, 230, 205, 1) 100%),
         url('images/%EC%9D%80%ED%98%9C%EB%A1%9C%EC%9A%B4%20%EC%95%84%EC%B9%A8%20%EB%AA%A8%EB%B0%94%EC%9D%BC%20.png'),
         linear-gradient(180deg, #F5E1DC 0%, #F8E8D6 50%, #EFE6CD 100%);
-      background-size: 100% 100%, cover, 100% 100%;
-      background-position: center, center var(--illust-shift), center;
+      background-size: 100% 100%, 100% 100%, cover, 100% 100%;
+      background-position: center, center, center var(--illust-shift), center;
       background-repeat: no-repeat;
     }
     .app-container[data-time-slot="afternoon"] {
       background-color: #ECE3D2;
       background-image:
+        linear-gradient(to bottom, rgba(197, 221, 223, 1) 0%, rgba(197, 221, 223, 0) var(--sky-fade-end)),
         linear-gradient(to bottom, rgba(236, 227, 210, 0) var(--fade-start), rgba(236, 227, 210, 1) 100%),
         url('images/%ED%8F%89%EC%95%88%ED%95%9C%20%EC%98%A4%ED%9B%84%20%EB%AA%A8%EB%B0%94%EC%9D%BC.png'),
         linear-gradient(180deg, #C5DDDF 0%, #E0E2D8 50%, #ECE3D2 100%);
-      background-size: 100% 100%, cover, 100% 100%;
-      background-position: center, center var(--illust-shift), center;
+      background-size: 100% 100%, 100% 100%, cover, 100% 100%;
+      background-position: center, center, center var(--illust-shift), center;
       background-repeat: no-repeat;
     }
     .app-container[data-time-slot="evening"] {
       background-color: #F5C672;
       background-image:
+        linear-gradient(to bottom, rgba(94, 88, 121, 1) 0%, rgba(94, 88, 121, 0) var(--sky-fade-end)),
         linear-gradient(to bottom, rgba(245, 198, 114, 0) var(--fade-start), rgba(245, 198, 114, 1) 100%),
         url('images/%EC%98%A8%EC%9C%A0%ED%95%9C%20%EC%A0%80%EB%85%81%20%EB%AA%A8%EB%B0%94%EC%9D%BC.png'),
         linear-gradient(180deg, #5E5879 0%, #C7896A 60%, #F5C672 100%);
-      background-size: 100% 100%, cover, 100% 100%;
-      background-position: center, center var(--illust-shift), center;
+      background-size: 100% 100%, 100% 100%, cover, 100% 100%;
+      background-position: center, center, center var(--illust-shift), center;
       background-repeat: no-repeat;
     }
     .app-container[data-time-slot="night"] {
       background-color: #2A3A5C;
       background-image:
+        linear-gradient(to bottom, rgba(15, 26, 53, 1) 0%, rgba(15, 26, 53, 0) var(--sky-fade-end)),
         linear-gradient(to bottom, rgba(42, 58, 92, 0) var(--fade-start), rgba(42, 58, 92, 1) 100%),
         url('images/%EA%B3%A0%EC%9A%94%ED%95%9C%20%EB%B0%A4%20%EB%AA%A8%EB%B0%94%EC%9D%BC%20.png'),
         linear-gradient(180deg, #0F1A35 0%, #1B2A4A 50%, #2A3A5C 100%);
-      background-size: 100% 100%, cover, 100% 100%;
-      background-position: center, center var(--illust-shift), center;
+      background-size: 100% 100%, 100% 100%, cover, 100% 100%;
+      background-position: center, center, center var(--illust-shift), center;
       background-repeat: no-repeat;
     }
 
