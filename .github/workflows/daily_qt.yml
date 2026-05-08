@@ -50,6 +50,18 @@ jobs:
             python scripts/generate_ai.py
           fi
 
+      - name: Generate 5단 호흡 묵상 (deep_dive)
+        continue-on-error: true   # 실패해도 본 파이프라인 계속 진행 (프론트엔드는 deep_dive 없으면 종전대로 렌더링)
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          if [ -z "${OPENAI_API_KEY}" ]; then
+            echo "::warning::OPENAI_API_KEY 미설정 → 5단 호흡 묵상 건너뜀"
+          else
+            echo "5단 호흡 묵상 생성 (data/deep_dive/{date}.json)"
+            python scripts/generate_meditation.py
+          fi
+
       - name: Commit and push changes
         run: |
           git config user.name "QT Bot (yeseong000)"
