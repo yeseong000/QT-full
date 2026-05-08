@@ -51,23 +51,30 @@ function applyTheme(theme) {
   }
 })();
 
-// 테마 즉시 적용 (DOMContentLoaded 전에 실행 → 플래시 최소화)
-(function applyStoredTheme() {
-  let stored = null;
-  try {
-    const raw = localStorage.getItem('settings.background');
-    if (raw) stored = raw;
-  } catch (e) { /* localStorage 차단/private 모드: 무시 */ }
+// 시간대 기반 자동 배경
+//   22:00–07:00 → dark, 그 외 → default(light)
+function pickAutoTheme(date = new Date()) {
+  const h = date.getHours();
+  return (h >= 22 || h < 7) ? 'dark' : 'default';
+}
 
-  // 사용자가 명시적으로 고른 값이 있으면 우선,
-  // 없으면 OS의 prefers-color-scheme를 따라감
-  if (!stored && window.matchMedia &&
-      window.matchMedia('(prefers-color-scheme: dark)').matches) {
-    stored = 'dark';
-  }
+function applyAutoTheme() {
+  applyTheme(pickAutoTheme());
+}
 
-  applyTheme(stored);
-})();
+// 즉시 적용 (DOMContentLoaded 전 → 플래시 최소화)
+applyAutoTheme();
+
+// 페이지가 떠 있는 동안 시간 경계(07:00 / 22:00)에서 자동 전환
+if (typeof window !== 'undefined') {
+  setInterval(applyAutoTheme, 60 * 60 * 1000);   // 1시간마다
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) applyAutoTheme();
+  });
+}
+
+// 과거 사용자가 수동으로 저장해둔 background 값 정리(있으면 제거)
+try { localStorage.removeItem('settings.background'); } catch (e) {}
 
 function applyFontStyle(style) {
   const s = style || Storage.get('settings.fontStyle', 'noto-serif') || 'noto-serif';
@@ -80,6 +87,8 @@ function applyFontStyle(style) {
 
 const Common = {
   applyTheme,
+  applyAutoTheme,
+  pickAutoTheme,
   applyFontStyle,
 
   /**
