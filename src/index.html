@@ -527,15 +527,11 @@
 
     /* ---------- 접근 A: 풀스크린 적응형 (기본) ----------
        - JS로 측정한 --app-vh로 컨테이너 높이 고정 (iOS Safari 첫 로드 안정화)
-       - 카드 위에 28svh 일러스트 영역 강제 확보 → 카드는 화면 하단 ~30% */
+       - 카드는 PC와 동일하게 margin-top: auto로 하단 자동 정렬
+       - 일러스트 영역은 헤더+인사말과 카드 사이 공간이 자동으로 채움 */
     @media (max-width: 480px) {
       html[data-layout-mode="adaptive"] #appContainer {
         height: var(--app-vh, 100dvh);
-      }
-      html[data-layout-mode="adaptive"] #appContainer > .app-scroll::before {
-        content: '';
-        flex: 0 0 28svh;
-        pointer-events: none;
       }
       html[data-layout-mode="adaptive"] #appContainer .today-card {
         margin-top: auto;
