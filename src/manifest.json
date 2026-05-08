@@ -1,0 +1,32 @@
+{
+  "name": "함께 만나",
+  "short_name": "함께 만나",
+  "description": "오늘의 말씀과 묵상을 함께해요",
+  "start_url": "/src/index.html",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#F0F4F2",
+  "background_color": "#F0F4F2",
+  "lang": "ko",
+  "icons": [
+    {
+      "src": "images/Icon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "images/Icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "images/Icon.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

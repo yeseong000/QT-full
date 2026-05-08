@@ -5,13 +5,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no, maximum-scale=1">
   <meta name="theme-color" content="#F0F4F2">
 
+  <!-- PWA (Android/Chrome) -->
+  <link rel="manifest" href="manifest.json">
+
   <!-- iOS PWA (홈 화면에 추가 시 앱처럼 동작) -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <meta name="apple-mobile-web-app-title" content="주만나 AI">
+  <meta name="apple-mobile-web-app-title" content="함께 만나">
   <meta name="format-detection" content="telephone=no">
+  <link rel="apple-touch-icon" href="images/Icon.png">
+  <link rel="icon" type="image/png" href="images/Icon.png">
 
-  <title>주만나</title>
+  <title>함께 만나</title>
 
   <!-- 카카오톡 / SNS 공유 미리보기 -->
   <meta property="og:type" content="website">
@@ -724,7 +729,7 @@
       <div class="modal-drag-handle"></div>
       <div class="modal-sheet__scroll">
         <div class="qr-modal-content">
-          <h2 class="qr-modal__title">큐티 묵상</h2>
+          <h2 class="qr-modal__title">함께 만나</h2>
           <p class="qr-modal__desc">QR을 스캔하면 사이트로 이동해요.</p>
           <div class="qr-card" id="qrCard">
             <!-- QR SVG는 JS에서 동적 생성 -->
