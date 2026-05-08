@@ -182,12 +182,12 @@
       background: #2A2F38; border-color: rgba(139, 157, 184, 0.45); color: #9BA8BC;
     }
 
-    /* 다크모드: streak hero를 차분한 forest 톤으로 — 큰 sage 면적이 눈부신 문제 해결
-       흰 텍스트 위 saturated sage → 어두운 카드 + sage accent 텍스트 strategy */
+    /* 다크모드: streak hero를 차분한 네이비 톤으로 — 큰 액센트 면적이 눈부신 문제 해결
+       흰 텍스트 위 saturated accent → 어두운 카드 + accent 텍스트 strategy */
     html[data-theme="dark"] .streak-hero {
-      background: linear-gradient(135deg, #1F2A26 0%, #25332D 100%);
+      background: linear-gradient(135deg, #1F2738 0%, #2A3450 100%);
       color: var(--text-primary);
-      box-shadow: inset 0 0 0 1px rgba(111, 180, 150, 0.18);
+      box-shadow: inset 0 0 0 1px rgba(110, 132, 168, 0.18);
     }
     html[data-theme="dark"] .streak-hero::before {
       opacity: 0.10;
@@ -200,13 +200,13 @@
       opacity: 1;
     }
     html[data-theme="dark"] .streak-hero__total {
-      background: rgba(111, 180, 150, 0.12);
+      background: rgba(110, 132, 168,0.12);
       color: var(--accent-sage-text);
     }
     html[data-theme="dark"] .milestone {
-      background: rgba(111, 180, 150, 0.08);
+      background: rgba(110, 132, 168,0.08);
       color: var(--text-body);
-      box-shadow: inset 0 0 0 1px rgba(111, 180, 150, 0.12);
+      box-shadow: inset 0 0 0 1px rgba(110, 132, 168,0.12);
     }
 
     /* 메모 미리보기 */

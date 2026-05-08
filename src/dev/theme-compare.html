@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>주만나 — 시간대 5종 컬러 비교판</title>
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;500;700&display=swap">
+  <link rel="stylesheet" href="../styles/design-tokens.css">
+
+  <style>
+    /* ==========================================================================
+       비교 페이지 — 도티테스트판 스타일
+       ========================================================================== */
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #F2F4F7;
+      font-family: 'Pretendard Variable', 'Pretendard', -apple-system, sans-serif;
+      color: #1F2937;
+    }
+
+    /* ---------- 상단 sticky 컨트롤 바 ---------- */
+    .control-bar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: #FFFFFF;
+      border-bottom: 1px solid #E5E7EB;
+      padding: 16px 24px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    }
+    .control-bar__title {
+      font-size: 18px;
+      font-weight: 700;
+      margin: 0 0 4px;
+      letter-spacing: -0.02em;
+    }
+    .control-bar__sub {
+      font-size: 13px;
+      color: #6B7280;
+      margin: 0 0 12px;
+    }
+    .palette-options {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .palette-option {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      border: 1.5px solid #E5E7EB;
+      border-radius: 999px;
+      cursor: pointer;
+      font-size: 13.5px;
+      font-weight: 500;
+      transition: all 0.15s ease;
+      background: #FFFFFF;
+      user-select: none;
+    }
+    .palette-option:hover { border-color: #9CA3AF; }
+    .palette-option input { display: none; }
+    .palette-option__swatch {
+      display: inline-flex;
+      gap: 2px;
+    }
+    .palette-option__dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      border: 1px solid rgba(0, 0, 0, 0.08);
+    }
+    .palette-option--active {
+      border-color: #1F2937;
+      background: #1F2937;
+      color: #FFFFFF;
+    }
+    .palette-option--active .palette-option__dot {
+      border-color: rgba(255, 255, 255, 0.4);
+    }
+
+    /* ---------- 5분할 그리드 ---------- */
+    .compare-root {
+      padding: 20px;
+    }
+    .compare-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 16px;
+      max-width: 1800px;
+      margin: 0 auto;
+    }
+    @media (max-width: 1023px) {
+      .compare-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 639px) {
+      .compare-grid { grid-template-columns: 1fr; }
+    }
+
+    /* ---------- 컬럼 (시간대 1개) ---------- */
+    .slot-col {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .slot-col__label {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 14px;
+      font-weight: 600;
+      color: #1F2937;
+      padding: 0 4px;
+    }
+    .slot-col__label-mode {
+      font-size: 11px;
+      font-weight: 500;
+      padding: 2px 8px;
+      border-radius: 999px;
+      letter-spacing: 0;
+    }
+    .slot-col__label-mode--light {
+      background: #FEF3C7;
+      color: #92400E;
+    }
+    .slot-col__label-mode--dark {
+      background: #1E293B;
+      color: #E2E8F0;
+    }
+
+    /* ==========================================================================
+       테마 격리 — [data-theme-preview]에 변수 스코프 정의
+       ========================================================================== */
+
+    /* 라이트 시간대 기본값 (디자인 토큰 :root 복사) */
+    [data-theme-preview="morning"],
+    [data-theme-preview="afternoon"],
+    [data-theme-preview="evening"] {
+      --bg-paper: #F0F4F2;
+      --bg-card: #FFFFFF;
+      --bg-soft: #E8F0EA;
+      --bg-input: #FAFAF7;
+      --text-primary: #2D3A32;
+      --text-body-color: #3D4A42;
+      --text-secondary: #7A857E;
+      --text-on-accent: #FFFFFF;
+      --accent-sage: var(--pal-light, #5BA892);
+      --accent-sage-dark: var(--pal-light-hover, #4A8F7C);
+      --accent-sage-soft: var(--pal-light-soft, #E8F0EA);
+      --border-subtle: #EEEBE2;
+      --border-chip: #D8DDD5;
+      --check-active: var(--pal-light, #5BA892);
+    }
+
+    /* 다크 시간대 기본값 (디자인 토큰 [data-theme=dark] 복사) */
+    [data-theme-preview="dawn"],
+    [data-theme-preview="night"] {
+      --bg-paper: #1A1D1B;
+      --bg-card: #25292A;
+      --bg-soft: #2A3633;
+      --bg-input: #22262A;
+      --text-primary: #E8EDE8;
+      --text-body-color: #CBD2CB;
+      --text-secondary: #9BA59E;
+      --text-on-accent: #15181A;
+      --accent-sage: var(--pal-dark, #6FB496);
+      --accent-sage-dark: var(--pal-dark-hover, #5FA083);
+      --accent-sage-soft: var(--pal-dark-soft, #2A3633);
+      --border-subtle: #353A37;
+      --border-chip: #454C48;
+      --check-active: var(--pal-dark, #6FB496);
+    }
+
+    /* ==========================================================================
+       팔레트 후보 — 컨트롤 바 토글로 라이브 변경
+       ========================================================================== */
+
+    /* A. 현재 세이지 그린 */
+    .compare-root[data-palette="sage"] {
+      --pal-light: #5BA892;
+      --pal-light-hover: #4A8F7C;
+      --pal-light-soft: #E8F0EA;
+      --pal-dark: #6FB496;
+      --pal-dark-hover: #5FA083;
+      --pal-dark-soft: #2A3633;
+    }
+    /* B. 네이비 후보 1 — 인디고 (깊고 안정) */
+    .compare-root[data-palette="navy-a"] {
+      --pal-light: #3B5BDB;
+      --pal-light-hover: #2D47B0;
+      --pal-light-soft: #E5EAFE;
+      --pal-dark: #7C9CFF;
+      --pal-dark-hover: #6B8AEE;
+      --pal-dark-soft: #2D3654;
+    }
+    /* C. 네이비 후보 2 — 슬레이트 블루 (묵상·차분) */
+    .compare-root[data-palette="navy-b"] {
+      --pal-light: #4F6BA8;
+      --pal-light-hover: #3F558A;
+      --pal-light-soft: #E8EDF6;
+      --pal-dark: #89A3D6;
+      --pal-dark-hover: #7891C4;
+      --pal-dark-soft: #2C3854;
+    }
+
+    /* ==========================================================================
+       미니어처 1 — 홈 하이라이트 (시간대 그라디언트 + 인사말 + 오늘의 말씀 카드)
+       index.html의 data-time-slot 그라디언트를 차용 (이미지는 생략, 그라디언트만)
+       ========================================================================== */
+
+    .mini-phone {
+      width: 100%;
+      aspect-ratio: 9 / 16;
+      max-height: 480px;
+      border-radius: 18px;
+      overflow: hidden;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+      display: flex;
+      flex-direction: column;
+      padding: 16px 14px 14px;
+      position: relative;
+    }
+    /* 시간대별 배경 (index.html과 동일한 3-layer: 페이드 + PNG + 폴백 그라디언트)
+       background-position의 -70px 오프셋은 production -130px를 미니 크기에 맞춰 비례 축소 */
+    [data-theme-preview="dawn"] .mini-phone {
+      background-color: #E5D0C0;
+      background-image:
+        linear-gradient(to bottom, rgba(229, 208, 192, 0) 45%, rgba(229, 208, 192, 1) 100%),
+        url('../images/%EA%B1%B0%EB%A3%A9%ED%95%9C%20%EC%83%88%EB%B2%BD%20%EB%AA%A8%EB%B0%94%EC%9D%BC%20.png'),
+        linear-gradient(180deg, #5C548A 0%, #B8A0BC 50%, #E5D0C0 100%);
+      background-size: 100% 100%, cover, 100% 100%;
+      background-position: center, center -70px, center;
+      background-repeat: no-repeat;
+    }
+    [data-theme-preview="morning"] .mini-phone {
+      background-color: #EFE6CD;
+      background-image:
+        linear-gradient(to bottom, rgba(239, 230, 205, 0) 45%, rgba(239, 230, 205, 1) 100%),
+        url('../images/%EC%9D%80%ED%98%9C%EB%A1%9C%EC%9A%B4%20%EC%95%84%EC%B9%A8%20%EB%AA%A8%EB%B0%94%EC%9D%BC%20.png'),
+        linear-gradient(180deg, #F5E1DC 0%, #F8E8D6 50%, #EFE6CD 100%);
+      background-size: 100% 100%, cover, 100% 100%;
+      background-position: center, center -70px, center;
+      background-repeat: no-repeat;
+    }
+    [data-theme-preview="afternoon"] .mini-phone {
+      background-color: #ECE3D2;
+      background-image:
+        linear-gradient(to bottom, rgba(236, 227, 210, 0) 45%, rgba(236, 227, 210, 1) 100%),
+        url('../images/%ED%8F%89%EC%95%88%ED%95%9C%20%EC%98%A4%ED%9B%84%20%EB%AA%A8%EB%B0%94%EC%9D%BC.png'),
+        linear-gradient(180deg, #C5DDDF 0%, #E0E2D8 50%, #ECE3D2 100%);
+      background-size: 100% 100%, cover, 100% 100%;
+      background-position: center, center -70px, center;
+      background-repeat: no-repeat;
+    }
+    [data-theme-preview="evening"] .mini-phone {
+      background-color: #F5C672;
+      background-image:
+        linear-gradient(to bottom, rgba(245, 198, 114, 0) 45%, rgba(245, 198, 114, 1) 100%),
+        url('../images/%EC%98%A8%EC%9C%A0%ED%95%9C%20%EC%A0%80%EB%85%81%20%EB%AA%A8%EB%B0%94%EC%9D%BC.png'),
+        linear-gradient(180deg, #5E5879 0%, #C7896A 60%, #F5C672 100%);
+      background-size: 100% 100%, cover, 100% 100%;
+      background-position: center, center -70px, center;
+      background-repeat: no-repeat;
+    }
+    [data-theme-preview="night"] .mini-phone {
+      background-color: #2A3A5C;
+      background-image:
+        linear-gradient(to bottom, rgba(42, 58, 92, 0) 45%, rgba(42, 58, 92, 1) 100%),
+        url('../images/%EA%B3%A0%EC%9A%94%ED%95%9C%20%EB%B0%A4%20%EB%AA%A8%EB%B0%94%EC%9D%BC%20.png'),
+        linear-gradient(180deg, #0F1A35 0%, #1B2A4A 50%, #2A3A5C 100%);
+      background-size: 100% 100%, cover, 100% 100%;
+      background-position: center, center -70px, center;
+      background-repeat: no-repeat;
+    }
+
+    .mini-greeting {
+      font-size: 16px;
+      font-weight: 700;
+      color: #2D3A32;
+      letter-spacing: -0.025em;
+      margin-bottom: 6px;
+      line-height: 1.25;
+    }
+    /* 어두운 시간대 인사말 흰색 */
+    [data-theme-preview="dawn"] .mini-greeting,
+    [data-theme-preview="evening"] .mini-greeting,
+    [data-theme-preview="night"] .mini-greeting {
+      color: #FFFFFF;
+      text-shadow: 0 1px 6px rgba(0, 0, 0, 0.18);
+    }
+
+    .mini-date-pill {
+      display: inline-flex;
+      align-self: flex-start;
+      padding: 4px 10px;
+      background: rgba(255, 255, 255, 0.85);
+      border-radius: 999px;
+      font-size: 10.5px;
+      font-weight: 500;
+      color: #2D3A32;
+      margin-bottom: auto;
+    }
+    [data-theme-preview="dawn"] .mini-date-pill,
+    [data-theme-preview="evening"] .mini-date-pill,
+    [data-theme-preview="night"] .mini-date-pill {
+      background: rgba(0, 0, 0, 0.28);
+      color: #FFFFFF;
+    }
+
+    /* 오늘의 말씀 카드 — 화면 하단 */
+    .mini-today-card {
+      background: #FFFFFF;
+      border-radius: 14px;
+      padding: 12px;
+      box-shadow: 0 -3px 14px rgba(0, 0, 0, 0.05);
+      margin-top: 12px;
+    }
+    .mini-today-meta {
+      font-size: 9px;
+      color: #7A857E;
+      margin-bottom: 4px;
+    }
+    .mini-today-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: #2D3A32;
+      letter-spacing: -0.02em;
+      line-height: 1.4;
+      margin-bottom: 3px;
+    }
+    .mini-today-ref {
+      font-size: 10px;
+      color: #7A857E;
+      margin-bottom: 8px;
+    }
+    /* CTA — index.html의 시간대별 다크 톤 그대로 */
+    .mini-cta {
+      display: block;
+      width: 100%;
+      padding: 8px 0;
+      border-radius: 10px;
+      border: none;
+      color: #FFFFFF;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+      cursor: default;
+    }
+    [data-theme-preview="dawn"]      .mini-cta { background: #2D3A5C; }
+    /* 화이트 모드 3종(아침·오후·저녁) — 대표색 핑크-로즈 계열로 통일, 시간 흐름은 미세 톤차로 표현 */
+    [data-theme-preview="morning"]   .mini-cta { background: #C77E8E; }  /* 따뜻한 피치-핑크 */
+    [data-theme-preview="afternoon"] .mini-cta { background: #BC7383; }  /* 중간 클리어 로즈 */
+    [data-theme-preview="evening"]   .mini-cta { background: #B5677A; }  /* 차분한 베리 핑크 */
+    [data-theme-preview="night"]     .mini-cta { background: #2D3658; }
+
+    /* ==========================================================================
+       미니어처 2 — QT 1단계: 말씀 카드 + accent 버튼
+       ========================================================================== */
+
+    .mini-qt {
+      background: var(--bg-paper);
+      border-radius: 14px;
+      padding: 14px;
+      color: var(--text-body-color);
+    }
+    .mini-qt__step {
+      font-size: 10px;
+      color: var(--accent-sage);
+      font-weight: 700;
+      margin-bottom: 4px;
+      letter-spacing: 0.04em;
+    }
+    .mini-qt__title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 8px;
+      letter-spacing: -0.015em;
+    }
+    .mini-qt__scripture {
+      background: var(--bg-card);
+      border-radius: 10px;
+      padding: 10px;
+      font-family: 'Noto Serif KR', serif;
+      font-size: 11px;
+      line-height: 1.6;
+      color: var(--text-primary);
+      margin-bottom: 10px;
+      border-left: 3px solid var(--accent-sage);
+    }
+    .mini-qt__btn {
+      display: inline-block;
+      width: 100%;
+      padding: 9px 0;
+      background: var(--accent-sage);
+      color: var(--text-on-accent);
+      border: none;
+      border-radius: 10px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: default;
+      letter-spacing: 0.01em;
+    }
+
+    /* ==========================================================================
+       미니어처 3 — 감정칩 + 체크박스 (인터랙티브 요소에서 accent 노출)
+       ========================================================================== */
+
+    .mini-chips {
+      background: var(--bg-paper);
+      border-radius: 14px;
+      padding: 12px;
+    }
+    .mini-chips__row {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+    .mini-chip {
+      padding: 5px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 500;
+      background: var(--bg-card);
+      color: var(--text-body-color);
+      border: 1px solid var(--border-chip);
+    }
+    .mini-chip--active {
+      background: var(--accent-sage);
+      color: var(--text-on-accent);
+      border-color: var(--accent-sage);
+    }
+    .mini-check-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      color: var(--text-body-color);
+    }
+    .mini-check {
+      width: 16px;
+      height: 16px;
+      border-radius: 4px;
+      background: var(--check-active);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-on-accent);
+      font-size: 10px;
+      font-weight: 700;
+    }
+
+    /* ==========================================================================
+       활성 팔레트 표시 라벨
+       ========================================================================== */
+    .now-showing {
+      display: inline-block;
+      margin-left: 12px;
+      font-size: 12px;
+      color: #6B7280;
+    }
+    .now-showing strong { color: #1F2937; }
+  </style>
+</head>
+<body>
+
+  <!-- ========== 상단 컨트롤 ========== -->
+  <div class="control-bar">
+    <h1 class="control-bar__title">시간대 5종 × 컬러 비교판
+      <span class="now-showing">현재: <strong id="nowShowingLabel">현재 (세이지 그린)</strong></span>
+    </h1>
+    <p class="control-bar__sub">
+      라이트 모드(아침·오후·저녁) · 다크 모드(밤·새벽) — 한 화면에서 동시 비교 ·
+      상단에서 컬러 후보를 클릭하면 5칸 전체 액센트가 즉시 바뀝니다.
+    </p>
+    <div class="palette-options" id="paletteOptions">
+      <label class="palette-option palette-option--active" data-palette="sage">
+        <input type="radio" name="palette" value="sage" checked>
+        <span class="palette-option__swatch">
+          <span class="palette-option__dot" style="background:#5BA892"></span>
+          <span class="palette-option__dot" style="background:#6FB496"></span>
+        </span>
+        A. 현재 (세이지 그린)
+      </label>
+      <label class="palette-option" data-palette="navy-a">
+        <input type="radio" name="palette" value="navy-a">
+        <span class="palette-option__swatch">
+          <span class="palette-option__dot" style="background:#3B5BDB"></span>
+          <span class="palette-option__dot" style="background:#7C9CFF"></span>
+        </span>
+        B. 인디고 (깊고 안정)
+      </label>
+      <label class="palette-option" data-palette="navy-b">
+        <input type="radio" name="palette" value="navy-b">
+        <span class="palette-option__swatch">
+          <span class="palette-option__dot" style="background:#4F6BA8"></span>
+          <span class="palette-option__dot" style="background:#89A3D6"></span>
+        </span>
+        C. 슬레이트 블루 (묵상·차분)
+      </label>
+    </div>
+  </div>
+
+  <!-- ========== 5분할 비교 ========== -->
+  <div class="compare-root" id="compareRoot" data-palette="sage">
+    <div class="compare-grid">
+
+      <!-- 새벽 (다크) -->
+      <div class="slot-col">
+        <div class="slot-col__label">
+          <span>🌌 새벽 <span style="color:#9CA3AF;font-weight:400;font-size:12px">(4-7시)</span></span>
+          <span class="slot-col__label-mode slot-col__label-mode--dark">DARK</span>
+        </div>
+        <div data-theme-preview="dawn">
+          <div class="mini-phone">
+            <span class="mini-date-pill">26년 5월 9일 (토)</span>
+            <div style="margin-top:auto">
+              <div class="mini-greeting">거룩한 새벽이네요</div>
+              <div class="mini-today-card">
+                <div class="mini-today-meta">⏱ 약 3분 소요</div>
+                <div class="mini-today-title">너희가 모든 일을 사랑으로 행하라</div>
+                <div class="mini-today-ref">고전 16:14</div>
+                <button class="mini-cta">묵상 시작하기</button>
+              </div>
+            </div>
+          </div>
+          <div class="mini-qt" style="margin-top:12px">
+            <div class="mini-qt__step">STEP 1 / 5</div>
+            <div class="mini-qt__title">오늘의 말씀</div>
+            <div class="mini-qt__scripture">
+              너희가 모든 일을 사랑으로 행하라.
+            </div>
+            <button class="mini-qt__btn">다음으로</button>
+          </div>
+          <div class="mini-chips" style="margin-top:12px">
+            <div class="mini-chips__row">
+              <span class="mini-chip">평안</span>
+              <span class="mini-chip mini-chip--active">통찰</span>
+              <span class="mini-chip">감사</span>
+            </div>
+            <div class="mini-check-row">
+              <span class="mini-check">✓</span>
+              <span>오늘의 묵상 완료</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 아침 (라이트) -->
+      <div class="slot-col">
+        <div class="slot-col__label">
+          <span>☀️ 아침 <span style="color:#9CA3AF;font-weight:400;font-size:12px">(7-12시)</span></span>
+          <span class="slot-col__label-mode slot-col__label-mode--light">LIGHT</span>
+        </div>
+        <div data-theme-preview="morning">
+          <div class="mini-phone">
+            <span class="mini-date-pill">26년 5월 9일 (토)</span>
+            <div style="margin-top:auto">
+              <div class="mini-greeting">은혜로운 아침이에요</div>
+              <div class="mini-today-card">
+                <div class="mini-today-meta">⏱ 약 3분 소요</div>
+                <div class="mini-today-title">너희가 모든 일을 사랑으로 행하라</div>
+                <div class="mini-today-ref">고전 16:14</div>
+                <button class="mini-cta">묵상 시작하기</button>
+              </div>
+            </div>
+          </div>
+          <div class="mini-qt" style="margin-top:12px">
+            <div class="mini-qt__step">STEP 1 / 5</div>
+            <div class="mini-qt__title">오늘의 말씀</div>
+            <div class="mini-qt__scripture">
+              너희가 모든 일을 사랑으로 행하라.
+            </div>
+            <button class="mini-qt__btn">다음으로</button>
+          </div>
+          <div class="mini-chips" style="margin-top:12px">
+            <div class="mini-chips__row">
+              <span class="mini-chip">평안</span>
+              <span class="mini-chip mini-chip--active">통찰</span>
+              <span class="mini-chip">감사</span>
+            </div>
+            <div class="mini-check-row">
+              <span class="mini-check">✓</span>
+              <span>오늘의 묵상 완료</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 오후 (라이트) -->
+      <div class="slot-col">
+        <div class="slot-col__label">
+          <span>🌤️ 오후 <span style="color:#9CA3AF;font-weight:400;font-size:12px">(12-17시)</span></span>
+          <span class="slot-col__label-mode slot-col__label-mode--light">LIGHT</span>
+        </div>
+        <div data-theme-preview="afternoon">
+          <div class="mini-phone">
+            <span class="mini-date-pill">26년 5월 9일 (토)</span>
+            <div style="margin-top:auto">
+              <div class="mini-greeting">평안한 오후예요</div>
+              <div class="mini-today-card">
+                <div class="mini-today-meta">⏱ 약 3분 소요</div>
+                <div class="mini-today-title">너희가 모든 일을 사랑으로 행하라</div>
+                <div class="mini-today-ref">고전 16:14</div>
+                <button class="mini-cta">묵상 시작하기</button>
+              </div>
+            </div>
+          </div>
+          <div class="mini-qt" style="margin-top:12px">
+            <div class="mini-qt__step">STEP 1 / 5</div>
+            <div class="mini-qt__title">오늘의 말씀</div>
+            <div class="mini-qt__scripture">
+              너희가 모든 일을 사랑으로 행하라.
+            </div>
+            <button class="mini-qt__btn">다음으로</button>
+          </div>
+          <div class="mini-chips" style="margin-top:12px">
+            <div class="mini-chips__row">
+              <span class="mini-chip">평안</span>
+              <span class="mini-chip mini-chip--active">통찰</span>
+              <span class="mini-chip">감사</span>
+            </div>
+            <div class="mini-check-row">
+              <span class="mini-check">✓</span>
+              <span>오늘의 묵상 완료</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 저녁 (라이트) -->
+      <div class="slot-col">
+        <div class="slot-col__label">
+          <span>🌙 저녁 <span style="color:#9CA3AF;font-weight:400;font-size:12px">(17-22시)</span></span>
+          <span class="slot-col__label-mode slot-col__label-mode--light">LIGHT</span>
+        </div>
+        <div data-theme-preview="evening">
+          <div class="mini-phone">
+            <span class="mini-date-pill">26년 5월 9일 (토)</span>
+            <div style="margin-top:auto">
+              <div class="mini-greeting">온유한 저녁이네요</div>
+              <div class="mini-today-card">
+                <div class="mini-today-meta">⏱ 약 3분 소요</div>
+                <div class="mini-today-title">너희가 모든 일을 사랑으로 행하라</div>
+                <div class="mini-today-ref">고전 16:14</div>
+                <button class="mini-cta">묵상 시작하기</button>
+              </div>
+            </div>
+          </div>
+          <div class="mini-qt" style="margin-top:12px">
+            <div class="mini-qt__step">STEP 1 / 5</div>
+            <div class="mini-qt__title">오늘의 말씀</div>
+            <div class="mini-qt__scripture">
+              너희가 모든 일을 사랑으로 행하라.
+            </div>
+            <button class="mini-qt__btn">다음으로</button>
+          </div>
+          <div class="mini-chips" style="margin-top:12px">
+            <div class="mini-chips__row">
+              <span class="mini-chip">평안</span>
+              <span class="mini-chip mini-chip--active">통찰</span>
+              <span class="mini-chip">감사</span>
+            </div>
+            <div class="mini-check-row">
+              <span class="mini-check">✓</span>
+              <span>오늘의 묵상 완료</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 밤 (다크) -->
+      <div class="slot-col">
+        <div class="slot-col__label">
+          <span>🌃 밤 <span style="color:#9CA3AF;font-weight:400;font-size:12px">(22-4시)</span></span>
+          <span class="slot-col__label-mode slot-col__label-mode--dark">DARK</span>
+        </div>
+        <div data-theme-preview="night">
+          <div class="mini-phone">
+            <span class="mini-date-pill">26년 5월 9일 (토)</span>
+            <div style="margin-top:auto">
+              <div class="mini-greeting">고요한 밤입니다</div>
+              <div class="mini-today-card">
+                <div class="mini-today-meta">⏱ 약 3분 소요</div>
+                <div class="mini-today-title">너희가 모든 일을 사랑으로 행하라</div>
+                <div class="mini-today-ref">고전 16:14</div>
+                <button class="mini-cta">묵상 시작하기</button>
+              </div>
+            </div>
+          </div>
+          <div class="mini-qt" style="margin-top:12px">
+            <div class="mini-qt__step">STEP 1 / 5</div>
+            <div class="mini-qt__title">오늘의 말씀</div>
+            <div class="mini-qt__scripture">
+              너희가 모든 일을 사랑으로 행하라.
+            </div>
+            <button class="mini-qt__btn">다음으로</button>
+          </div>
+          <div class="mini-chips" style="margin-top:12px">
+            <div class="mini-chips__row">
+              <span class="mini-chip">평안</span>
+              <span class="mini-chip mini-chip--active">통찰</span>
+              <span class="mini-chip">감사</span>
+            </div>
+            <div class="mini-check-row">
+              <span class="mini-check">✓</span>
+              <span>오늘의 묵상 완료</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    const PALETTE_LABELS = {
+      'sage':   'A. 현재 (세이지 그린)',
+      'navy-a': 'B. 인디고 (깊고 안정)',
+      'navy-b': 'C. 슬레이트 블루 (묵상·차분)',
+    };
+
+    const root = document.getElementById('compareRoot');
+    const label = document.getElementById('nowShowingLabel');
+    const options = document.querySelectorAll('.palette-option');
+
+    options.forEach(opt => {
+      opt.addEventListener('click', () => {
+        const value = opt.getAttribute('data-palette');
+        root.setAttribute('data-palette', value);
+        label.textContent = PALETTE_LABELS[value];
+
+        options.forEach(o => o.classList.remove('palette-option--active'));
+        opt.classList.add('palette-option--active');
+
+        const input = opt.querySelector('input');
+        if (input) input.checked = true;
+      });
+    });
+  </script>
+
+</body>
+</html>

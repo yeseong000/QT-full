@@ -267,15 +267,16 @@
       text-align: center;
       transition: transform var(--duration-fast), background var(--duration-base);
     }
+    /* 시간대별 CTA — 라이트 3종(아침·오후·저녁) 핑크-로즈 패밀리, 다크 2종(새벽·밤) 네이비 */
     .app-container[data-time-slot="dawn"]      .today-cta { background: #2D3A5C; }
-    .app-container[data-time-slot="morning"]   .today-cta { background: #4A3520; }
-    .app-container[data-time-slot="afternoon"] .today-cta { background: #2D4A5C; }
-    .app-container[data-time-slot="evening"]   .today-cta { background: #4A1F2E; }
+    .app-container[data-time-slot="morning"]   .today-cta { background: #C77E8E; }
+    .app-container[data-time-slot="afternoon"] .today-cta { background: #BC7383; }
+    .app-container[data-time-slot="evening"]   .today-cta { background: #B5677A; }
     .app-container[data-time-slot="night"]     .today-cta { background: #2D3658; }
     .app-container[data-time-slot="dawn"]      .today-cta:hover { background: #1F2A45; }
-    .app-container[data-time-slot="morning"]   .today-cta:hover { background: #362517; }
-    .app-container[data-time-slot="afternoon"] .today-cta:hover { background: #1F3645; }
-    .app-container[data-time-slot="evening"]   .today-cta:hover { background: #361621; }
+    .app-container[data-time-slot="morning"]   .today-cta:hover { background: #A85A6E; }
+    .app-container[data-time-slot="afternoon"] .today-cta:hover { background: #9C5A6C; }
+    .app-container[data-time-slot="evening"]   .today-cta:hover { background: #9A4F62; }
     .app-container[data-time-slot="night"]     .today-cta:hover { background: #1F2645; }
 
     /* ---------- 로딩/에러 ---------- */
@@ -493,7 +494,7 @@
     .qr-copy-btn {
       background: transparent;
       border: 0;
-      color: var(--accent-sage-text, #5BA892);
+      color: var(--accent-sage-text, #9A4F60);
       font-size: 13px;
       font-weight: 600;
       padding: 4px 8px;
