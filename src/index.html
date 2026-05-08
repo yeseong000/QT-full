@@ -30,17 +30,18 @@
   <link rel="stylesheet" href="styles/design-tokens.css">
   <link rel="stylesheet" href="styles/common.css">
 
-  <!-- 레이아웃 모드 토글 (CSSOM 적용 전 실행되어야 첫 페인트부터 정확) -->
+  <!-- 레이아웃 모드 (CSSOM 적용 전 실행되어야 첫 페인트부터 정확) -->
   <script>
-    // 레이아웃 모드: URL ?mode=adaptive|letterbox 또는 localStorage 저장값, 기본 adaptive
+    // 기본은 항상 adaptive. URL ?mode=letterbox 일 때만 letterbox로 일회성 전환.
+    // (이전엔 localStorage에 저장해 매 로드 자동 복원했지만, letterbox로 잠기는
+    //  부작용이 있어 영구화 폐지. 기존 저장값도 정리.)
     (function () {
       try {
         var params = new URLSearchParams(location.search);
-        var stored = localStorage.getItem('layoutMode');
-        var mode = params.get('mode') || stored || 'adaptive';
+        var mode = params.get('mode');
         if (mode !== 'adaptive' && mode !== 'letterbox') mode = 'adaptive';
         document.documentElement.setAttribute('data-layout-mode', mode);
-        localStorage.setItem('layoutMode', mode);
+        try { localStorage.removeItem('layoutMode'); } catch (e) {}
       } catch (e) { /* SSR/private mode 등 */ }
     })();
   </script>
