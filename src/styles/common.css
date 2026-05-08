@@ -214,41 +214,40 @@ input, textarea {
      md 사용자에게만 적용됨 (의도한 동작) */
   :root,
   html[data-font-size="md"] {
-    --text-hero: 32px;
-    --text-h1: 25px;
-    --text-h2: 20px;
-    --text-scripture: 18px;
-    --text-body: 17px;
+    --text-hero: 34px;
+    --text-h1: 26px;
+    --text-h2: 22px;
+    --text-scripture: 19px;
+    --text-body: 18px;
     --text-small: 15px;
     --text-caption: 13px;
-    /* 컴팩트 spacing — 콘텐츠를 한 화면에 더 잘 들어가게 */
-    --card-padding: 20px;
-    --card-gap: 18px;
-    --page-padding-top: 16px;
-    --page-padding-bottom: 80px;
+    --card-padding: 28px;
+    --card-gap: 24px;
+    --page-padding-top: 20px;
+    --page-padding-bottom: 100px;
   }
 
-  /* 터치/클릭 영역 한 단계 확대 */
+  /* 터치/클릭 영역 확대 */
   .icon-btn {
-    width: 48px;
-    height: 48px;
+    width: 52px;
+    height: 52px;
   }
   .btn {
-    min-height: 48px;
+    min-height: 52px;
   }
   .bottom-nav {
-    padding: 16px 24px;
+    padding: 20px 28px;
   }
   .fab {
-    width: 56px;
-    height: 56px;
+    width: 60px;
+    height: 60px;
   }
 
   /* ----------------------------------------------------------
-     Step-2 (묵상) 페이지 전용 2칼럼 그리드
+     Step-2 (묵상) 페이지 전용 2칼럼 그리드 — 좌·우 균형
      - 풀폭: top-bar / page-title / scripture-toggle (sticky 유지)
-     - 좌측: 책 맥락
-     - 우측: 핵심 요약 + 인물 + 해설 (자동 stack)
+     - 좌측: 책 맥락 + 구절 깊이 들여다보기 (해설)
+     - 우측: 핵심 요약 + 말씀 속 인물들
      ---------------------------------------------------------- */
   [data-qt-step="meditation"] .app-scroll {
     display: grid;
@@ -262,12 +261,12 @@ input, textarea {
   [data-qt-step="meditation"] .scripture-toggle {
     grid-column: 1 / -1;
   }
-  [data-qt-step="meditation"] #bookContextCard {
+  [data-qt-step="meditation"] #bookContextCard,
+  [data-qt-step="meditation"] #commentaryCard {
     grid-column: 1 / 2;
   }
   [data-qt-step="meditation"] #summaryCard,
-  [data-qt-step="meditation"] #charactersCard,
-  [data-qt-step="meditation"] #commentaryCard {
+  [data-qt-step="meditation"] #charactersCard {
     grid-column: 2 / 3;
   }
 }
@@ -290,33 +289,32 @@ input, textarea {
 
   :root,
   html[data-font-size="md"] {
-    --text-hero: 34px;
-    --text-h1: 27px;
-    --text-h2: 22px;
-    --text-scripture: 19px;
-    --text-body: 18px;
-    --text-small: 15px;
-    --text-caption: 13px;
-    /* 더 컴팩트 spacing (대형 화면) */
-    --card-padding: 18px;
-    --card-gap: 16px;
-    --page-padding-top: 18px;
-    --page-padding-bottom: 60px;
+    --text-hero: 38px;
+    --text-h1: 30px;
+    --text-h2: 24px;
+    --text-scripture: 20px;
+    --text-body: 20px;
+    --text-small: 16px;
+    --text-caption: 14px;
+    --card-padding: 32px;
+    --card-gap: 28px;
+    --page-padding-top: 24px;
+    --page-padding-bottom: 80px;
   }
 
   .icon-btn {
-    width: 52px;
-    height: 52px;
-  }
-  .btn {
-    min-height: 52px;
-  }
-  .bottom-nav {
-    padding: 18px 28px;
-  }
-  .fab {
     width: 60px;
     height: 60px;
+  }
+  .btn {
+    min-height: 60px;
+  }
+  .bottom-nav {
+    padding: 24px 32px;
+  }
+  .fab {
+    width: 68px;
+    height: 68px;
   }
 }
 
