@@ -512,10 +512,14 @@
 
     /* ---------- 접근 A: 풀스크린 적응형 (기본) ----------
        - 컨테이너 height는 common.css의 100dvh 그대로 사용 (동적 viewport 자동 추적)
-         · var(--app-vh) JS 측정은 PWA standalone/iOS 일부 환경에서 작은 값으로
-           잘못 잡혀 위쪽에 흰 띠가 보이는 부수효과 발견 → 사용 중단
-       - 카드는 PC와 동일하게 margin-top: auto로 하단 자동 정렬 */
+       - 카드는 PC와 동일하게 margin-top: auto로 하단 자동 정렬
+       - body 배경을 시간대 그라디언트로 채움 → PWA의 시스템 영역
+         (Dynamic Island 위, 홈바 아래, overscroll bounce 시 보이는 영역)이
+         흰색이 아니라 일러스트 끝 색과 자연스럽게 이어짐 */
     @media (max-width: 480px) {
+      html[data-layout-mode="adaptive"] body {
+        background: var(--time-bg, var(--bg-paper));
+      }
       html[data-layout-mode="adaptive"] #appContainer .today-card {
         margin-top: auto;
         margin-bottom: max(24px, env(safe-area-inset-bottom, 0));
@@ -796,6 +800,18 @@
         evening: '#5E5879', night: '#0F1A35',
       };
       document.documentElement.style.setProperty('--letterbox-bg', LETTERBOX_BG[slot] || '');
+
+      // PWA standalone 모드의 시스템 영역(Dynamic Island 위쪽 / 홈바 아래쪽 / overscroll bounce)
+      // 에 노출되는 body 배경을 시간대 매칭 그라디언트로 채움 (위=sky, 아래=ground)
+      // → letterbox 모드에서 띠가 시간대 색으로 이어진 원리를 adaptive 모드에도 적용
+      const TIME_BG_GRADIENT = {
+        dawn:      'linear-gradient(180deg, #5C548A 0%, #E5D0C0 100%)',
+        morning:   'linear-gradient(180deg, #F5E1DC 0%, #EFE6CD 100%)',
+        afternoon: 'linear-gradient(180deg, #C5DDDF 0%, #ECE3D2 100%)',
+        evening:   'linear-gradient(180deg, #5E5879 0%, #F5C672 100%)',
+        night:     'linear-gradient(180deg, #0F1A35 0%, #2A3A5C 100%)',
+      };
+      document.documentElement.style.setProperty('--time-bg', TIME_BG_GRADIENT[slot] || '');
 
       renderGreeting(slot);
       renderStreak();
