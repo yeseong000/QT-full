@@ -793,9 +793,12 @@
       // 시간대별 sky(위)·ground(아래) 색 — 시스템 영역 흰 띠 제거의 단일 출처
       // sky : Dynamic Island 주변 status bar (theme-color로 OS 그림) + letterbox 띠
       // ground: 홈바 아래 / 하단 overscroll bounce (html background-color로 노출)
+      // sky 값은 일러스트 PNG의 "실제 보이는 상단 색"을 직접 샘플링한 값.
+      // (PNG가 --illust-shift: -130px 시프트되어 row 0이 아닌 row ~281부터 보이므로
+      // 그라디언트 0% 색이 아닌 실제 보이는 색을 써야 OS status bar와 경계가 사라짐)
       const SKY_COLOR = {
-        dawn: '#5C548A', morning: '#F5E1DC', afternoon: '#C5DDDF',
-        evening: '#5E5879', night: '#0F1A35',
+        dawn: '#7C74A0', morning: '#F0D7CA', afternoon: '#E5E9EC',
+        evening: '#DEAC96', night: '#072151',
       };
       const GROUND_COLOR = {
         dawn: '#E5D0C0', morning: '#EFE6CD', afternoon: '#ECE3D2',
