@@ -597,20 +597,27 @@
          흰 띠 제거: html은 ground 단색, body는 sky→ground 그라디언트, theme-color는
          JS에서 sky 색으로 동적 변경(meta tag) — 3중 매핑 */
     @media (max-width: 480px) {
+      /* 다이내믹 아일랜드 옆 status bar 색은 일반 Safari에서 theme-color가 아니라
+         html background-color로 결정됨. PNG 상단(SKY)과 하단(GROUND)이 다르므로
+         html에 SKY → GROUND 그라디언트를 fixed로 깔아 status bar 잘림을 제거하고
+         하단 overscroll(홈바 영역)도 PNG 하단과 자연스럽게 이어지게 함. */
       html[data-layout-mode="adaptive"] {
+        background: linear-gradient(
+          180deg,
+          var(--sky-color, var(--bg-paper)) 0%,
+          var(--ground-color, var(--bg-paper)) 100%
+        ) fixed;
         background-color: var(--ground-color, var(--bg-paper));
       }
       html[data-layout-mode="adaptive"] body {
         background: var(--time-bg, var(--bg-paper));
         background-color: var(--ground-color, var(--bg-paper));
       }
-      /* 모바일: 카드를 화면 하단 고정(margin-top: auto) 대신
-         viewport 비율 기반 spacer로 띄워, 위쪽에 일러스트가 보이고
-         유저가 스크롤하면 카드가 자연스럽게 위로 올라옴.
-         margin-bottom으로 콘텐츠 총 높이를 viewport보다 크게 만들어 스크롤 보장. */
+      /* 모바일: 카드를 화면 하단에 자동 정렬(원래 PC와 동일).
+         스크롤 비활성화 — PWA/네이티브 앱처럼 한 화면에 고정. */
       html[data-layout-mode="adaptive"] #appContainer .today-card {
-        margin-top: 55vh;
-        margin-bottom: max(60px, env(safe-area-inset-bottom, 0));
+        margin-top: auto;
+        margin-bottom: max(24px, env(safe-area-inset-bottom, 0));
       }
     }
 
