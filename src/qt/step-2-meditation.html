@@ -36,12 +36,14 @@
     }
 
     .scripture-toggle__header {
+      position: relative;        /* z-index 활성화 — 펼침 시 ::before 위로 띄움 */
+      z-index: 2;
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: var(--space-3);
       padding: 10px 16px 10px 14px;
-      background: rgba(255, 255, 255, 0.88);
+      background: rgba(255, 255, 255, 0.92);
       backdrop-filter: blur(20px) saturate(1.4);
       -webkit-backdrop-filter: blur(20px) saturate(1.4);
       border-radius: var(--radius-pill);
@@ -49,42 +51,56 @@
       cursor: pointer;
       -webkit-tap-highlight-color: transparent;
       user-select: none;
-      transition: box-shadow var(--duration-base), transform var(--duration-fast);
+      transition: box-shadow var(--duration-base), transform var(--duration-fast), background var(--duration-base);
     }
     .scripture-toggle__header:active {
       transform: scale(0.98);
     }
+    /* 펼침 시 — pill 자체는 솔리드 + backdrop-filter 제거로 윤곽 또렷이 */
     .scripture-toggle.is-open .scripture-toggle__header {
-      box-shadow: 0 3px 14px rgba(45, 58, 50, 0.10);
+      background: #FFFFFF;
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+      box-shadow: 0 4px 18px rgba(45, 58, 50, 0.14);
     }
 
     /* 다크 테마: 글래스 캡슐 — bg-card 톤 + 옅은 네이비 액센트 테두리로 elevation */
     html[data-theme="dark"] .scripture-toggle__header {
-      background: rgba(35, 38, 41, 0.88);
+      background: rgba(35, 38, 41, 0.92);
       box-shadow: inset 0 0 0 1px rgba(110, 132, 168, 0.10);
     }
     html[data-theme="dark"] .scripture-toggle.is-open .scripture-toggle__header {
-      box-shadow: inset 0 0 0 1px rgba(110, 132, 168, 0.20);
+      background: var(--bg-card);
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+      box-shadow:
+        inset 0 0 0 1px rgba(110, 132, 168, 0.22),
+        0 4px 18px rgba(0, 0, 0, 0.35);
     }
 
-    /* 펼침 시 — 주변 콘텐츠를 자연스럽게 blur 처리해 본문에 집중되게 함 */
-    .scripture-toggle.is-open::before {
-      content: '';
+    /* 글래스 백드롭 — body 직속에 두는 별도 요소.
+       .scripture-toggle 내부에 ::before로 두면 부모(z=20) stacking context에 갇혀
+       외부 콘텐츠를 backdrop-filter로 흐릴 수 없으므로 분리함. */
+    .scripture-backdrop {
       position: fixed;
       inset: 0;
-      backdrop-filter: blur(6px);
-      -webkit-backdrop-filter: blur(6px);
-      background: rgba(0, 0, 0, 0.18);
-      z-index: 19;                /* 헤더(z=20) 보다 아래 */
+      background: rgba(45, 58, 50, 0.10);
+      backdrop-filter: blur(10px) saturate(1.1);
+      -webkit-backdrop-filter: blur(10px) saturate(1.1);
+      z-index: 15;                /* scripture-toggle(z=20) 아래 — pill/본문은 또렷 */
       pointer-events: none;
-      animation: scriptureBackdropIn var(--duration-base) var(--ease-out);
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity var(--duration-base) var(--ease-out),
+                  visibility 0s linear var(--duration-base);
     }
-    html[data-theme="dark"] .scripture-toggle.is-open::before {
-      background: rgba(0, 0, 0, 0.32);   /* 다크는 살짝 더 진하게 */
+    .scripture-backdrop.is-active {
+      opacity: 1;
+      visibility: visible;
+      transition: opacity var(--duration-base) var(--ease-out);
     }
-    @keyframes scriptureBackdropIn {
-      from { opacity: 0; }
-      to   { opacity: 1; }
+    html[data-theme="dark"] .scripture-backdrop {
+      background: rgba(0, 0, 0, 0.30);
     }
 
     .scripture-toggle__label {
@@ -117,6 +133,7 @@
       top: calc(100% + var(--space-2));
       left: 0;
       right: 0;
+      z-index: 1;                /* ::before(0) 위, header(2) 아래 — 펼친 본문도 흐림 영향 받지 않게 */
       max-height: 0;
       overflow: hidden;
       background: var(--bg-card);
@@ -245,6 +262,17 @@
       margin-bottom: 12px;
     }
 
+    /* 5단 호흡 — "깊은 묵상" 카드 내부 (5개 sub-section을 단락 간격으로 분리) */
+    .deep-dive__step + .deep-dive__step {
+      margin-top: var(--space-5);
+    }
+    .deep-dive__body {
+      font-size: var(--text-body);
+      line-height: 1.85;
+      color: var(--text-body);
+      white-space: pre-wrap;
+    }
+
     /* 말씀 탭 (오늘 범위 / 전체 장) */
     .scripture-tabs {
       display: flex;
@@ -303,6 +331,9 @@
   </style>
 </head>
 <body>
+  <!-- 펼침 시 페이지 전체에 깔리는 글래스 백드롭 (pill 외 영역만 흐림) -->
+  <div class="scripture-backdrop" id="scriptureBackdrop" aria-hidden="true"></div>
+
   <div class="app-container" data-qt-step="meditation">
    <main class="app-scroll">
 
@@ -352,7 +383,7 @@
       </div>
     </div>
 
-    <!-- 책 맥락 카드 (큰 그림 먼저) -->
+    <!-- ① 책 맥락 카드 (큰 그림 먼저) -->
     <section class="meditation-card" id="bookContextCard" style="display:none;">
       <h2 class="meditation-card__title">
         <span class="meditation-card__icon">📚</span>
@@ -361,8 +392,42 @@
       <div class="prose" id="bookContext"></div>
     </section>
 
-    <!-- 핵심 요약 카드 -->
-    <section class="meditation-card" id="summaryCard">
+    <!-- ② 등장인물 카드 -->
+    <section class="meditation-card" id="charactersCard" style="display:none;">
+      <h2 class="meditation-card__title">
+        <span class="meditation-card__icon">👥</span>
+        말씀 속 인물들
+      </h2>
+      <div id="charactersList"></div>
+    </section>
+
+    <!-- ③ 깊은 묵상 카드 (5단 호흡: 장면·질문·맥락·통찰·연결) -->
+    <section class="meditation-card" id="deepDiveCard" style="display:none;">
+      <h2 class="meditation-card__title">
+        <span class="meditation-card__icon">🌿</span>
+        깊은 묵상
+      </h2>
+      <div class="deep-dive">
+        <div class="deep-dive__step">
+          <div class="deep-dive__body" id="deepDiveScene"></div>
+        </div>
+        <div class="deep-dive__step">
+          <div class="deep-dive__body" id="deepDiveQuestion"></div>
+        </div>
+        <div class="deep-dive__step">
+          <div class="deep-dive__body" id="deepDiveContext"></div>
+        </div>
+        <div class="deep-dive__step">
+          <div class="deep-dive__body" id="deepDiveInsight"></div>
+        </div>
+        <div class="deep-dive__step">
+          <div class="deep-dive__body" id="deepDiveBridge"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 폴백: 핵심 요약 카드 (deep_dive 없을 때만 표시) -->
+    <section class="meditation-card" id="summaryCard" style="display:none;">
       <h2 class="meditation-card__title">
         <span class="meditation-card__icon">✨</span>
         말씀 속 장면
@@ -373,16 +438,7 @@
       </ul>
     </section>
 
-    <!-- 등장인물 카드 -->
-    <section class="meditation-card" id="charactersCard" style="display:none;">
-      <h2 class="meditation-card__title">
-        <span class="meditation-card__icon">👥</span>
-        말씀 속 인물들
-      </h2>
-      <div id="charactersList"></div>
-    </section>
-
-    <!-- 구절 해설 카드 -->
+    <!-- 폴백: 구절 해설 카드 (deep_dive 없을 때만 표시) -->
     <section class="meditation-card" id="commentaryCard" style="display:none;">
       <h2 class="meditation-card__title">
         <span class="meditation-card__icon">💡</span>
@@ -444,26 +500,64 @@
 
     // ========== AI 묵상 로드 ==========
     async function loadAI() {
-      const ai = await loadWithFallback('ai');
+      const [ai, deepDive] = await Promise.all([
+        loadWithFallback('ai'),
+        loadWithFallback('deep_dive'),
+      ]);
 
-      if (!ai) {
+      if (!ai && !deepDive) {
+        document.getElementById('summaryCard').style.display = '';
         document.getElementById('summaryList').innerHTML =
           '<li class="error" style="padding:0;">묵상을 불러올 수 없어요.</li>';
         return;
       }
 
-      // 신·구 스키마 fallback
-      const _ctxParts = (ai.book_context || '').split('. ');
-      const bookOverview = ai.book_overview ||
-        (_ctxParts.slice(0, -1).join('. ') + (_ctxParts.length > 1 ? '.' : '') || ai.book_context || '');
-      const passageIntro = ai.passage_intro ||
-        (_ctxParts.length > 1 ? _ctxParts[_ctxParts.length - 1].trim() : '');
-      const scenes = ai.scenes || ai.core_summary || [];
+      // 책 흐름 / 등장인물은 ai 데이터에서 (deep_dive에는 없음)
+      if (ai) {
+        const _ctxParts = (ai.book_context || '').split('. ');
+        const bookOverview = ai.book_overview ||
+          (_ctxParts.slice(0, -1).join('. ') + (_ctxParts.length > 1 ? '.' : '') || ai.book_context || '');
+        renderCharacters(ai.characters);
+        renderBookContext(bookOverview);
+      }
 
-      renderSummary(scenes, passageIntro);
-      renderCharacters(ai.characters);
-      renderBookContext(bookOverview);
-      renderCommentary(ai.verse_commentary);
+      // 분기: deep_dive 있으면 5단 호흡 카드, 없으면 종전 두 카드(말씀 속 장면 + 구절 해설)
+      if (deepDive) {
+        renderDeepDive(deepDive);
+      } else if (ai) {
+        const _ctxParts = (ai.book_context || '').split('. ');
+        const passageIntro = ai.passage_intro ||
+          (_ctxParts.length > 1 ? _ctxParts[_ctxParts.length - 1].trim() : '');
+        const scenes = ai.scenes || ai.core_summary || [];
+        document.getElementById('summaryCard').style.display = '';
+        renderSummary(scenes, passageIntro);
+        renderCommentary(ai.verse_commentary);
+      }
+    }
+
+    function renderDeepDive(d) {
+      const map = {
+        deepDiveScene: '장면',
+        deepDiveQuestion: '질문',
+        deepDiveContext: '맥락',
+        deepDiveInsight: '통찰',
+        deepDiveBridge: '연결',
+      };
+      let any = false;
+      for (const [id, key] of Object.entries(map)) {
+        const text = d[key];
+        const el = document.getElementById(id);
+        if (!el) continue;
+        if (text && String(text).trim()) {
+          el.textContent = text;
+          el.parentElement.style.display = '';
+          any = true;
+        } else {
+          // 빈 키는 해당 sub-section만 숨김
+          el.parentElement.style.display = 'none';
+        }
+      }
+      if (any) document.getElementById('deepDiveCard').style.display = '';
     }
 
     function renderSummary(summary, passageIntro) {
@@ -615,8 +709,10 @@
       // 말씀 토글 (클릭/엔터/스페이스)
       const toggle = document.getElementById('scriptureToggle');
       const header = document.getElementById('scriptureToggleHeader');
+      const backdrop = document.getElementById('scriptureBackdrop');
       const doToggle = () => {
         const isOpen = toggle.classList.toggle('is-open');
+        backdrop.classList.toggle('is-active', isOpen);
         toggle.setAttribute('aria-expanded', String(isOpen));
       };
       header.addEventListener('click', doToggle);
