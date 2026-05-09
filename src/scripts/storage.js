@@ -59,7 +59,18 @@ const Storage = {
   // ========================================================================
 
   /**
-   * 사용자 이름 가져오기 (없으면 기본값 설정하고 반환)
+   * 닉네임 끝 '님' 호칭 제거. '님'은 표시용 호칭이지 신원의 일부가 아님.
+   */
+  _stripHonorific(name) {
+    if (!name) return name;
+    let s = String(name).trim();
+    while (s.endsWith('님')) s = s.slice(0, -1).trim();
+    return s;
+  },
+
+  /**
+   * 사용자 이름 가져오기 (없으면 기본값 설정하고 반환).
+   * 과거에 '님'이 붙어 저장된 값이 있으면 자동으로 정리해 다시 저장.
    */
   getUserName() {
     let name = this.get('user.name');
@@ -67,15 +78,18 @@ const Storage = {
       name = this.DEFAULT_NICKNAME;
       this.set('user.name', name);
       this.set('user.joinedAt', new Date().toISOString());
+      return name;
     }
-    return name;
+    const cleaned = this._stripHonorific(name);
+    if (cleaned !== name) this.set('user.name', cleaned || this.DEFAULT_NICKNAME);
+    return cleaned || this.DEFAULT_NICKNAME;
   },
 
   /**
-   * 사용자 이름 변경
+   * 사용자 이름 변경. 입력에 '님'이 붙어 있어도 호칭은 떼고 저장.
    */
   setUserName(name) {
-    const trimmed = (name || '').trim();
+    const trimmed = this._stripHonorific((name || '').trim());
     if (!trimmed) return false;
     this.set('user.name', trimmed);
     return true;
@@ -107,9 +121,9 @@ const Storage = {
   restoreFromServer(hash, records) {
     this.set('user.hash', hash);
 
-    // 해시에서 닉네임 추출 (예: "어린양#12345" → "어린양")
+    // 해시에서 닉네임 추출 (예: "어린양#12345" → "어린양"). '님' 호칭은 떼고 저장.
     const m = String(hash).match(/^(.+)#\d+$/);
-    if (m) this.set('user.name', m[1]);
+    if (m) this.set('user.name', this._stripHonorific(m[1]) || this.DEFAULT_NICKNAME);
 
     if (Array.isArray(records)) {
       records.forEach((r) => {

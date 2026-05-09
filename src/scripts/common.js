@@ -92,17 +92,18 @@ const Common = {
   applyFontStyle,
 
   /**
-   * 닉네임에 '님' 자동 부착 (이미 '님'으로 끝나면 그대로)
+   * 닉네임 정규화 — 끝에 '님'이 붙어 있으면 떼고 반환. ('님'은 호칭이라 신원의 일부 X)
+   * 함수 이름은 호환을 위해 유지하지만 실제로는 호칭을 부착하지 않는다.
    */
   withHonorific(name) {
-    if (!name) return '어린양님';
-    return name.endsWith('님') ? name : `${name}님`;
+    if (!name) return '어린양';
+    let s = String(name).trim();
+    while (s.endsWith('님')) s = s.slice(0, -1).trim();
+    return s || '어린양';
   },
 
   /**
-   * 시간대별 인사말 가져오기
-   * @param {string} name - 사용자 이름 (님 없이)
-   * @returns {string} 인사말 (님 자동 부착)
+   * 시간대별 인사말 — 호칭(님)은 부착하지 않는다.
    */
   getGreeting(name = '어린양') {
     const hour = new Date().getHours();
@@ -120,8 +121,7 @@ const Common = {
       base = '고요한 밤이네요';
     }
 
-    const displayName = name.endsWith('님') ? name : `${name}님`;
-    return `${base}, ${displayName}`;
+    return `${base}, ${this.withHonorific(name)}`;
   },
 
   /**

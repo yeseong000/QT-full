@@ -83,6 +83,22 @@ const SupabaseSync = {
     let hash = Storage.getUserHash();
 
     if (hash) {
+      // 1) 닉네임에 '님' 호칭이 박혀 저장된 레거시 해시 정리
+      //    예: '어린양님#7610' → '어린양#7610'으로 이전하고 기록도 복제
+      const honor = String(hash).match(/^(.+?)님#(\d+)$/);
+      if (honor) {
+        try {
+          const migrated = await this.migrateHonorificHash(hash);
+          if (migrated) {
+            Storage.setUserHash(migrated, { force: true });
+            hash = migrated;
+          }
+        } catch (e) {
+          console.warn('[Migration] 님 호칭 정리 실패 — 기존 해시 유지:', e);
+        }
+      }
+
+      // 2) 5자리 이상 레거시 → 4자리 변환
       const legacy = String(hash).match(/^(.+)#(\d+)$/);
       if (legacy && legacy[2].length >= 5) {
         try {
@@ -119,6 +135,70 @@ const SupabaseSync = {
       attempts++;
     }
     return null;
+  },
+
+  /**
+   * 닉네임 끝에 '님'이 박혀 저장된 해시를 호칭 없는 버전으로 이전.
+   * 예: '어린양님#7610' → '어린양#7610'.
+   * - 새 해시가 비어 있으면 등록 후 기존 qt_records를 복제.
+   * - 새 해시가 이미 같은(호칭 떼낸) 닉네임으로 존재하면 그대로 어댑트(추가 등록 X).
+   * - 성공 시 새 해시 문자열, 실패 시 null.
+   */
+  async migrateHonorificHash(oldHash) {
+    const m = String(oldHash).match(/^(.+?)(님+)#(\d+)$/);
+    if (!m) return null;
+    const baseNick = m[1];
+    const num = m[3];
+    if (!baseNick) return null;
+
+    const newHash = `${baseNick}#${num}`;
+    if (newHash === oldHash) return null;
+
+    let usable = false;
+    try {
+      usable = await this.registerHash(newHash, baseNick);
+      if (!usable) {
+        // 이미 존재 — 같은 베이스 닉네임이면 그 행을 그대로 사용.
+        const existing = await this.lookupHash(newHash);
+        if (existing && (existing.nickname === baseNick || existing.nickname === `${baseNick}님`)) {
+          usable = true;
+        }
+      }
+    } catch (e) {
+      console.warn('[HonorificMigration] 등록 시도 실패:', newHash, e);
+      return null;
+    }
+    if (!usable) return null;
+
+    let copied = 0;
+    try {
+      const records = await this.fetchAllRecords(oldHash);
+      if (Array.isArray(records)) {
+        for (const r of records) {
+          if (!r || !r.date) continue;
+          await _req('POST', 'qt_records', {
+            body: {
+              user_hash:        newHash,
+              date:             r.date,
+              emotions:         r.emotions          || [],
+              reflection:       r.reflection        || null,
+              question_answers: r.question_answers  || [],
+              memo:             r.memo              || null,
+              completed:        r.completed         || false,
+              progress_step:    r.progress_step     || 5,
+              updated_at:       new Date().toISOString(),
+            },
+            prefer: 'resolution=merge-duplicates,return=minimal',
+          });
+          copied++;
+        }
+      }
+    } catch (e) {
+      console.warn('[HonorificMigration] 기록 복제 실패 (계속 진행):', e);
+    }
+
+    console.log(`[HonorificMigration] ${oldHash} → ${newHash} (${copied}건 복제)`);
+    return newHash;
   },
 
   /**
@@ -201,13 +281,20 @@ const SupabaseSync = {
     if (!trimmed) return { ok: false, reason: 'empty' };
     if (!/^.+#\d{4}$/.test(trimmed)) return { ok: false, reason: 'format' };
 
-    try {
-      const user = await this.lookupHash(trimmed);
-      if (!user) return { ok: false, reason: 'not_found' };
+    // 사용자가 '어린양님#7610'처럼 호칭을 붙여 입력해도 떼고 한 번 더 시도.
+    const candidates = [trimmed];
+    const stripped = trimmed.replace(/(.+?)(님+)#(\d+)$/, '$1#$3');
+    if (stripped !== trimmed) candidates.push(stripped);
 
-      const records = await this.fetchAllRecords(trimmed);
-      Storage.restoreFromServer(trimmed, records || []);
-      return { ok: true, recordCount: (records || []).length };
+    try {
+      for (const candidate of candidates) {
+        const user = await this.lookupHash(candidate);
+        if (!user) continue;
+        const records = await this.fetchAllRecords(candidate);
+        Storage.restoreFromServer(candidate, records || []);
+        return { ok: true, recordCount: (records || []).length };
+      }
+      return { ok: false, reason: 'not_found' };
     } catch (e) {
       console.warn('복원 실패:', e);
       return { ok: false, reason: 'network' };
