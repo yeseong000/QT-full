@@ -59,12 +59,14 @@
        - layer 1 (단순 2-stop linear 페이드): 위쪽 45%는 완전 투명(PNG 그대로),
          45%~100% 55% 폭에서 매끈하게 색상 alpha 0 → 1로 보간
          (multi-stop의 alpha 점프로 인한 끊김 제거) */
+    /* fallback 그라디언트 시작색은 각 PNG가 화면 상단에서 보이는 실제 픽셀색과
+       동일하게 맞춰 PNG 미로드 시에도 동일한 사용자 경험을 보장 */
     .app-container[data-time-slot="dawn"] {
       background-color: #E5D0C0;
       background-image:
         linear-gradient(to bottom, rgba(229, 208, 192, 0) 45%, rgba(229, 208, 192, 1) 100%),
         url('images/%EA%B1%B0%EB%A3%A9%ED%95%9C%20%EC%83%88%EB%B2%BD%20%EB%AA%A8%EB%B0%94%EC%9D%BC%20.png'),
-        linear-gradient(180deg, #5C548A 0%, #B8A0BC 50%, #E5D0C0 100%);
+        linear-gradient(180deg, #7C74A2 0%, #B8A0BC 50%, #E5D0C0 100%);
       background-size: 100% 100%, cover, 100% 100%;
       background-position: center, center -130px, center;
       background-repeat: no-repeat;
@@ -74,7 +76,7 @@
       background-image:
         linear-gradient(to bottom, rgba(239, 230, 205, 0) 45%, rgba(239, 230, 205, 1) 100%),
         url('images/%EC%9D%80%ED%98%9C%EB%A1%9C%EC%9A%B4%20%EC%95%84%EC%B9%A8%20%EB%AA%A8%EB%B0%94%EC%9D%BC%20.png'),
-        linear-gradient(180deg, #F5E1DC 0%, #F8E8D6 50%, #EFE6CD 100%);
+        linear-gradient(180deg, #F1D8CB 0%, #F5DECC 50%, #EFE6CD 100%);
       background-size: 100% 100%, cover, 100% 100%;
       background-position: center, center -130px, center;
       background-repeat: no-repeat;
@@ -84,7 +86,7 @@
       background-image:
         linear-gradient(to bottom, rgba(236, 227, 210, 0) 45%, rgba(236, 227, 210, 1) 100%),
         url('images/%ED%8F%89%EC%95%88%ED%95%9C%20%EC%98%A4%ED%9B%84%20%EB%AA%A8%EB%B0%94%EC%9D%BC.png'),
-        linear-gradient(180deg, #C5DDDF 0%, #E0E2D8 50%, #ECE3D2 100%);
+        linear-gradient(180deg, #E6E9ED 0%, #E0E2D8 50%, #ECE3D2 100%);
       background-size: 100% 100%, cover, 100% 100%;
       background-position: center, center -130px, center;
       background-repeat: no-repeat;
@@ -94,7 +96,7 @@
       background-image:
         linear-gradient(to bottom, rgba(245, 198, 114, 0) 45%, rgba(245, 198, 114, 1) 100%),
         url('images/%EC%98%A8%EC%9C%A0%ED%95%9C%20%EC%A0%80%EB%85%81%20%EB%AA%A8%EB%B0%94%EC%9D%BC.png'),
-        linear-gradient(180deg, #5E5879 0%, #C7896A 60%, #F5C672 100%);
+        linear-gradient(180deg, #DEAD98 0%, #DFA982 60%, #F5C672 100%);
       background-size: 100% 100%, cover, 100% 100%;
       background-position: center, center -130px, center;
       background-repeat: no-repeat;
@@ -104,7 +106,7 @@
       background-image:
         linear-gradient(to bottom, rgba(42, 58, 92, 0) 45%, rgba(42, 58, 92, 1) 100%),
         url('images/%EA%B3%A0%EC%9A%94%ED%95%9C%20%EB%B0%A4%20%EB%AA%A8%EB%B0%94%EC%9D%BC%20.png'),
-        linear-gradient(180deg, #0F1A35 0%, #1B2A4A 50%, #2A3A5C 100%);
+        linear-gradient(180deg, #082252 0%, #1B2A4A 50%, #2A3A5C 100%);
       background-size: 100% 100%, cover, 100% 100%;
       background-position: center, center -130px, center;
       background-repeat: no-repeat;
@@ -459,7 +461,7 @@
       opacity: 0;
     }
     .restore-accordion.is-open .restore-accordion__body {
-      max-height: 220px;
+      max-height: 380px;
       opacity: 1;
     }
     .restore-accordion__desc {
@@ -468,6 +470,42 @@
       margin: var(--space-3) 0;
       line-height: 1.6;
     }
+
+    /* 아코디언 내부 — 입력 필드 옆에 자연스럽게 붙는 ghost 텍스트 버튼 */
+    .btn-link {
+      appearance: none;
+      background: transparent;
+      border: none;
+      padding: var(--space-3) var(--space-2);
+      color: var(--accent-sage-text);
+      font-size: var(--text-small);
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      cursor: pointer;
+      white-space: nowrap;
+      border-radius: var(--radius-sm);
+      transition: background var(--duration-base), transform var(--duration-fast) var(--ease-out);
+      -webkit-tap-highlight-color: transparent;
+    }
+    .btn-link:active { background: var(--accent-sage-soft); transform: scale(0.97); }
+    .btn-link:disabled { opacity: 0.5; cursor: default; }
+
+    .restore-row { display: flex; gap: var(--space-3); align-items: center; }
+    .restore-row .input-field { flex: 1; min-width: 0; }
+    .restore-status {
+      font-size: var(--text-small);
+      color: var(--text-secondary);
+      margin-top: var(--space-2);
+      min-height: 1.2em;
+    }
+    .restore-divider {
+      height: 1px;
+      background: var(--border-input);
+      margin: var(--space-4) 0;
+      opacity: 0.5;
+    }
+    .restore-json-actions { display: flex; gap: var(--space-2); }
+    .restore-json-actions .btn-link { flex: 1; text-align: center; }
 
     /* 액션 버튼 */
     .modal-actions {
@@ -566,9 +604,13 @@
         background: var(--time-bg, var(--bg-paper));
         background-color: var(--ground-color, var(--bg-paper));
       }
+      /* 모바일: 카드를 화면 하단 고정(margin-top: auto) 대신
+         viewport 비율 기반 spacer로 띄워, 위쪽에 일러스트가 보이고
+         유저가 스크롤하면 카드가 자연스럽게 위로 올라옴.
+         margin-bottom으로 콘텐츠 총 높이를 viewport보다 크게 만들어 스크롤 보장. */
       html[data-layout-mode="adaptive"] #appContainer .today-card {
-        margin-top: auto;
-        margin-bottom: max(24px, env(safe-area-inset-bottom, 0));
+        margin-top: 55vh;
+        margin-bottom: max(60px, env(safe-area-inset-bottom, 0));
       }
     }
 
@@ -731,10 +773,11 @@
             </svg>
           </button>
           <div class="restore-accordion__body" id="restoreAccordionBody">
+            <!-- 1. 해시 동기화 -->
             <p class="restore-accordion__desc">
-              이전에 쓰던 해시를 입력하시면<br>묵상 기록을 불러올 수 있어요 (예: 어린양#1234)
+              이전에 쓰던 해시태그를 입력하면<br>묵상 기록을 동기화할 수 있어요 (예: 어린양#1234)
             </p>
-            <div style="display:flex; gap: var(--space-3); align-items:center;">
+            <div class="restore-row">
               <input
                 type="text"
                 class="input-field"
@@ -744,11 +787,24 @@
                 autocapitalize="off"
                 autocorrect="off"
                 spellcheck="false"
-                style="flex: 1; min-width: 0;"
               >
-              <button class="btn btn-secondary" id="restoreHashBtn" type="button" style="white-space:nowrap; flex-shrink: 0;">불러오기</button>
+              <button class="btn-link" id="restoreHashBtn" type="button">동기화</button>
             </div>
-            <div id="restoreStatus" style="font-size: var(--text-small); color: var(--text-secondary); margin-top: var(--space-2); min-height: 1.2em;"></div>
+            <div id="restoreStatus" class="restore-status"></div>
+
+            <!-- 2. 구분선 -->
+            <div class="restore-divider"></div>
+
+            <!-- 3. JSON 백업 -->
+            <p class="restore-accordion__desc" style="margin-top:0;">
+              이 기기의 데이터를 파일로 내려받거나, 백업 파일에서 다시 불러올 수 있어요
+            </p>
+            <div class="restore-json-actions">
+              <button class="btn-link" id="exportJsonBtn" type="button">.json 내보내기</button>
+              <button class="btn-link" id="importJsonBtn" type="button">.json 가져오기</button>
+            </div>
+            <input type="file" id="importJsonFile" accept="application/json" hidden>
+            <div id="importJsonStatus" class="restore-status"></div>
           </div>
         </div>
 
@@ -840,9 +896,11 @@
       // 시간대별 sky(위)·ground(아래) 색 — PWA standalone 시스템 영역 흰 띠 제거의 단일 출처
       // sky : Dynamic Island 주변 status bar (theme-color로 OS 그림) + letterbox 띠
       // ground: 홈바 아래 / 하단 overscroll bounce (html background-color로 노출)
+      // ※ SKY는 각 PNG가 화면 상단에 표시될 때의 실제 픽셀색(샘플링)으로 맞춰
+      //    Dynamic Island/Status bar와 PNG 사이의 시각적 잘림(띠 경계)을 제거.
       const SKY_COLOR = {
-        dawn: '#5C548A', morning: '#F5E1DC', afternoon: '#C5DDDF',
-        evening: '#5E5879', night: '#0F1A35',
+        dawn: '#7C74A2', morning: '#F1D8CB', afternoon: '#E6E9ED',
+        evening: '#DEAD98', night: '#082252',
       };
       const GROUND_COLOR = {
         dawn: '#E5D0C0', morning: '#EFE6CD', afternoon: '#ECE3D2',
@@ -856,13 +914,14 @@
       const themeColorMeta = document.querySelector('meta[name="theme-color"]');
       if (themeColorMeta) themeColorMeta.setAttribute('content', SKY_COLOR[slot] || '#F0F4F2');
 
-      // body 배경 그라디언트 (sky → ground)
+      // body 배경 그라디언트 (sky → ground) — 시작색은 SKY_COLOR와 동일하게 유지해
+      // 시스템 영역(다이내믹 아일랜드)과 PNG 사이의 색 끊김을 제거
       const TIME_BG_GRADIENT = {
-        dawn:      'linear-gradient(180deg, #5C548A 0%, #E5D0C0 100%)',
-        morning:   'linear-gradient(180deg, #F5E1DC 0%, #EFE6CD 100%)',
-        afternoon: 'linear-gradient(180deg, #C5DDDF 0%, #ECE3D2 100%)',
-        evening:   'linear-gradient(180deg, #5E5879 0%, #F5C672 100%)',
-        night:     'linear-gradient(180deg, #0F1A35 0%, #2A3A5C 100%)',
+        dawn:      'linear-gradient(180deg, #7C74A2 0%, #E5D0C0 100%)',
+        morning:   'linear-gradient(180deg, #F1D8CB 0%, #EFE6CD 100%)',
+        afternoon: 'linear-gradient(180deg, #E6E9ED 0%, #ECE3D2 100%)',
+        evening:   'linear-gradient(180deg, #DEAD98 0%, #F5C672 100%)',
+        night:     'linear-gradient(180deg, #082252 0%, #2A3A5C 100%)',
       };
       document.documentElement.style.setProperty('--time-bg', TIME_BG_GRADIENT[slot] || '');
 
@@ -1111,6 +1170,11 @@
 
       document.getElementById('restoreHashBtn').addEventListener('click', handleRestore);
 
+      // JSON 백업
+      document.getElementById('exportJsonBtn').addEventListener('click', handleExportJson);
+      document.getElementById('importJsonBtn').addEventListener('click', handleImportJsonClick);
+      document.getElementById('importJsonFile').addEventListener('change', handleImportJsonFile);
+
       // QR 모달 닫기 (백드롭 클릭)
       document.getElementById('qrModal').addEventListener('click', (e) => {
         if (e.target.id === 'qrModal') closeQrModal();
@@ -1259,7 +1323,7 @@
       }
 
       btn.disabled = true;
-      status.textContent = '불러오는 중...';
+      status.textContent = '동기화 중...';
       const result = await SupabaseSync.restoreFromHash(value);
       btn.disabled = false;
 
@@ -1269,13 +1333,94 @@
           not_found: '해당 해시를 찾을 수 없어요', network: '네트워크 오류예요. 잠시 후 다시 시도해주세요',
         };
         status.style.color = 'var(--text-secondary)';
-        status.textContent = msgs[result.reason] || '불러오기에 실패했어요';
+        status.textContent = msgs[result.reason] || '동기화에 실패했어요';
         return;
       }
 
       status.style.color = 'var(--accent-sage-text)';
-      status.textContent = `${result.recordCount}일치 기록을 불러왔어요. 새로고침할게요...`;
+      status.textContent = `${result.recordCount}일치 기록을 동기화했어요. 새로고침할게요...`;
       setTimeout(() => window.location.reload(), 800);
+    }
+
+    // ========== 로컬 JSON 백업 ==========
+    const BACKUP_KEY_PREFIXES = ['user.', 'streak.', 'records.', 'settings.', 'tooltip.'];
+    const BACKUP_EXACT_KEYS = new Set(['layoutMode']);
+
+    function collectLocalDump() {
+      const dump = {};
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (!key) continue;
+        const ok = BACKUP_KEY_PREFIXES.some((p) => key.startsWith(p))
+                || BACKUP_EXACT_KEYS.has(key);
+        if (ok) dump[key] = localStorage.getItem(key);
+      }
+      return dump;
+    }
+
+    function handleExportJson() {
+      const status = document.getElementById('importJsonStatus');
+      const payload = {
+        schema:     1,
+        app:        'jumanna-qt',
+        exportedAt: new Date().toISOString(),
+        userHash:   Storage.getUserHash() || null,
+        data:       collectLocalDump(),
+      };
+      const blob  = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+      const today = new Date().toISOString().slice(0, 10);
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `jumanna-backup-${today}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+
+      status.style.color = 'var(--accent-sage-text)';
+      status.textContent = '백업 파일을 내려받았어요';
+    }
+
+    function handleImportJsonClick() {
+      document.getElementById('importJsonFile').click();
+    }
+
+    function handleImportJsonFile(ev) {
+      const status = document.getElementById('importJsonStatus');
+      status.style.color = 'var(--text-secondary)';
+      const file = ev.target.files && ev.target.files[0];
+      ev.target.value = ''; // 같은 파일 재선택 가능하도록
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onerror = () => { status.textContent = '파일을 읽지 못했어요'; };
+      reader.onload  = (e) => {
+        let payload;
+        try { payload = JSON.parse(e.target.result); }
+        catch { status.textContent = '올바른 JSON 파일이 아니에요'; return; }
+        if (!payload || typeof payload !== 'object' || !payload.data || typeof payload.data !== 'object') {
+          status.textContent = '주만나 백업 파일이 아니에요';
+          return;
+        }
+        const ok = confirm(
+          '이 기기의 묵상 기록을 백업 파일로 덮어씁니다.\n현재 기록은 사라질 수 있어요. 진행할까요?'
+        );
+        if (!ok) return;
+
+        let restored = 0;
+        Object.entries(payload.data).forEach(([k, v]) => {
+          if (typeof v !== 'string') return;
+          const allow = BACKUP_KEY_PREFIXES.some((p) => k.startsWith(p))
+                     || BACKUP_EXACT_KEYS.has(k);
+          if (!allow) return;
+          localStorage.setItem(k, v);
+          restored++;
+        });
+        status.style.color = 'var(--accent-sage-text)';
+        status.textContent = `${restored}개 항목 복원 완료. 새로고침할게요...`;
+        setTimeout(() => window.location.reload(), 800);
+      };
+      reader.readAsText(file);
     }
 
     // ========== 폰트 크기 선택기 ==========
