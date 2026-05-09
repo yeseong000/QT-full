@@ -284,9 +284,16 @@ input, textarea {
   [data-qt-step="meditation"] #summaryCard {
     grid-column: 1 / -1;
   }
-  /* 좌측: 깊은 묵상 (자기 height만) */
+  /* 좌측 큰 카드: 깊은 묵상 (우측 두 row 합산만큼 차지)
+     - grid-row: span 2로 두 row 차지하지만 spanned item은 row sizing에 기여 안 함
+     - min-height: 0 + align-self: stretch로 우측 카드 사이 간격이 commentary 길이에 영향 안 받음
+     - 콘텐츠 길면 카드 내부 스크롤 */
   [data-qt-step="meditation"] #commentaryCard {
     grid-column: 1 / 2;
+    grid-row: span 2;
+    align-self: stretch;
+    min-height: 0;
+    overflow-y: auto;
   }
   /* 우측 칼럼 — 사무엘상의 흐름 위, 말씀 속 인물들 아래 */
   [data-qt-step="meditation"] #bookContextCard {
