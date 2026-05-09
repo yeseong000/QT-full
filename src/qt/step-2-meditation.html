@@ -84,9 +84,9 @@
     .scripture-backdrop {
       position: fixed;
       inset: 0;
-      background: rgba(45, 58, 50, 0.10);
-      backdrop-filter: blur(10px) saturate(1.1);
-      -webkit-backdrop-filter: blur(10px) saturate(1.1);
+      background: rgba(45, 58, 50, 0.04);     /* 거의 투명 — blur로만 디포커스 */
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
       z-index: 15;                /* scripture-toggle(z=20) 아래 — pill/본문은 또렷 */
       pointer-events: none;
       opacity: 0;
@@ -100,7 +100,7 @@
       transition: opacity var(--duration-base) var(--ease-out);
     }
     html[data-theme="dark"] .scripture-backdrop {
-      background: rgba(0, 0, 0, 0.30);
+      background: rgba(0, 0, 0, 0.18);
     }
 
     .scripture-toggle__label {
