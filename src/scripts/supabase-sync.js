@@ -77,10 +77,26 @@ const SupabaseSync = {
   /**
    * 로컬에 해시가 있으면 그대로, 없으면 새로 만들어 서버에 등록.
    * 첫 방문/첫 묵상 모두 같은 진입점으로 사용.
+   * 5자리 이상 레거시 해시는 자동으로 4자리로 변환한다.
    */
   async ensureUserHash() {
     let hash = Storage.getUserHash();
-    if (hash) return hash;
+
+    if (hash) {
+      const legacy = String(hash).match(/^(.+)#(\d+)$/);
+      if (legacy && legacy[2].length >= 5) {
+        try {
+          const migrated = await this.migrateLegacyHash(hash);
+          if (migrated) {
+            Storage.setUserHash(migrated, { force: true });
+            return migrated;
+          }
+        } catch (e) {
+          console.warn('[Migration] 자동 변환 실패 — 기존 해시 유지:', e);
+        }
+      }
+      return hash;
+    }
 
     const nickname = Storage.getUserName();
     let attempts = 0;
@@ -102,6 +118,77 @@ const SupabaseSync = {
       }
       attempts++;
     }
+    return null;
+  },
+
+  /**
+   * 레거시 5자리 이상 해시를 4자리로 자동 변환.
+   * 후보 순서: 앞 4자리 → 뒤 4자리 → 랜덤(최대 5회).
+   * 서버에 후보가 비어 있으면 그 번호로 등록하고, 기존 qt_records를
+   * 새 해시로 복제한다. 성공 시 새 해시 문자열, 실패 시 null.
+   */
+  async migrateLegacyHash(oldHash) {
+    const m = String(oldHash).match(/^(.+)#(\d+)$/);
+    if (!m) return null;
+    const nickname = m[1];
+    const oldNum = m[2];
+    if (oldNum.length < 5) return null;
+
+    const candidates = [oldNum.slice(0, 4), oldNum.slice(-4)];
+    for (let i = 0; i < 5; i++) {
+      candidates.push(String(Math.floor(1000 + Math.random() * 9000)));
+    }
+
+    for (const newNum of candidates) {
+      const newHash = `${nickname}#${newNum}`;
+      if (newHash === oldHash) continue;
+
+      let usable = false;
+      try {
+        usable = await this.registerHash(newHash, nickname);
+        if (!usable) {
+          // 이미 등록된 행이 우리(같은 닉네임) 것이면 이어서 사용 — 부분 실패 후 재시도 케이스.
+          const existing = await this.lookupHash(newHash);
+          if (existing && existing.nickname === nickname) usable = true;
+        }
+      } catch (e) {
+        console.warn('[Migration] 등록 시도 실패:', newHash, e);
+        continue;
+      }
+      if (!usable) continue;
+
+      let copied = 0;
+      try {
+        const records = await this.fetchAllRecords(oldHash);
+        if (Array.isArray(records)) {
+          for (const r of records) {
+            if (!r || !r.date) continue;
+            await _req('POST', 'qt_records', {
+              body: {
+                user_hash:        newHash,
+                date:             r.date,
+                emotions:         r.emotions          || [],
+                reflection:       r.reflection        || null,
+                question_answers: r.question_answers  || [],
+                memo:             r.memo              || null,
+                completed:        r.completed         || false,
+                progress_step:    r.progress_step     || 5,
+                updated_at:       new Date().toISOString(),
+              },
+              prefer: 'resolution=merge-duplicates,return=minimal',
+            });
+            copied++;
+          }
+        }
+      } catch (e) {
+        console.warn('[Migration] 기록 복제 실패 (계속 진행):', e);
+      }
+
+      console.log(`[Migration] ${oldHash} → ${newHash} (${copied}건 복제)`);
+      return newHash;
+    }
+
+    console.warn('[Migration] 모든 후보 등록 실패 — 기존 해시 유지.');
     return null;
   },
 
