@@ -22,7 +22,91 @@
   <link rel="stylesheet" href="../styles/design-tokens.css">
   <link rel="stylesheet" href="../styles/common.css">
 
+  <!-- ★ 첫 페인트 전: 시간대 결정 → app-container에 data-time-slot 주입 (블러 배경 첫 페인트부터 정확) -->
+  <script>
+    (function () {
+      var hour = new Date().getHours();
+      var slot = (hour >= 4  && hour < 7)  ? 'dawn'
+               : (hour >= 7  && hour < 12) ? 'morning'
+               : (hour >= 12 && hour < 17) ? 'afternoon'
+               : (hour >= 17 && hour < 22) ? 'evening'
+               : 'night';
+      document.documentElement.setAttribute('data-time-slot', slot);
+    })();
+  </script>
+
   <style>
+    /* ========== 시간대별 블러 배경 (calendar.html과 동일 패턴) ==========
+       - layer 1 (.bg-blur): PNG 일러스트 + blur 50px + scale 1.1로 가장자리 잘림 방지
+       - layer 2 (.bg-overlay): 시간대별 색상 오버레이로 가독성 확보
+       - layer 3 (.glass-card 룰로 변환된 .card): 반투명 + backdrop-filter blur */
+    .app-container { position: relative; }
+    .bg-blur {
+      position: absolute;
+      inset: -30px;
+      z-index: -2;
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      filter: blur(50px) saturate(0.85);
+      transform: scale(1.1);
+      pointer-events: none;
+    }
+    .bg-overlay {
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      pointer-events: none;
+    }
+    html[data-time-slot="dawn"]      .bg-blur {
+      background-image: url('../images/%EA%B1%B0%EB%A3%A9%ED%95%9C%20%EC%83%88%EB%B2%BD%20%EB%AA%A8%EB%B0%94%EC%9D%BC%20.png');
+    }
+    html[data-time-slot="morning"]   .bg-blur {
+      background-image: url('../images/%EC%9D%80%ED%98%9C%EB%A1%9C%EC%9A%B4%20%EC%95%84%EC%B9%A8%20%EB%AA%A8%EB%B0%94%EC%9D%BC%20.png');
+    }
+    html[data-time-slot="afternoon"] .bg-blur {
+      background-image: url('../images/%ED%8F%89%EC%95%88%ED%95%9C%20%EC%98%A4%ED%9B%84%20%EB%AA%A8%EB%B0%94%EC%9D%BC.png');
+    }
+    html[data-time-slot="evening"]   .bg-blur {
+      background-image: url('../images/%EC%98%A8%EC%9C%A0%ED%95%9C%20%EC%A0%80%EB%85%81%20%EB%AA%A8%EB%B0%94%EC%9D%BC.png');
+    }
+    html[data-time-slot="night"]     .bg-blur {
+      background-image: url('../images/%EA%B3%A0%EC%9A%94%ED%95%9C%20%EB%B0%A4%20%EB%AA%A8%EB%B0%94%EC%9D%BC%20.png');
+    }
+    html[data-time-slot="dawn"]      .bg-overlay { background: rgba(255, 255, 255, 0.55); }
+    html[data-time-slot="morning"]   .bg-overlay { background: rgba(255, 255, 255, 0.60); }
+    html[data-time-slot="afternoon"] .bg-overlay { background: rgba(255, 255, 255, 0.55); }
+    html[data-time-slot="evening"]   .bg-overlay { background: rgba(255, 255, 255, 0.55); }
+    html[data-time-slot="night"]     .bg-overlay { background: rgba(0, 0, 0, 0.50); }
+
+    /* 기존 .card를 글래스로 변환 — 시간대 활성 시에만 */
+    html[data-time-slot] .card {
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+    html[data-time-slot="night"] .card {
+      background: rgba(255, 255, 255, 0.10);
+      border: 0.5px solid rgba(255, 255, 255, 0.15);
+    }
+    /* 야간 시간대: 본문 텍스트 흰색 처리 */
+    html[data-time-slot="night"] {
+      color: #FFFFFF;
+    }
+    html[data-time-slot="night"] .page-title { color: #FFFFFF; }
+    html[data-time-slot="night"] .verse-line { color: rgba(255, 255, 255, 0.92); }
+    html[data-time-slot="night"] .verse-number { color: #A8B5D0; }
+    html[data-time-slot="night"] .scripture-ref { color: rgba(255, 255, 255, 0.65); }
+    html[data-time-slot="night"] .verse-line + .verse-line {
+      border-top-color: rgba(255, 255, 255, 0.12);
+    }
+    html[data-time-slot="night"] .scripture-ref {
+      border-bottom-color: rgba(255, 255, 255, 0.12);
+    }
+    html[data-time-slot="night"] .icon-btn { color: rgba(255, 255, 255, 0.92); }
+    html[data-time-slot="night"] .progress-dot { background: rgba(255, 255, 255, 0.30); }
+    html[data-time-slot="night"] .progress-dot.active { background: #A8B5D0; }
+
     /* ========== 1단계 전용 ========== */
 
     /* 성경 본문 */
@@ -229,7 +313,11 @@
   </style>
 </head>
 <body>
-  <div class="app-container">
+  <div class="app-container" id="appContainer">
+   <!-- 시간대별 블러 배경 (calendar.html과 동일 패턴) -->
+   <div class="bg-blur"></div>
+   <div class="bg-overlay"></div>
+
    <main class="app-scroll">
 
     <!-- 상단바 (X · 진행 단계 1/4) -->
