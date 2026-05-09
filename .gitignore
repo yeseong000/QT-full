@@ -49,3 +49,7 @@ src/seed-test.html
 
 # 프롬프트 반복 테스트 출력 (로컬 전용)
 data/application_test_*.json
+
+# 실험·백업 격리 영역 (배포 X)
+sandbox/
+*.backup
