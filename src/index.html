@@ -94,55 +94,55 @@
     .app-container[data-time-slot="dawn"] {
       background-color: #E5D0C0;
       background-image:
-        linear-gradient(180deg, rgba(124, 116, 162, 0.55) 0%, rgba(124, 116, 162, 0) 100%),
+        linear-gradient(180deg, rgba(124, 116, 162, 0.85) 0%, rgba(124, 116, 162, 0) 100%),
         linear-gradient(to bottom, rgba(229, 208, 192, 0) 45%, rgba(229, 208, 192, 1) 100%),
         url('images/%EA%B1%B0%EB%A3%A9%ED%95%9C%20%EC%83%88%EB%B2%BD%20%EB%AA%A8%EB%B0%94%EC%9D%BC%20.png'),
         linear-gradient(180deg, #7C74A2 0%, #B8A0BC 50%, #E5D0C0 100%);
-      background-size: 100% 60px, 100% 100%, cover, 100% 100%;
+      background-size: 100% 100px, 100% 100%, cover, 100% 100%;
       background-position: top, center, center -130px, center;
       background-repeat: no-repeat;
     }
     .app-container[data-time-slot="morning"] {
       background-color: #EFE6CD;
       background-image:
-        linear-gradient(180deg, rgba(241, 216, 203, 0.55) 0%, rgba(241, 216, 203, 0) 100%),
+        linear-gradient(180deg, rgba(241, 216, 203, 0.85) 0%, rgba(241, 216, 203, 0) 100%),
         linear-gradient(to bottom, rgba(239, 230, 205, 0) 45%, rgba(239, 230, 205, 1) 100%),
         url('images/%EC%9D%80%ED%98%9C%EB%A1%9C%EC%9A%B4%20%EC%95%84%EC%B9%A8%20%EB%AA%A8%EB%B0%94%EC%9D%BC%20.png'),
         linear-gradient(180deg, #F1D8CB 0%, #F5DECC 50%, #EFE6CD 100%);
-      background-size: 100% 60px, 100% 100%, cover, 100% 100%;
+      background-size: 100% 100px, 100% 100%, cover, 100% 100%;
       background-position: top, center, center -130px, center;
       background-repeat: no-repeat;
     }
     .app-container[data-time-slot="afternoon"] {
       background-color: #ECE3D2;
       background-image:
-        linear-gradient(180deg, rgba(230, 233, 237, 0.55) 0%, rgba(230, 233, 237, 0) 100%),
+        linear-gradient(180deg, rgba(230, 233, 237, 0.85) 0%, rgba(230, 233, 237, 0) 100%),
         linear-gradient(to bottom, rgba(236, 227, 210, 0) 45%, rgba(236, 227, 210, 1) 100%),
         url('images/%ED%8F%89%EC%95%88%ED%95%9C%20%EC%98%A4%ED%9B%84%20%EB%AA%A8%EB%B0%94%EC%9D%BC.png'),
         linear-gradient(180deg, #E6E9ED 0%, #E0E2D8 50%, #ECE3D2 100%);
-      background-size: 100% 60px, 100% 100%, cover, 100% 100%;
+      background-size: 100% 100px, 100% 100%, cover, 100% 100%;
       background-position: top, center, center -130px, center;
       background-repeat: no-repeat;
     }
     .app-container[data-time-slot="evening"] {
       background-color: #F5C672;
       background-image:
-        linear-gradient(180deg, rgba(222, 173, 152, 0.55) 0%, rgba(222, 173, 152, 0) 100%),
+        linear-gradient(180deg, rgba(222, 173, 152, 0.85) 0%, rgba(222, 173, 152, 0) 100%),
         linear-gradient(to bottom, rgba(245, 198, 114, 0) 45%, rgba(245, 198, 114, 1) 100%),
         url('images/%EC%98%A8%EC%9C%A0%ED%95%9C%20%EC%A0%80%EB%85%81%20%EB%AA%A8%EB%B0%94%EC%9D%BC.png'),
         linear-gradient(180deg, #DEAD98 0%, #DFA982 60%, #F5C672 100%);
-      background-size: 100% 60px, 100% 100%, cover, 100% 100%;
+      background-size: 100% 100px, 100% 100%, cover, 100% 100%;
       background-position: top, center, center -130px, center;
       background-repeat: no-repeat;
     }
     .app-container[data-time-slot="night"] {
       background-color: #2A3A5C;
       background-image:
-        linear-gradient(180deg, rgba(8, 34, 82, 0.55) 0%, rgba(8, 34, 82, 0) 100%),
+        linear-gradient(180deg, rgba(8, 34, 82, 0.85) 0%, rgba(8, 34, 82, 0) 100%),
         linear-gradient(to bottom, rgba(42, 58, 92, 0) 45%, rgba(42, 58, 92, 1) 100%),
         url('images/%EA%B3%A0%EC%9A%94%ED%95%9C%20%EB%B0%A4%20%EB%AA%A8%EB%B0%94%EC%9D%BC%20.png'),
         linear-gradient(180deg, #082252 0%, #1B2A4A 50%, #2A3A5C 100%);
-      background-size: 100% 60px, 100% 100%, cover, 100% 100%;
+      background-size: 100% 100px, 100% 100%, cover, 100% 100%;
       background-position: top, center, center -130px, center;
       background-repeat: no-repeat;
     }
@@ -626,19 +626,19 @@
          흰 띠 제거: html은 ground 단색, body는 sky→ground 그라디언트, theme-color는
          JS에서 sky 색으로 동적 변경(meta tag) — 3중 매핑 */
     @media (max-width: 480px) {
-      /* ★ "2개로 따로" 전략 (사용자 의도):
-         - 상단(status bar/다이내믹 아일랜드) → <head> inline JS의 theme-color = SKY
-         - 하단(overscroll bounce/홈바)      → 여기 CSS의 background-color = GROUND
-         두 개 메커니즘이 독립이라 한쪽이 다른 쪽을 침범하지 않음.
-         background-image 그라디언트는 element 자체 영역(=PNG에 가려짐)에 깔리는
-         시각 보강용 — viewport 안쪽 보일 가능성은 낮지만 fallback으로 SKY → GROUND 유지. */
+      /* "따로따로" — 상단 SKY / 하단 GROUND 분리 시도.
+         iOS Safari가 어느 element를 추출 우선할지 환경마다 다르므로 양쪽에 다른 색 배치:
+         - html background-color = SKY (다이내믹 아일랜드 옆/상단 추출 라인)
+         - body background-color = GROUND (overscroll/홈바 추출 라인)
+         - theme-color = SKY (PWA standalone 다이내믹 아일랜드 채우기, inline JS)
+         그라디언트는 element 영역 안 시각 보강용 */
       html[data-layout-mode="adaptive"] {
         background-image: linear-gradient(
           180deg,
           var(--sky-color, var(--bg-paper)) 0%,
           var(--ground-color, var(--bg-paper)) 100%
         );
-        background-color: var(--ground-color, var(--bg-paper));  /* ← 하단 추출 = GROUND */
+        background-color: var(--sky-color, var(--bg-paper));   /* 상단 추출 = SKY */
       }
       html[data-layout-mode="adaptive"] body {
         background-image: linear-gradient(
@@ -646,8 +646,8 @@
           var(--sky-color, var(--bg-paper)) 0%,
           var(--ground-color, var(--bg-paper)) 100%
         );
-        background-color: var(--ground-color, var(--bg-paper));  /* ← 하단 추출 = GROUND */
-        overscroll-behavior-y: none;                              /* iOS 16+ bounce 차단 */
+        background-color: var(--ground-color, var(--bg-paper));  /* 하단 추출 = GROUND */
+        overscroll-behavior-y: none;
       }
       /* 모바일: 카드를 화면 하단에 자동 정렬(원래 PC와 동일).
          스크롤 비활성화 — PWA/네이티브 앱처럼 한 화면에 고정. */
