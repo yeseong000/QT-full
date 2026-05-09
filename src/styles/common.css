@@ -207,17 +207,19 @@ input, textarea {
 }
 
 /* ------------------------------------------------------------------
-   📱 768px+: iPad Mini portrait 대응 (600×1280, 부드러운 섀도우만)
+   📱 744px+: iPad Mini 6 portrait (8.3") 대응
+   - 카드 700×1080 (실제 iPad Mini 6 비율 0.66 반영)
+   - max-width: 90vw로 작은 가로 viewport에서 자동 클램프
    - 폰트/컴포넌트도 한 단계 ramp (md 사용자에게만 — lg/lg-xl는 design-tokens 우선)
    ------------------------------------------------------------------ */
-@media (min-width: 768px) {
+@media (min-width: 744px) {
   body {
     padding: min(60px, 3vh) 40px;
   }
   .app-container {
-    width: 600px;
-    max-width: 600px;
-    height: min(1280px, 95vh);
+    width: 700px;
+    max-width: 90vw;
+    height: min(1080px, 95vh);
     min-height: 0;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.20);
   }
@@ -297,7 +299,9 @@ input, textarea {
 }
 
 /* ------------------------------------------------------------------
-   💻 1024px+: iPad Pro / 대형 데스크톱 대응 (720×1480, 부드러운 섀도우만)
+   💻 1024px+: iPad Pro 12.9" / 대형 데스크톱 / iPad landscape 대응
+   - 카드 950×1280 (실제 iPad Pro 12.9" 비율 0.74 반영)
+   - max-width: 90vw로 가로 모드 / 데스크톱 자동 적응
    - 폰트/컴포넌트도 두 단계 ramp (md 사용자에게만)
    ------------------------------------------------------------------ */
 @media (min-width: 1024px) {
@@ -305,9 +309,9 @@ input, textarea {
     padding: min(80px, 4vh) 60px;
   }
   .app-container {
-    width: 720px;
-    max-width: 720px;
-    height: min(1480px, 95vh);
+    width: 950px;
+    max-width: 90vw;
+    height: min(1280px, 95vh);
     min-height: 0;
     box-shadow: 0 24px 70px rgba(0, 0, 0, 0.22);
   }
