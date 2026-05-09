@@ -36,39 +36,22 @@
   </script>
 
   <style>
-    /* ========== 시간대별 블러 배경 (calendar/step-1과 동일 패턴) ========== */
-    .app-container { position: relative; isolation: isolate; }
-    .bg-blur {
-      position: absolute; inset: -30px; z-index: -2;
-      background-size: cover; background-position: center; background-repeat: no-repeat;
-      filter: blur(50px) saturate(0.85); transform: scale(1.1); pointer-events: none;
-    }
-    .bg-overlay { position: absolute; inset: 0; z-index: -1; pointer-events: none; }
-    html[data-time-slot="dawn"]      .bg-blur { background-image: url('../images/%EA%B1%B0%EB%A3%A9%ED%95%9C%20%EC%83%88%EB%B2%BD%20%EB%AA%A8%EB%B0%94%EC%9D%BC%20.png'); }
-    html[data-time-slot="morning"]   .bg-blur { background-image: url('../images/%EC%9D%80%ED%98%9C%EB%A1%9C%EC%9A%B4%20%EC%95%84%EC%B9%A8%20%EB%AA%A8%EB%B0%94%EC%9D%BC%20.png'); }
-    html[data-time-slot="afternoon"] .bg-blur { background-image: url('../images/%ED%8F%89%EC%95%88%ED%95%9C%20%EC%98%A4%ED%9B%84%20%EB%AA%A8%EB%B0%94%EC%9D%BC.png'); }
-    html[data-time-slot="evening"]   .bg-blur { background-image: url('../images/%EC%98%A8%EC%9C%A0%ED%95%9C%20%EC%A0%80%EB%85%81%20%EB%AA%A8%EB%B0%94%EC%9D%BC.png'); }
-    html[data-time-slot="night"]     .bg-blur { background-image: url('../images/%EA%B3%A0%EC%9A%94%ED%95%9C%20%EB%B0%A4%20%EB%AA%A8%EB%B0%94%EC%9D%BC%20.png'); }
-    html[data-time-slot="dawn"]      .bg-overlay { background: rgba(255, 255, 255, 0.55); }
-    html[data-time-slot="morning"]   .bg-overlay { background: rgba(255, 255, 255, 0.60); }
-    html[data-time-slot="afternoon"] .bg-overlay { background: rgba(255, 255, 255, 0.55); }
-    html[data-time-slot="evening"]   .bg-overlay { background: rgba(255, 255, 255, 0.55); }
-    html[data-time-slot="night"]     .bg-overlay { background: rgba(0, 0, 0, 0.50); }
-    html[data-time-slot] .card,
-    html[data-time-slot] .meditation-card {
-      background: rgba(255, 255, 255, 0.85);
-      backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
-    }
-    html[data-time-slot="night"] .card,
-    html[data-time-slot="night"] .meditation-card {
-      background: rgba(255, 255, 255, 0.10);
-      border: 0.5px solid rgba(255, 255, 255, 0.15);
-    }
+    /* ========== 시간대별 단일 배경색 (PNG dominant 대표색) ========== */
+    html[data-time-slot="dawn"]      body { background-color: #E5D0C0; }
+    html[data-time-slot="morning"]   body { background-color: #EFE6CD; }
+    html[data-time-slot="afternoon"] body { background-color: #ECE3D2; }
+    html[data-time-slot="evening"]   body { background-color: #F5C672; }
+    html[data-time-slot="night"]     body { background-color: #2A3A5C; }
     html[data-time-slot="night"] { color: #FFFFFF; }
     html[data-time-slot="night"] .page-title { color: #FFFFFF; }
     html[data-time-slot="night"] .icon-btn { color: rgba(255, 255, 255, 0.92); }
     html[data-time-slot="night"] .progress-dot { background: rgba(255, 255, 255, 0.30); }
     html[data-time-slot="night"] .progress-dot.active { background: #A8B5D0; }
+    html[data-time-slot="night"] .card,
+    html[data-time-slot="night"] .meditation-card {
+      background: rgba(255, 255, 255, 0.10);
+      border: 0.5px solid rgba(255, 255, 255, 0.15);
+    }
 
     /* ========== 2단계 전용 ========== */
 
@@ -411,8 +394,6 @@
   <div class="scripture-backdrop" id="scriptureBackdrop" aria-hidden="true"></div>
 
   <div class="app-container" id="appContainer" data-qt-step="meditation">
-    <div class="bg-blur"></div>
-    <div class="bg-overlay"></div>
    <main class="app-scroll">
 
     <!-- 상단바 (X · 진행 단계 2/4 · 가가) -->
