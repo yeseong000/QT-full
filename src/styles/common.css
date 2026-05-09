@@ -258,11 +258,10 @@ input, textarea {
   }
 
   /* ----------------------------------------------------------
-     Step-2 (묵상) 페이지 전용 2칼럼 그리드 — 좌·우 균형
-     - 풀폭: top-bar / page-title / scripture-toggle (sticky 유지)
-     - 좌측 위: 구절 깊이 들여다보기 (해설)
-     - 우측 위: 핵심 요약
-     - 좌측 아래: 책 맥락
+     Step-2 (묵상) 페이지 전용 2칼럼 그리드
+     - 풀폭: top-bar / page-title / scripture-toggle / 핵심 요약
+     - 좌측: 구절 깊이 들여다보기 (큰 카드, row span 2)
+     - 우측 위: 책 맥락 (사무엘상의 흐름)
      - 우측 아래: 말씀 속 인물들
      ---------------------------------------------------------- */
   [data-qt-step="meditation"] .app-scroll {
@@ -275,26 +274,21 @@ input, textarea {
   }
   [data-qt-step="meditation"] .top-bar,
   [data-qt-step="meditation"] .page-title,
-  [data-qt-step="meditation"] .scripture-toggle {
+  [data-qt-step="meditation"] .scripture-toggle,
+  [data-qt-step="meditation"] #summaryCard {
     grid-column: 1 / -1;
   }
-  /* 좌측 칼럼 — 구절 해설 위, 책 맥락 아래 */
+  /* 좌측 큰 카드 — 깊은 묵상 (우측 2개 카드와 동일 높이) */
   [data-qt-step="meditation"] #commentaryCard {
     grid-column: 1 / 2;
-    grid-row: 4;
+    grid-row: span 2;
   }
+  /* 우측 칼럼 — 사무엘상의 흐름 위, 말씀 속 인물들 아래 */
   [data-qt-step="meditation"] #bookContextCard {
-    grid-column: 1 / 2;
-    grid-row: 5;
-  }
-  /* 우측 칼럼 — 핵심 요약 위, 인물 아래 */
-  [data-qt-step="meditation"] #summaryCard {
     grid-column: 2 / 3;
-    grid-row: 4;
   }
   [data-qt-step="meditation"] #charactersCard {
     grid-column: 2 / 3;
-    grid-row: 5;
   }
 }
 
