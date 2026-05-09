@@ -498,12 +498,6 @@
       margin-top: var(--space-2);
       min-height: 1.2em;
     }
-    .restore-divider {
-      height: 1px;
-      background: var(--border-input);
-      margin: var(--space-4) 0;
-      opacity: 0.5;
-    }
     .restore-json-actions { display: flex; gap: var(--space-2); }
     .restore-json-actions .btn-link { flex: 1; text-align: center; }
 
@@ -597,21 +591,25 @@
          흰 띠 제거: html은 ground 단색, body는 sky→ground 그라디언트, theme-color는
          JS에서 sky 색으로 동적 변경(meta tag) — 3중 매핑 */
     @media (max-width: 480px) {
-      /* 다이내믹 아일랜드 옆 status bar 색은 일반 Safari에서 theme-color가 아니라
-         html background-color로 결정됨. PNG 상단(SKY)과 하단(GROUND)이 다르므로
-         html에 SKY → GROUND 그라디언트를 fixed로 깔아 status bar 잘림을 제거하고
-         하단 overscroll(홈바 영역)도 PNG 하단과 자연스럽게 이어지게 함. */
+      /* iOS Safari toolbar/status bar 색은 (1) theme-color, (2) background-color 단색을
+         추출하고 background-attachment: fixed는 무시함. 이전 시도에서 background-color가
+         ground로 남아있어 그게 status bar에 추출되어 "하단 색이 상단에 보이는" 잘림 발생.
+         해결:
+         - background-color를 SKY로 통일 → toolbar/status bar 추출 시 SKY (PNG 상단과 일치)
+         - background-image는 SKY → GROUND 그라디언트 유지 → element 자체의 위는 SKY,
+           아래는 GROUND. 일반 Safari에서 스크롤로 위쪽 영역이 노출돼도 PNG와 매끄럽게 연결.
+         - body도 동일: background-color SKY, background-image SKY→GROUND */
       html[data-layout-mode="adaptive"] {
-        background: linear-gradient(
+        background-image: linear-gradient(
           180deg,
           var(--sky-color, var(--bg-paper)) 0%,
           var(--ground-color, var(--bg-paper)) 100%
-        ) fixed;
-        background-color: var(--ground-color, var(--bg-paper));
+        );
+        background-color: var(--sky-color, var(--bg-paper));
       }
       html[data-layout-mode="adaptive"] body {
-        background: var(--time-bg, var(--bg-paper));
-        background-color: var(--ground-color, var(--bg-paper));
+        background-image: var(--time-bg, none);
+        background-color: var(--sky-color, var(--bg-paper));
       }
       /* 모바일: 카드를 화면 하단에 자동 정렬(원래 PC와 동일).
          스크롤 비활성화 — PWA/네이티브 앱처럼 한 화면에 고정. */
@@ -799,16 +797,13 @@
             </div>
             <div id="restoreStatus" class="restore-status"></div>
 
-            <!-- 2. 구분선 -->
-            <div class="restore-divider"></div>
-
-            <!-- 3. JSON 백업 -->
-            <p class="restore-accordion__desc" style="margin-top:0;">
+            <!-- 2. JSON 백업 -->
+            <p class="restore-accordion__desc">
               이 기기의 데이터를 파일로 내려받거나, 백업 파일에서 다시 불러올 수 있어요
             </p>
             <div class="restore-json-actions">
-              <button class="btn-link" id="exportJsonBtn" type="button">.json 내보내기</button>
-              <button class="btn-link" id="importJsonBtn" type="button">.json 가져오기</button>
+              <button class="btn-link" id="exportJsonBtn" type="button">데이터 내보내기</button>
+              <button class="btn-link" id="importJsonBtn" type="button">데이터 가져오기</button>
             </div>
             <input type="file" id="importJsonFile" accept="application/json" hidden>
             <div id="importJsonStatus" class="restore-status"></div>
@@ -1315,7 +1310,7 @@
       const value  = input.value.trim();
 
       status.style.color = 'var(--text-secondary)';
-      if (!value) { status.textContent = '해시를 입력해주세요'; input.focus(); return; }
+      if (!value) { input.focus(); return; }
 
       if (typeof SupabaseSync === 'undefined' || !SupabaseSync.isConfigured()) {
         status.textContent = '서버 연결이 설정되지 않았어요'; return;
@@ -1374,11 +1369,14 @@
         userHash:   Storage.getUserHash() || null,
         data:       collectLocalDump(),
       };
-      const blob  = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-      const today = new Date().toISOString().slice(0, 10);
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+      const d = new Date();
+      const yy = String(d.getFullYear()).slice(-2);
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = `jumanna-backup-${today}.json`;
+      a.download = `manna data-${yy}.${mm}.${dd}.json`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
