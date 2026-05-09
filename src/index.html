@@ -67,58 +67,60 @@
        - layer 2 : PNG 일러스트 (cover, -130px 시프트)
        - layer 3 : PNG 미로드 시 fallback 그라디언트 (SKY → mid → GROUND)
        fallback 그라디언트 시작색은 PNG 화면 상단 실제 픽셀색과 동일 매핑. */
+    /* layer 0 (PNG 위쪽 fade): alpha를 1이 아닌 0.55로 깔아 PNG 채도가 비치도록.
+       이전 alpha 1은 PNG 위쪽 60px가 SKY 단색에 거의 가려져 "탁한/답답한" 느낌 발생. */
     .app-container[data-time-slot="dawn"] {
       background-color: #E5D0C0;
       background-image:
-        linear-gradient(180deg, rgba(124, 116, 162, 1) 0%, rgba(124, 116, 162, 0) 100%),
+        linear-gradient(180deg, rgba(124, 116, 162, 0.55) 0%, rgba(124, 116, 162, 0) 100%),
         linear-gradient(to bottom, rgba(229, 208, 192, 0) 45%, rgba(229, 208, 192, 1) 100%),
         url('images/%EA%B1%B0%EB%A3%A9%ED%95%9C%20%EC%83%88%EB%B2%BD%20%EB%AA%A8%EB%B0%94%EC%9D%BC%20.png'),
         linear-gradient(180deg, #7C74A2 0%, #B8A0BC 50%, #E5D0C0 100%);
-      background-size: 100% 80px, 100% 100%, cover, 100% 100%;
+      background-size: 100% 60px, 100% 100%, cover, 100% 100%;
       background-position: top, center, center -130px, center;
       background-repeat: no-repeat;
     }
     .app-container[data-time-slot="morning"] {
       background-color: #EFE6CD;
       background-image:
-        linear-gradient(180deg, rgba(241, 216, 203, 1) 0%, rgba(241, 216, 203, 0) 100%),
+        linear-gradient(180deg, rgba(241, 216, 203, 0.55) 0%, rgba(241, 216, 203, 0) 100%),
         linear-gradient(to bottom, rgba(239, 230, 205, 0) 45%, rgba(239, 230, 205, 1) 100%),
         url('images/%EC%9D%80%ED%98%9C%EB%A1%9C%EC%9A%B4%20%EC%95%84%EC%B9%A8%20%EB%AA%A8%EB%B0%94%EC%9D%BC%20.png'),
         linear-gradient(180deg, #F1D8CB 0%, #F5DECC 50%, #EFE6CD 100%);
-      background-size: 100% 80px, 100% 100%, cover, 100% 100%;
+      background-size: 100% 60px, 100% 100%, cover, 100% 100%;
       background-position: top, center, center -130px, center;
       background-repeat: no-repeat;
     }
     .app-container[data-time-slot="afternoon"] {
       background-color: #ECE3D2;
       background-image:
-        linear-gradient(180deg, rgba(230, 233, 237, 1) 0%, rgba(230, 233, 237, 0) 100%),
+        linear-gradient(180deg, rgba(230, 233, 237, 0.55) 0%, rgba(230, 233, 237, 0) 100%),
         linear-gradient(to bottom, rgba(236, 227, 210, 0) 45%, rgba(236, 227, 210, 1) 100%),
         url('images/%ED%8F%89%EC%95%88%ED%95%9C%20%EC%98%A4%ED%9B%84%20%EB%AA%A8%EB%B0%94%EC%9D%BC.png'),
         linear-gradient(180deg, #E6E9ED 0%, #E0E2D8 50%, #ECE3D2 100%);
-      background-size: 100% 80px, 100% 100%, cover, 100% 100%;
+      background-size: 100% 60px, 100% 100%, cover, 100% 100%;
       background-position: top, center, center -130px, center;
       background-repeat: no-repeat;
     }
     .app-container[data-time-slot="evening"] {
       background-color: #F5C672;
       background-image:
-        linear-gradient(180deg, rgba(222, 173, 152, 1) 0%, rgba(222, 173, 152, 0) 100%),
+        linear-gradient(180deg, rgba(222, 173, 152, 0.55) 0%, rgba(222, 173, 152, 0) 100%),
         linear-gradient(to bottom, rgba(245, 198, 114, 0) 45%, rgba(245, 198, 114, 1) 100%),
         url('images/%EC%98%A8%EC%9C%A0%ED%95%9C%20%EC%A0%80%EB%85%81%20%EB%AA%A8%EB%B0%94%EC%9D%BC.png'),
         linear-gradient(180deg, #DEAD98 0%, #DFA982 60%, #F5C672 100%);
-      background-size: 100% 80px, 100% 100%, cover, 100% 100%;
+      background-size: 100% 60px, 100% 100%, cover, 100% 100%;
       background-position: top, center, center -130px, center;
       background-repeat: no-repeat;
     }
     .app-container[data-time-slot="night"] {
       background-color: #2A3A5C;
       background-image:
-        linear-gradient(180deg, rgba(8, 34, 82, 1) 0%, rgba(8, 34, 82, 0) 100%),
+        linear-gradient(180deg, rgba(8, 34, 82, 0.55) 0%, rgba(8, 34, 82, 0) 100%),
         linear-gradient(to bottom, rgba(42, 58, 92, 0) 45%, rgba(42, 58, 92, 1) 100%),
         url('images/%EA%B3%A0%EC%9A%94%ED%95%9C%20%EB%B0%A4%20%EB%AA%A8%EB%B0%94%EC%9D%BC%20.png'),
         linear-gradient(180deg, #082252 0%, #1B2A4A 50%, #2A3A5C 100%);
-      background-size: 100% 80px, 100% 100%, cover, 100% 100%;
+      background-size: 100% 60px, 100% 100%, cover, 100% 100%;
       background-position: top, center, center -130px, center;
       background-repeat: no-repeat;
     }
@@ -602,25 +604,35 @@
          흰 띠 제거: html은 ground 단색, body는 sky→ground 그라디언트, theme-color는
          JS에서 sky 색으로 동적 변경(meta tag) — 3중 매핑 */
     @media (max-width: 480px) {
-      /* iOS Safari toolbar/status bar 색은 (1) theme-color, (2) background-color 단색을
-         추출하고 background-attachment: fixed는 무시함. 이전 시도에서 background-color가
-         ground로 남아있어 그게 status bar에 추출되어 "하단 색이 상단에 보이는" 잘림 발생.
-         해결:
-         - background-color를 SKY로 통일 → toolbar/status bar 추출 시 SKY (PNG 상단과 일치)
-         - background-image는 SKY → GROUND 그라디언트 유지 → element 자체의 위는 SKY,
-           아래는 GROUND. 일반 Safari에서 스크롤로 위쪽 영역이 노출돼도 PNG와 매끄럽게 연결.
-         - body도 동일: background-color SKY, background-image SKY→GROUND */
+      /* 상하단 분리 (사용자 의도):
+         - 상단(다이내믹 아일랜드/status bar) = SKY
+         - 하단(홈바/overscroll bounce) = GROUND
+         - 중앙은 PNG로 가려져 보이지 않으므로 그라디언트의 hard-ish split을 중앙에 배치
+         iOS Safari 색 추출 메커니즘이 일정하지 않으므로 양쪽 모두 대응:
+         - html background-color = SKY  (status bar 추출 라인)
+         - body background-color = GROUND (overscroll bounce 라인)
+         - 양쪽 background-image는 위 30% SKY → 70%부터 GROUND 단색 (가운데 부드러운 전환)
+         - body에 overscroll-behavior-y: none (iOS 16+ : bounce 자체 차단) */
       html[data-layout-mode="adaptive"] {
         background-image: linear-gradient(
           180deg,
           var(--sky-color, var(--bg-paper)) 0%,
+          var(--sky-color, var(--bg-paper)) 30%,
+          var(--ground-color, var(--bg-paper)) 70%,
           var(--ground-color, var(--bg-paper)) 100%
         );
         background-color: var(--sky-color, var(--bg-paper));
       }
       html[data-layout-mode="adaptive"] body {
-        background-image: var(--time-bg, none);
-        background-color: var(--sky-color, var(--bg-paper));
+        background-image: linear-gradient(
+          180deg,
+          var(--sky-color, var(--bg-paper)) 0%,
+          var(--sky-color, var(--bg-paper)) 30%,
+          var(--ground-color, var(--bg-paper)) 70%,
+          var(--ground-color, var(--bg-paper)) 100%
+        );
+        background-color: var(--ground-color, var(--bg-paper));
+        overscroll-behavior-y: none;
       }
       /* 모바일: 카드를 화면 하단에 자동 정렬(원래 PC와 동일).
          스크롤 비활성화 — PWA/네이티브 앱처럼 한 화면에 고정. */
