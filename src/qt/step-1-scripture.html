@@ -40,7 +40,9 @@
        - layer 1 (.bg-blur): PNG 일러스트 + blur 50px + scale 1.1로 가장자리 잘림 방지
        - layer 2 (.bg-overlay): 시간대별 색상 오버레이로 가독성 확보
        - layer 3 (.glass-card 룰로 변환된 .card): 반투명 + backdrop-filter blur */
-    .app-container { position: relative; }
+    /* isolation: isolate — app-container를 stacking context로 만들어
+       bg-blur(z-index:-2)가 body 배경 뒤로 빠지지 않도록 contain */
+    .app-container { position: relative; isolation: isolate; }
     .bg-blur {
       position: absolute;
       inset: -30px;
