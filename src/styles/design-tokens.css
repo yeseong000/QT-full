@@ -18,12 +18,12 @@
   --bg-image-url: none;
 
   /* ------------------------------------------------------------------
-     2. 컬러 - 텍스트
+     2. 컬러 - 텍스트 (sage hue 제거, 중성 그레이로 통일)
      ------------------------------------------------------------------ */
-  --text-primary: #2D3A32;
-  --text-body: #3D4A42;
-  --text-secondary: #7A857E;
-  --text-placeholder: #B0B9B4;
+  --text-primary: #2D2E33;
+  --text-body: #3D3F44;
+  --text-secondary: #7E7B85;
+  --text-placeholder: #B0AEB5;
   --text-on-accent: #FFFFFF;
 
   /* ------------------------------------------------------------------
@@ -46,11 +46,11 @@
   /* ------------------------------------------------------------------
      5. 컬러 - 경계선/상태
      ------------------------------------------------------------------ */
-  --border-subtle: #EEEBE2;
-  --border-chip: #D8DDD5;
-  --border-input: #C9CFC9;
+  --border-subtle: #EEE9E9;
+  --border-chip: #D8D3D6;
+  --border-input: #CAC5C9;
 
-  --check-inactive: #D8DDD5;
+  --check-inactive: #D8D3D6;
   --check-active: #BC7383;
   --highlight-underline: #FFF3C4;
 
@@ -177,10 +177,10 @@ html[data-theme="dark"] {
   --bg-soft: #252930;              /* 거의 중성 다크 (네이비 hint만 살짝) */
   --bg-input: #22262A;
 
-  --text-primary: #E8EDE8;
-  --text-body: #CBD2CB;
-  --text-secondary: #9BA59E;       /* 4.5:1 대비 확보 — 보조 안내문 가독성 */
-  --text-placeholder: #5D6560;
+  --text-primary: #E8E9EC;
+  --text-body: #CBCDD2;
+  --text-secondary: #9B9DA5;       /* 4.5:1 대비 확보 — 보조 안내문 가독성 (sage hue 제거) */
+  --text-placeholder: #5D5F65;
   --text-on-accent: #15181A;       /* 밝은 accent 위 어두운 텍스트 (배경에 맞춤) */
 
   /* Accent: 다크 모드 = 네이비 패밀리 — 다크 시간대(밤·새벽) 대표색
@@ -190,10 +190,10 @@ html[data-theme="dark"] {
   --accent-sage-soft: #28344A;
   --accent-sage-text: #A8B5D0;
 
-  --border-subtle: #353A37;
-  --border-chip: #454C48;
-  --border-input: #3F4540;
-  --check-inactive: #454C48;
+  --border-subtle: #353740;
+  --border-chip: #454850;
+  --border-input: #3F4148;
+  --check-inactive: #454850;
   --check-active: #6E84A8;
   --highlight-underline: #353F38;
 

@@ -50,6 +50,28 @@
     })();
   </script>
 
+  <!-- ★ 첫 페인트 전: 시간대별 SKY 색을 theme-color에 강제 주입.
+       iOS Safari status bar / 다이내믹 아일랜드 옆 영역은 OS가 theme-color로 칠함.
+       background-color(=GROUND, 하단 overscroll용)와 분리해서 상하단을 다른 색으로 적용 가능.
+       DOMContentLoaded 후 변경하면 첫 페인트 때 정적 #F0F4F2가 잡혀 어색하므로 inline 처리. -->
+  <script>
+    (function () {
+      var hour = new Date().getHours();
+      var slot = (hour >= 4  && hour < 7)  ? 'dawn'
+               : (hour >= 7  && hour < 12) ? 'morning'
+               : (hour >= 12 && hour < 17) ? 'afternoon'
+               : (hour >= 17 && hour < 22) ? 'evening'
+               : 'night';
+      var SKY    = { dawn:'#7C74A2', morning:'#F1D8CB', afternoon:'#E6E9ED', evening:'#DEAD98', night:'#082252' };
+      var GROUND = { dawn:'#E5D0C0', morning:'#EFE6CD', afternoon:'#ECE3D2', evening:'#F5C672', night:'#2A3A5C' };
+      var meta = document.querySelector('meta[name="theme-color"]');
+      if (meta) meta.setAttribute('content', SKY[slot]);
+      // CSS 변수도 첫 페인트 전 주입 (이후 DOMContentLoaded JS와 중복되어도 안전)
+      document.documentElement.style.setProperty('--sky-color', SKY[slot]);
+      document.documentElement.style.setProperty('--ground-color', GROUND[slot]);
+    })();
+  </script>
+
   <style>
     /* ========== 홈 전용 스타일 ========== */
 
@@ -604,35 +626,28 @@
          흰 띠 제거: html은 ground 단색, body는 sky→ground 그라디언트, theme-color는
          JS에서 sky 색으로 동적 변경(meta tag) — 3중 매핑 */
     @media (max-width: 480px) {
-      /* 상하단 분리 (사용자 의도):
-         - 상단(다이내믹 아일랜드/status bar) = SKY
-         - 하단(홈바/overscroll bounce) = GROUND
-         - 중앙은 PNG로 가려져 보이지 않으므로 그라디언트의 hard-ish split을 중앙에 배치
-         iOS Safari 색 추출 메커니즘이 일정하지 않으므로 양쪽 모두 대응:
-         - html background-color = SKY  (status bar 추출 라인)
-         - body background-color = GROUND (overscroll bounce 라인)
-         - 양쪽 background-image는 위 30% SKY → 70%부터 GROUND 단색 (가운데 부드러운 전환)
-         - body에 overscroll-behavior-y: none (iOS 16+ : bounce 자체 차단) */
+      /* ★ "2개로 따로" 전략 (사용자 의도):
+         - 상단(status bar/다이내믹 아일랜드) → <head> inline JS의 theme-color = SKY
+         - 하단(overscroll bounce/홈바)      → 여기 CSS의 background-color = GROUND
+         두 개 메커니즘이 독립이라 한쪽이 다른 쪽을 침범하지 않음.
+         background-image 그라디언트는 element 자체 영역(=PNG에 가려짐)에 깔리는
+         시각 보강용 — viewport 안쪽 보일 가능성은 낮지만 fallback으로 SKY → GROUND 유지. */
       html[data-layout-mode="adaptive"] {
         background-image: linear-gradient(
           180deg,
           var(--sky-color, var(--bg-paper)) 0%,
-          var(--sky-color, var(--bg-paper)) 30%,
-          var(--ground-color, var(--bg-paper)) 70%,
           var(--ground-color, var(--bg-paper)) 100%
         );
-        background-color: var(--sky-color, var(--bg-paper));
+        background-color: var(--ground-color, var(--bg-paper));  /* ← 하단 추출 = GROUND */
       }
       html[data-layout-mode="adaptive"] body {
         background-image: linear-gradient(
           180deg,
           var(--sky-color, var(--bg-paper)) 0%,
-          var(--sky-color, var(--bg-paper)) 30%,
-          var(--ground-color, var(--bg-paper)) 70%,
           var(--ground-color, var(--bg-paper)) 100%
         );
-        background-color: var(--ground-color, var(--bg-paper));
-        overscroll-behavior-y: none;
+        background-color: var(--ground-color, var(--bg-paper));  /* ← 하단 추출 = GROUND */
+        overscroll-behavior-y: none;                              /* iOS 16+ bounce 차단 */
       }
       /* 모바일: 카드를 화면 하단에 자동 정렬(원래 PC와 동일).
          스크롤 비활성화 — PWA/네이티브 앱처럼 한 화면에 고정. */
