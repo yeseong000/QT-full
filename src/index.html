@@ -59,56 +59,67 @@
        - layer 1 (단순 2-stop linear 페이드): 위쪽 45%는 완전 투명(PNG 그대로),
          45%~100% 55% 폭에서 매끈하게 색상 alpha 0 → 1로 보간
          (multi-stop의 alpha 점프로 인한 끊김 제거) */
-    /* fallback 그라디언트 시작색은 각 PNG가 화면 상단에서 보이는 실제 픽셀색과
-       동일하게 맞춰 PNG 미로드 시에도 동일한 사용자 경험을 보장 */
+    /* 4-layer 배경 (위→아래 순):
+       - layer 0 (NEW): PNG 위쪽 80px 영역에 SKY 색으로 fade-out 깔아 PNG 첫 픽셀과
+         status bar(SKY 단색) 사이 미세 색차를 매끄럽게 흡수.
+         디바이스 viewport 비율이 PNG와 달라 cover 시 다른 픽셀이 보여도 항상 자연스러움.
+       - layer 1 : 하단 GROUND 페이드 (45%~100% 구간 alpha 0→1)
+       - layer 2 : PNG 일러스트 (cover, -130px 시프트)
+       - layer 3 : PNG 미로드 시 fallback 그라디언트 (SKY → mid → GROUND)
+       fallback 그라디언트 시작색은 PNG 화면 상단 실제 픽셀색과 동일 매핑. */
     .app-container[data-time-slot="dawn"] {
       background-color: #E5D0C0;
       background-image:
+        linear-gradient(180deg, rgba(124, 116, 162, 1) 0%, rgba(124, 116, 162, 0) 100%),
         linear-gradient(to bottom, rgba(229, 208, 192, 0) 45%, rgba(229, 208, 192, 1) 100%),
         url('images/%EA%B1%B0%EB%A3%A9%ED%95%9C%20%EC%83%88%EB%B2%BD%20%EB%AA%A8%EB%B0%94%EC%9D%BC%20.png'),
         linear-gradient(180deg, #7C74A2 0%, #B8A0BC 50%, #E5D0C0 100%);
-      background-size: 100% 100%, cover, 100% 100%;
-      background-position: center, center -130px, center;
+      background-size: 100% 80px, 100% 100%, cover, 100% 100%;
+      background-position: top, center, center -130px, center;
       background-repeat: no-repeat;
     }
     .app-container[data-time-slot="morning"] {
       background-color: #EFE6CD;
       background-image:
+        linear-gradient(180deg, rgba(241, 216, 203, 1) 0%, rgba(241, 216, 203, 0) 100%),
         linear-gradient(to bottom, rgba(239, 230, 205, 0) 45%, rgba(239, 230, 205, 1) 100%),
         url('images/%EC%9D%80%ED%98%9C%EB%A1%9C%EC%9A%B4%20%EC%95%84%EC%B9%A8%20%EB%AA%A8%EB%B0%94%EC%9D%BC%20.png'),
         linear-gradient(180deg, #F1D8CB 0%, #F5DECC 50%, #EFE6CD 100%);
-      background-size: 100% 100%, cover, 100% 100%;
-      background-position: center, center -130px, center;
+      background-size: 100% 80px, 100% 100%, cover, 100% 100%;
+      background-position: top, center, center -130px, center;
       background-repeat: no-repeat;
     }
     .app-container[data-time-slot="afternoon"] {
       background-color: #ECE3D2;
       background-image:
+        linear-gradient(180deg, rgba(230, 233, 237, 1) 0%, rgba(230, 233, 237, 0) 100%),
         linear-gradient(to bottom, rgba(236, 227, 210, 0) 45%, rgba(236, 227, 210, 1) 100%),
         url('images/%ED%8F%89%EC%95%88%ED%95%9C%20%EC%98%A4%ED%9B%84%20%EB%AA%A8%EB%B0%94%EC%9D%BC.png'),
         linear-gradient(180deg, #E6E9ED 0%, #E0E2D8 50%, #ECE3D2 100%);
-      background-size: 100% 100%, cover, 100% 100%;
-      background-position: center, center -130px, center;
+      background-size: 100% 80px, 100% 100%, cover, 100% 100%;
+      background-position: top, center, center -130px, center;
       background-repeat: no-repeat;
     }
     .app-container[data-time-slot="evening"] {
       background-color: #F5C672;
       background-image:
+        linear-gradient(180deg, rgba(222, 173, 152, 1) 0%, rgba(222, 173, 152, 0) 100%),
         linear-gradient(to bottom, rgba(245, 198, 114, 0) 45%, rgba(245, 198, 114, 1) 100%),
         url('images/%EC%98%A8%EC%9C%A0%ED%95%9C%20%EC%A0%80%EB%85%81%20%EB%AA%A8%EB%B0%94%EC%9D%BC.png'),
         linear-gradient(180deg, #DEAD98 0%, #DFA982 60%, #F5C672 100%);
-      background-size: 100% 100%, cover, 100% 100%;
-      background-position: center, center -130px, center;
+      background-size: 100% 80px, 100% 100%, cover, 100% 100%;
+      background-position: top, center, center -130px, center;
       background-repeat: no-repeat;
     }
     .app-container[data-time-slot="night"] {
       background-color: #2A3A5C;
       background-image:
+        linear-gradient(180deg, rgba(8, 34, 82, 1) 0%, rgba(8, 34, 82, 0) 100%),
         linear-gradient(to bottom, rgba(42, 58, 92, 0) 45%, rgba(42, 58, 92, 1) 100%),
         url('images/%EA%B3%A0%EC%9A%94%ED%95%9C%20%EB%B0%A4%20%EB%AA%A8%EB%B0%94%EC%9D%BC%20.png'),
         linear-gradient(180deg, #082252 0%, #1B2A4A 50%, #2A3A5C 100%);
-      background-size: 100% 100%, cover, 100% 100%;
-      background-position: center, center -130px, center;
+      background-size: 100% 80px, 100% 100%, cover, 100% 100%;
+      background-position: top, center, center -130px, center;
       background-repeat: no-repeat;
     }
 
