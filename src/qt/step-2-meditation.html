@@ -43,11 +43,16 @@
       justify-content: space-between;
       gap: var(--space-3);
       padding: 10px 16px 10px 14px;
-      background: rgba(255, 255, 255, 0.92);
-      backdrop-filter: blur(20px) saturate(1.4);
-      -webkit-backdrop-filter: blur(20px) saturate(1.4);
+      /* iOS material — milky white로 두면 saturate(180%)가 뒤 색감을 살림 (vibrancy) */
+      background: rgba(255, 255, 255, 0.78);
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
       border-radius: var(--radius-pill);
-      box-shadow: 0 2px 10px rgba(45, 58, 50, 0.08);
+      /* 다층 그림자: top highlight(빛 반사) + 가까운 그림자(선명) + 먼 그림자(부드러움) */
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.8),
+        0 1px 2px rgba(45, 58, 50, 0.04),
+        0 6px 16px rgba(45, 58, 50, 0.08);
       cursor: pointer;
       -webkit-tap-highlight-color: transparent;
       user-select: none;
@@ -56,26 +61,38 @@
     .scripture-toggle__header:active {
       transform: scale(0.98);
     }
-    /* 펼침 시 — pill 자체는 솔리드 + backdrop-filter 제거로 윤곽 또렷이 */
+    /* 펼침 시 — solid + 깊이 있는 다층 그림자로 진짜 "떠 있는" 느낌 */
     .scripture-toggle.is-open .scripture-toggle__header {
       background: #FFFFFF;
       backdrop-filter: none;
       -webkit-backdrop-filter: none;
-      box-shadow: 0 4px 18px rgba(45, 58, 50, 0.14);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.9),
+        0 1px 2px rgba(45, 58, 50, 0.05),
+        0 2px 6px rgba(45, 58, 50, 0.06),
+        0 8px 24px rgba(45, 58, 50, 0.12);
     }
 
-    /* 다크 테마: 글래스 캡슐 — bg-card 톤 + 옅은 네이비 액센트 테두리로 elevation */
+    /* 다크 테마: iOS dark material — saturate로 뒤 색감 살리고 다층 그림자 */
     html[data-theme="dark"] .scripture-toggle__header {
-      background: rgba(35, 38, 41, 0.92);
-      box-shadow: inset 0 0 0 1px rgba(110, 132, 168, 0.10);
+      background: rgba(35, 38, 41, 0.78);
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.06),
+        inset 0 0 0 1px rgba(110, 132, 168, 0.10),
+        0 1px 2px rgba(0, 0, 0, 0.20),
+        0 6px 16px rgba(0, 0, 0, 0.30);
     }
     html[data-theme="dark"] .scripture-toggle.is-open .scripture-toggle__header {
       background: var(--bg-card);
       backdrop-filter: none;
       -webkit-backdrop-filter: none;
       box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.08),
         inset 0 0 0 1px rgba(110, 132, 168, 0.22),
-        0 4px 18px rgba(0, 0, 0, 0.35);
+        0 1px 2px rgba(0, 0, 0, 0.25),
+        0 8px 24px rgba(0, 0, 0, 0.42);
     }
 
     /* 글래스 백드롭 — body 직속에 두는 별도 요소.
@@ -84,23 +101,33 @@
     .scripture-backdrop {
       position: fixed;
       inset: 0;
-      background: rgba(45, 58, 50, 0.04);     /* 거의 투명 — blur로만 디포커스 */
-      backdrop-filter: blur(6px);
-      -webkit-backdrop-filter: blur(6px);
+      background: rgba(45, 58, 50, 0.03);
+      /* 시작 상태: blur 없음 → is-active에서 점진적으로 들어옴 (Apple spring) */
+      backdrop-filter: blur(0px) saturate(100%);
+      -webkit-backdrop-filter: blur(0px) saturate(100%);
       z-index: 15;                /* scripture-toggle(z=20) 아래 — pill/본문은 또렷 */
       pointer-events: none;
       opacity: 0;
       visibility: hidden;
-      transition: opacity var(--duration-base) var(--ease-out),
-                  visibility 0s linear var(--duration-base);
+      transition:
+        opacity 320ms cubic-bezier(0.32, 0.72, 0, 1),
+        backdrop-filter 320ms cubic-bezier(0.32, 0.72, 0, 1),
+        -webkit-backdrop-filter 320ms cubic-bezier(0.32, 0.72, 0, 1),
+        visibility 0s linear 320ms;
     }
     .scripture-backdrop.is-active {
       opacity: 1;
       visibility: visible;
-      transition: opacity var(--duration-base) var(--ease-out);
+      /* iOS material: blur + saturate(150%)로 vibrancy — 뒤 콘텐츠의 색감을 살림 */
+      backdrop-filter: blur(10px) saturate(150%);
+      -webkit-backdrop-filter: blur(10px) saturate(150%);
+      transition:
+        opacity 320ms cubic-bezier(0.32, 0.72, 0, 1),
+        backdrop-filter 320ms cubic-bezier(0.32, 0.72, 0, 1),
+        -webkit-backdrop-filter 320ms cubic-bezier(0.32, 0.72, 0, 1);
     }
     html[data-theme="dark"] .scripture-backdrop {
-      background: rgba(0, 0, 0, 0.18);
+      background: rgba(0, 0, 0, 0.22);
     }
 
     .scripture-toggle__label {
@@ -262,9 +289,11 @@
       margin-bottom: 12px;
     }
 
-    /* 5단 호흡 — "깊은 묵상" 카드 내부 (5개 sub-section을 단락 간격으로 분리) */
+    /* 5단 호흡 — "깊은 묵상" 카드 내부 (5개 sub-section을 옅은 구분선으로 분리) */
     .deep-dive__step + .deep-dive__step {
       margin-top: var(--space-5);
+      padding-top: var(--space-5);
+      border-top: 1px solid var(--border-subtle);
     }
     .deep-dive__body {
       font-size: var(--text-body);
