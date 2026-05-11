@@ -104,13 +104,30 @@ def fetch_page(retries: int = 3) -> str:
 
 
 # ===== 파싱 =====
+# 오륜교회 페이지는 절 범위 구분 기호로 보통 하이픈(-)을 쓰지만,
+# 가끔 엔대시(–)·엠대시(—)·물결(~) 등 다른 문자가 섞여 들어온다.
+# 정규식이 이런 변형을 못 알아보면 제목·구절 파싱이 통째로 실패하므로,
+# 파싱 전에 모든 대시류를 평범한 하이픈으로 정규화한다.
+_DASH_VARIANTS = "‐‑‒–—―−⁃⁓∼〜～－~"
+_DASH_TRANS = {ord(ch): "-" for ch in _DASH_VARIANTS}
+
+
+def _normalize_dashes(s: str) -> str:
+    """범위 구분 기호로 쓰일 수 있는 모든 대시·물결류를 '-' 하나로 통일."""
+    return s.translate(_DASH_TRANS)
+
+
 def split_title_and_ref(line: str) -> tuple:
-    """'회복으로 나아가라 룻기 1:15-22' → ('회복으로 나아가라', '룻기 1:15-22')"""
-    pattern = r"^(.+?)\s+([가-힣]+(?:상|하)?)\s+(\d+):(\d+[a-z]?)(?:[-~](?:(\d+):)?(\d+[a-z]?))?$"
-    m = re.match(pattern, line.strip())
+    """'회복으로 나아가라 룻기 1:15-22' → ('회복으로 나아가라', '룻기 1:15-22')
+
+    장을 넘나드는 범위('사무엘상 6:19-7:2')도 인식한다.
+    """
+    line = _normalize_dashes(line.strip())
+    pattern = r"^(.+?)\s+([가-힣]+(?:상|하)?)\s+(\d+):(\d+[a-z]?)(?:-(?:(\d+):)?(\d+[a-z]?))?$"
+    m = re.match(pattern, line)
     if not m:
         log(f"제목/구절 파싱 실패: {line}", "WARN")
-        return line.strip(), ""
+        return line, ""
 
     title = m.group(1).strip()
     book = m.group(2)
@@ -126,27 +143,67 @@ def split_title_and_ref(line: str) -> tuple:
 
 
 def parse_scripture_ref(ref: str) -> dict:
-    """'룻기 1:15-22' → {book, chapter, start, end}"""
-    m = re.match(r"([가-힣]+(?:상|하)?)\s+(\d+):(\d+[a-z]?)(?:[-~](?:(\d+):)?(\d+[a-z]?))?", ref)
+    """'룻기 1:15-22' → {book, chapter, start, end, ...}
+
+    장을 넘나드는 범위('사무엘상 6:19-7:2')도 처리한다.
+    - chapter / start / end: 하위 호환용 (start_chapter, start_verse, end_verse)
+    - start_chapter, start_verse, end_chapter, end_verse: 정확한 범위
+    - cross_chapter: 시작 장과 끝 장이 다르면 True
+    """
+    empty = {
+        "book": "", "chapter": 0, "start": 0, "end": 0,
+        "start_chapter": 0, "start_verse": 0, "end_chapter": 0, "end_verse": 0,
+        "cross_chapter": False,
+    }
+    m = re.match(
+        r"([가-힣]+(?:상|하)?)\s+(\d+):(\d+[a-z]?)(?:-(?:(\d+):)?(\d+[a-z]?))?",
+        _normalize_dashes(ref),
+    )
     if not m:
-        return {"book": "", "chapter": 0, "start": 0, "end": 0}
-    start_raw = m.group(3)
-    end_raw = m.group(5) if m.group(5) else m.group(3)
+        return empty
+
+    def _num(raw: str) -> int:
+        return int(re.sub(r"[^\d]", "", raw))
+
+    book = m.group(1)
+    start_chapter = int(m.group(2))
+    start_verse = _num(m.group(3))
+    end_chapter = int(m.group(4)) if m.group(4) else start_chapter
+    end_verse = _num(m.group(5)) if m.group(5) else start_verse
+
     return {
-        "book": m.group(1),
-        "chapter": int(m.group(2)),
-        "start": int(re.sub(r"[a-z]", "", start_raw)),
-        "end": int(re.sub(r"[a-z]", "", end_raw)),
+        "book": book,
+        "chapter": start_chapter,
+        "start": start_verse,
+        "end": end_verse,
+        "start_chapter": start_chapter,
+        "start_verse": start_verse,
+        "end_chapter": end_chapter,
+        "end_verse": end_verse,
+        "cross_chapter": end_chapter != start_chapter,
     }
 
 
-def extract_verses(soup: BeautifulSoup, start: int, end: int) -> list:
+def extract_verses(soup: BeautifulSoup, ref: dict) -> list:
     """
     구절 추출. 한글 본문만.
     한글 본문 뒤에 '-' 구분선 후 영문이 나오므로 구분선 이후는 스킵.
+
+    장을 넘나드는 범위(예: 사무엘상 6:19-7:2)도 처리한다. 페이지에는 절 번호가
+    6:19→19, 7:1→1 처럼 장이 바뀔 때 다시 작아지므로, 절 번호가 직전보다 작아지면
+    다음 장으로 넘어간 것으로 본다. cross_chapter인 경우 각 절에 chapter도 기록한다.
     """
+    cross = ref.get("cross_chapter", False)
+    start_ch = ref.get("start_chapter") or ref.get("chapter") or 0
+    start_v = ref.get("start_verse") or ref.get("start") or 0
+    end_ch = ref.get("end_chapter") or ref.get("chapter") or 0
+    end_v = ref.get("end_verse") or ref.get("end") or 0
+
     verses = []
+    seen = set()          # (chapter, number) 중복 방지
     korean_done = False
+    cur_ch = start_ch
+    prev_num = None
 
     for li in soup.find_all("li"):
         text = li.get_text(" ", strip=True)
@@ -166,21 +223,33 @@ def extract_verses(soup: BeautifulSoup, start: int, end: int) -> list:
         verse_num = int(m.group(1))
         verse_text = m.group(2).strip()
 
-        # 범위 밖
-        if verse_num < start or verse_num > end:
-            continue
-
-        # 중복 방지
-        if any(v["number"] == verse_num for v in verses):
-            continue
-
         # 한글 없으면 스킵 (영문 배제)
         if not re.search(r"[가-힣]", verse_text):
             continue
 
-        verses.append({"number": verse_num, "text": verse_text})
+        # 장 경계 감지: 번호가 직전보다 작아지면 다음 장
+        if cross and prev_num is not None and verse_num <= prev_num and cur_ch < end_ch:
+            cur_ch += 1
+        prev_num = verse_num
 
-    verses.sort(key=lambda v: v["number"])
+        # 범위 밖 (장·절 함께 비교)
+        if (cur_ch, verse_num) < (start_ch, start_v):
+            continue
+        if (cur_ch, verse_num) > (end_ch, end_v):
+            continue
+
+        key = (cur_ch, verse_num)
+        if key in seen:
+            continue
+        seen.add(key)
+
+        verse = {"number": verse_num, "text": verse_text}
+        if cross:
+            verse["chapter"] = cur_ch
+        verses.append(verse)
+
+    if not cross:
+        verses.sort(key=lambda v: v["number"])
     return verses
 
 
@@ -257,7 +326,7 @@ def parse_qt(html: str) -> dict:
     log(f"부제: {subtitle or '(없음)'}")
 
     # 구절
-    verses = extract_verses(soup, ref_parsed["start"], ref_parsed["end"])
+    verses = extract_verses(soup, ref_parsed)
     log(f"구절 추출: {len(verses)}절", "OK" if verses else "WARN")
 
     # 질문
@@ -274,6 +343,9 @@ def parse_qt(html: str) -> dict:
         "chapter": ref_parsed["chapter"],
         "verses_start": ref_parsed["start"],
         "verses_end": ref_parsed["end"],
+        "verses_start_chapter": ref_parsed["start_chapter"],
+        "verses_end_chapter": ref_parsed["end_chapter"],
+        "cross_chapter": ref_parsed["cross_chapter"],
         "verses": verses,
         "oryun_questions": questions,
         # full_chapter_verses: 해당 장(chapter) 전체 구절.
@@ -286,20 +358,29 @@ def parse_qt(html: str) -> dict:
 
 
 # ===== 검증 =====
-def validate(data: dict) -> list:
+def validate(data: dict) -> tuple:
+    """(critical, warnings) 반환. critical 이 비어있지 않으면 데이터를 저장하지 않는다."""
+    critical = []
     warnings = []
+
     if not data["title"]:
-        warnings.append("제목이 비어있음")
+        critical.append("제목이 비어있음")
     if not data["scripture_ref"]:
-        warnings.append("성경 구절 범위가 비어있음")
+        critical.append("성경 구절 범위가 비어있음 (제목/구절 파싱 실패 가능)")
     if not data["verses"]:
-        warnings.append("구절이 하나도 없음")
-    elif data["verses_start"] and data["verses_end"]:
+        critical.append("구절이 하나도 없음")
+    elif not data.get("cross_chapter") and data["verses_start"] and data["verses_end"]:
+        # 같은 장 안의 단순 범위일 때만 절 개수를 정확히 검증
         expected = data["verses_end"] - data["verses_start"] + 1
         actual = len(data["verses"])
         if actual != expected:
             warnings.append(f"구절 개수 불일치: 예상 {expected}절, 실제 {actual}절")
-    return warnings
+
+    # 제목 안에 성경 구절이 그대로 섞여 들어갔는지 (파싱 실패 흔적)
+    if re.search(r"\d+:\d+", data["title"]):
+        critical.append(f"제목에 구절 표기가 섞여 있음: {data['title']!r}")
+
+    return critical, warnings
 
 
 # ===== 저장 =====
@@ -336,10 +417,23 @@ def main() -> int:
         log(f"파싱 실패: {e}", "ERR")
         return 2
 
-    warnings = validate(data)
-    if warnings:
-        for w in warnings:
-            log(w, "WARN")
+    critical, warnings = validate(data)
+    for w in warnings:
+        log(w, "WARN")
+    for c in critical:
+        log(c, "ERR")
+
+    log("=" * 50)
+    log(f"제목:   {data['title']}")
+    log(f"구절:   {data['scripture_ref']}")
+    log(f"절 수:  {len(data['verses'])}")
+    log(f"질문:   {len(data['oryun_questions'])}개")
+    log("=" * 50)
+
+    if critical:
+        log("치명적 오류가 있어 데이터를 저장하지 않습니다 (워크플로 실패 처리).", "ERR")
+        log("💡 페이지 구조나 구절 표기 형식이 바뀌었을 수 있어요 — fetch_qt.py 파싱 규칙 점검 필요.")
+        return 3
 
     if args.dry_run:
         log("[DRY RUN] 저장하지 않고 종료합니다")
@@ -351,13 +445,6 @@ def main() -> int:
         )
         save_json(data, output_path)
         log(f"저장 완료: {output_path}", "OK")
-
-    log("=" * 50)
-    log(f"제목:   {data['title']}")
-    log(f"구절:   {data['scripture_ref']}")
-    log(f"절 수:  {len(data['verses'])}")
-    log(f"질문:   {len(data['oryun_questions'])}개")
-    log("=" * 50)
 
     return 0
 
