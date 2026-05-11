@@ -23,8 +23,11 @@ function applyTheme(theme) {
   }
 
   // 2) 모바일 브라우저 주소창 색
-  const meta = document.querySelector('meta[name="theme-color"]');
-  if (meta) meta.setAttribute('content', THEME_CHROME_COLORS[t]);
+  // index.html처럼 시간대별 색을 자체 관리하는 페이지(html[data-uses-time-slot])는 건드리지 않음
+  if (!document.documentElement.hasAttribute('data-uses-time-slot')) {
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute('content', THEME_CHROME_COLORS[t]);
+  }
 
   // 3) iOS PWA 상태바 스타일 (다크일 때 노치 영역도 어둡게)
   const iosBar = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
