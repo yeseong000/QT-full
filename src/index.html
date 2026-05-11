@@ -64,8 +64,11 @@
                : 'night';
       var SKY    = { dawn:'#7C74A2', morning:'#F1D8CB', afternoon:'#E6E9ED', evening:'#DEAD98', night:'#082252' };
       var GROUND = { dawn:'#E5D0C0', morning:'#EFE6CD', afternoon:'#ECE3D2', evening:'#F5C672', night:'#2A3A5C' };
+      // 분기 신호: applyTheme(common.js)이 meta theme-color를 덮어쓰지 못하게
+      document.documentElement.setAttribute('data-uses-time-slot', 'true');
       var meta = document.querySelector('meta[name="theme-color"]');
-      if (meta) meta.setAttribute('content', SKY[slot]);
+      // 하단 일러스트 영역(GROUND)과 시스템 chrome을 일치시킨다
+      if (meta) meta.setAttribute('content', GROUND[slot]);
       // CSS 변수도 첫 페인트 전 주입 (이후 DOMContentLoaded JS와 중복되어도 안전)
       document.documentElement.style.setProperty('--sky-color', SKY[slot]);
       document.documentElement.style.setProperty('--ground-color', GROUND[slot]);
