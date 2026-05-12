@@ -208,7 +208,7 @@ jumanna-qt-full/
 | GPT 프롬프트 | `docs/AI_PROMPT.md` |
 | 크롤링 로직 | `docs/SCRAPER.md` |
 | 일본어 현지화 | `JAPANESE_LOCALIZATION_PLAN.md` |
-| 남은 할 일 | `NEXT_STEPS.md` |
+| 남은 할 일 | `docs/history/NEXT_STEPS.md` (보관) |
 | 작업별 요청 방법 | `PROMPT_TEMPLATES.md` |
 
 ---

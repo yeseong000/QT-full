@@ -23,7 +23,7 @@
 1. **`BRIEFING.md`** - 1페이지 전체 요약 (2분, Claude 웹 전달용)
 2. **이 파일** (`HANDOFF.md`) - 상세 인수인계 (5분)
 3. **`CONTEXT.md`** - 현재 상태 스냅샷 (2분)
-4. **`NEXT_STEPS.md`** - 앞으로 할 일 체크리스트 (필요할 때)
+4. **`docs/history/NEXT_STEPS.md`** - 앞으로 할 일 체크리스트 (필요할 때)
 5. **`PROMPT_TEMPLATES.md`** - 작업별 AI 요청 템플릿 (필요할 때)
 6. **`JAPANESE_LOCALIZATION_PLAN.md`** - 일본어 현지화 계획 (관련 작업 시)
 7. **`docs/README.md`** - 프로젝트 전체 개요 (상세)
@@ -220,7 +220,7 @@ python3 -m http.server 8000
 → "홈 화면에 추가" 후 **PWA 모드로 실행**하면 정상
 
 ### Q. 새 기능 추가하고 싶어요
-→ 먼저 `NEXT_STEPS.md` Phase 6 확장 기능 섹션 확인
+→ 먼저 `docs/history/NEXT_STEPS.md` Phase 6 확장 기능 섹션 확인
 → 없으면 `docs/ROADMAP.md`에 추가 후 구현
 
 ### Q. 디자인 바꾸고 싶어요
@@ -253,7 +253,7 @@ python3 -m http.server 8000
 | 데이터 구조 모르겠다 | `docs/DATA_SCHEMA.md` |
 | 크롤러 어떻게 돌아가는지 | `docs/SCRAPER.md` + `scripts/README.md` |
 | AI 프롬프트 건드려야 한다 | `docs/AI_PROMPT.md` |
-| 앞으로 뭐 해야 하는지 | `NEXT_STEPS.md` |
+| 앞으로 뭐 해야 하는지 | `docs/history/NEXT_STEPS.md` |
 
 ---
 

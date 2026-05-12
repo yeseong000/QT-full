@@ -181,7 +181,7 @@
    - 참고 파일: `docs/USER_FLOW.md`, `src/step-1-scripture.html`
    - 데이터: `data/ai/2026-04-22.json`
 
-→ 자세한 작업 리스트는 `NEXT_STEPS.md`
+→ 자세한 작업 리스트는 `docs/history/NEXT_STEPS.md` (보관)
 
 ---
 
