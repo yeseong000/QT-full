@@ -278,7 +278,7 @@ input, textarea {
      Step-2 (묵상) 페이지 전용 2칼럼 그리드
      - 풀폭: top-bar / page-title / scripture-toggle / 핵심 요약
      - 좌측: 구절 깊이 들여다보기 (자기 콘텐츠 높이만큼)
-     - 우측 위: 책 맥락 (사무엘상의 흐름)
+     - 우측 위: 책 살펴보기
      - 우측 아래: 말씀 속 인물들
      - align-items: start로 각 카드는 row 위쪽 정렬 + 자기 height만
      ---------------------------------------------------------- */
@@ -312,7 +312,7 @@ input, textarea {
     min-height: 0;
     overflow-y: auto;
   }
-  /* 우측 칼럼 — 사무엘상의 흐름 위, 말씀 속 인물들 아래 */
+  /* 우측 칼럼 — 책 살펴보기 카드 위, 말씀 속 인물들 아래 */
   [data-qt-step="meditation"] #bookContextCard {
     grid-column: 2 / 3;
   }

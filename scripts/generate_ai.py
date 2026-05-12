@@ -98,7 +98,24 @@ def build_user_prompt(qt_data: dict) -> str:
 [요구사항]
 1. scenes: 본문의 핵심 장면을 정확히 5개의 짧은 문장으로 묘사. 각 문장은 한 줄로 끝나게.
 2. characters: 본문에 등장하는 주요 인물 1~3명. 각 인물당 2~3문장 설명.
-3. book_overview: 이 책({qt_data['book_name']})의 전체 배경과 주제만 설명. 2~3문장. 오늘 구절에 대한 언급 절대 금지.
+3. book_overview: 이 책({qt_data['book_name']}) 전체에 대한 소개. 오늘 본문이나 특정 구절은 절대 언급하지 말 것.
+   다음 4개 필드를 가진 **객체(JSON object)** 로 출력:
+
+   - "author" (저자): 누가 썼다고 전해지는지. 가능하면 한두 어절로 짧게 (예: "사도바울",
+     "전통적으로 사무엘로 전해짐"). 저자 논쟁이 있는 책(히브리서, 베드로후서, 모세오경,
+     이사야, 욥기 등)은 "알려져 있지 않음", "여러 견해가 있음" 같은 완충 표현 필수. 단정 금지.
+
+   - "date" (시기): 대략의 기록 시기를 한 줄로 짧게
+     (예: "AD 60~63년경 추정", "사사 시대 후 후대에 정리"). 정확한 연도 단정 금지.
+
+   - "place" (기록 장소와 대상): 어디서 누구를 위해 쓰였는지 자연스러운 한 문장
+     (예: "로마의 감옥에서 썼으며 에베소에 있는 그리스도인을 위해 씀.").
+     알 수 없으면 "정확한 기록 장소는 알려져 있지 않습니다" 식으로 처리.
+
+   - "core" (핵심 내용): 책 전체 줄거리·핵심 메시지. 1~2문장. 특정 구절 인용 금지.
+
+   톤: 한국어, 존댓말, 따뜻한 ~이에요/~습니다 체. 신학용어는 풀어 설명.
+   교단 편향·논쟁적 해석 금지.
 4. passage_intro: 오늘 본문이 이 책의 흐름 안에서 어디에 위치하는지. 정확히 1문장.
 5. verse_commentary: 본문에서 주목할 만한 단어, 배경, 의미. 3~5문장.
 6. application: "말씀 적용하기" 3개.
@@ -147,7 +164,12 @@ JSON 형식으로만 응답하고, 다음 구조를 따르세요:
   "characters": [
     {{"name": "이름", "description": "설명"}}
   ],
-  "book_overview": "책 전체 배경 설명 (오늘 구절 언급 금지)",
+  "book_overview": {{
+    "author": "저자 (한두 어절 또는 회피 어구)",
+    "date": "대략적 시기 한 줄",
+    "place": "어디서 누구를 위해 쓰였는지 (한 문장)",
+    "core": "책 전체 줄거리·메시지 (1~2문장, 특정 구절 인용 금지)"
+  }},
   "passage_intro": "오늘 본문의 위치 (정확히 1문장)",
   "verse_commentary": "구절 해설",
   "application": [
@@ -269,7 +291,12 @@ def _mock_ruth_1(qt_data: dict) -> dict:
                 "description": "모압 여인이자 나오미의 며느리입니다. 남편을 잃고도 시어머니를 떠나지 않기로 결심합니다. 이방인의 길을 감수하며 헌신을 택한 사람입니다."
             }
         ],
-        "book_overview": "룻기는 사사시대라는 혼란의 시기에 피어난 한 이방 여인의 헌신과 회복의 이야기입니다. 짧지만 강렬한 이 책은 '상실'에서 '회복'으로 이어지는 하나님의 섬세한 인도를 보여줍니다. 훗날 룻은 다윗의 증조모가 되어 예수 그리스도의 족보에 오르게 됩니다.",
+        "book_overview": {
+            "author": "전통적으로 사무엘로 전해짐",
+            "date": "사사 시대 이야기, 후대에 정리됨",
+            "place": "이스라엘 백성을 위해 쓰였으며, 정확한 기록 장소는 알려져 있지 않습니다.",
+            "core": "모압 여인 룻이 시어머니를 따라 베들레헴에 와 보아스와 가정을 이루는 이야기로, 평범한 삶 속에서 일하시는 하나님의 손길을 보여줍니다.",
+        },
         "passage_intro": "오늘 본문은 이 거대한 이야기의 시작점입니다.",
         "verse_commentary": "'마라'는 히브리어로 '쓴맛'을 뜻합니다. 나오미는 자신의 고통을 숨기지 않고 솔직히 토로합니다. 그런데 본문 마지막에 '보리 추수가 시작될 때'라는 표현이 덧붙여집니다. 이는 단순한 시간 정보가 아닙니다. 비어 돌아온 그녀에게 다시 채우심이 시작될 것을 알리는 복선입니다.",
         "application": [
@@ -322,7 +349,12 @@ def _mock_generic(qt_data: dict) -> dict:
                 "description": f"{book} 본문에 등장하는 주요 인물입니다. 삶의 순간마다 하나님의 임재를 경험합니다. 이들의 이야기는 오늘 우리에게도 살아있는 말씀입니다."
             }
         ],
-        "book_overview": f"{book}은 구약/신약 성경의 한 부분으로, 하나님의 구원 역사를 보여주는 중요한 책입니다. 전체 맥락을 이해하면 본문의 의미가 더 풍성해집니다.",
+        "book_overview": {
+            "author": f"{book}의 저자에 대해서는 여러 견해가 있습니다",
+            "date": f"{book}이 다루는 시대 이후 후대에 정리된 것으로 전해집니다",
+            "place": "당시 하나님의 백성을 위해 기록되었습니다.",
+            "core": f"{book}은 하나님과 그 백성 사이의 관계, 그 안에서 일하시는 하나님의 손길을 보여줍니다.",
+        },
         "passage_intro": "오늘 본문은 이 책의 큰 흐름 속에서 특별한 위치를 차지합니다.",
         "verse_commentary": "오늘 본문에서 주목할 만한 표현들이 있습니다. 성경 원어의 뉘앙스와 당시 역사적 배경을 함께 살펴보면 본문이 더 깊이 이해됩니다. 하나님은 말씀을 통해 오늘도 우리에게 말씀하십니다.",
         "application": [
@@ -494,9 +526,19 @@ def validate(ai_data: dict) -> list:
     if len(scenes) != 5:
         warnings.append(f"scenes가 정확히 5개가 아님 (현재 {len(scenes)}개)")
 
-    # book_overview / passage_intro 존재 확인
-    if not ai_data.get("book_overview"):
+    # book_overview 검증: 객체(4필드)이며 옛 문자열도 폴백으로 허용
+    bo = ai_data.get("book_overview")
+    if not bo:
         warnings.append("book_overview 필드 없음")
+    elif isinstance(bo, dict):
+        for key in ("author", "date", "place", "core"):
+            if not bo.get(key):
+                warnings.append(f"book_overview.{key} 비어 있음")
+    elif isinstance(bo, str):
+        if len(bo) < 30:
+            warnings.append(f"book_overview 문자열이 너무 짧음 ({len(bo)}자)")
+
+    # passage_intro 존재 확인
     if not ai_data.get("passage_intro"):
         warnings.append("passage_intro 필드 없음")
 

@@ -64,7 +64,12 @@ GPT가 생성한 묵상 콘텐츠. 자세한 스키마는 `AI_PROMPT.md` 참고.
   "date": "2026-04-22",
   "scenes": ["...", "...", "...", "...", "..."],
   "characters": [{ "name": "...", "description": "..." }],
-  "book_overview": "책 전체 배경과 주제 (오늘 구절 언급 없음, 2~3문장)",
+  "book_overview": {
+    "author": "저자 (한두 어절 또는 회피 어구)",
+    "date": "기록 시기 한 줄",
+    "place": "기록 장소와 대상 (한 문장)",
+    "core": "책 전체 핵심 내용 (1~2문장)"
+  },
   "passage_intro": "오늘 본문이 이 책의 흐름 안에서 어디에 위치하는지 (1문장)",
   "verse_commentary": "...",
   "application": [{ "statement": "...", "detail": "..." }],
@@ -77,6 +82,7 @@ GPT가 생성한 묵상 콘텐츠. 자세한 스키마는 `AI_PROMPT.md` 참고.
 > **하위 호환:** 구 스키마(`book_context`, `core_summary`)로 생성된 기존 JSON은 변경하지 않아도 됩니다.
 > 프론트엔드에서 새 필드가 없을 경우 자동으로 구 필드에서 분기 처리합니다.
 > 신규 `generate_ai.py` 실행분부터 새 필드가 생성됩니다.
+> 옛 `book_overview`가 문자열 형식인 JSON도 프론트엔드가 자동으로 prose 형태로 폴백 렌더합니다.
 
 ### 3. `/data/manifest.json` (인덱스)
 

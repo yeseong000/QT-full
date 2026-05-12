@@ -303,7 +303,7 @@
       color: var(--text-body);
     }
 
-    /* 책 맥락 / 구절 해설 본문 */
+    /* 구절 해설 본문 + 책 살펴보기 문자열 폴백 */
     .prose {
       font-size: var(--text-body);
       line-height: 1.85;
@@ -387,6 +387,33 @@
     .error {
       color: #B84A4A;
     }
+
+    /* 책 살펴보기 카드 (정의 목록식 dl grid) */
+    .book-overview-list {
+      display: grid;
+      grid-template-columns: 92px 1fr;
+      row-gap: 14px;
+      column-gap: 16px;
+      margin: 0;
+    }
+    .book-overview-list dt {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--accent-sage-text);
+      padding-top: 2px;
+      letter-spacing: 0.02em;
+    }
+    .book-overview-list dd {
+      margin: 0;
+      font-size: var(--text-body);
+      line-height: 1.65;
+      color: var(--text-body);
+    }
+    /* 작은/큰 폰트 모드 대응 */
+    html[data-font-size="sm"] .book-overview-list { grid-template-columns: 80px 1fr; }
+    html[data-font-size="lg"] .book-overview-list { grid-template-columns: 100px 1fr; }
+    /* 다크/밤 모드에서 라벨 대비 보강 */
+    html[data-time-slot="night"] .book-overview-list dt { color: #A8D5C2; }
   </style>
 </head>
 <body>
@@ -442,19 +469,17 @@
       </div>
     </div>
 
-    <!-- ① 책 맥락 카드 (큰 그림 먼저) -->
+    <!-- ① 책 살펴보기 카드 (큰 그림 먼저) -->
     <section class="meditation-card" id="bookContextCard" style="display:none;">
       <h2 class="meditation-card__title">
-        <span class="meditation-card__icon">📚</span>
-        <span><span id="bookContextTitle">책</span>의 흐름</span>
+        <span><span id="bookContextTitle">책</span> 살펴보기</span>
       </h2>
-      <div class="prose" id="bookContext"></div>
+      <div id="bookContext"></div>
     </section>
 
     <!-- ② 등장인물 카드 -->
     <section class="meditation-card" id="charactersCard" style="display:none;">
       <h2 class="meditation-card__title">
-        <span class="meditation-card__icon">👥</span>
         말씀 속 인물들
       </h2>
       <div id="charactersList"></div>
@@ -463,7 +488,6 @@
     <!-- ③ 깊은 묵상 카드 (5단 호흡: 장면·질문·맥락·통찰·연결) -->
     <section class="meditation-card" id="deepDiveCard" style="display:none;">
       <h2 class="meditation-card__title">
-        <span class="meditation-card__icon">🌿</span>
         깊은 묵상
       </h2>
       <div class="deep-dive">
@@ -488,7 +512,6 @@
     <!-- 폴백: 핵심 요약 카드 (deep_dive 없을 때만 표시) -->
     <section class="meditation-card" id="summaryCard" style="display:none;">
       <h2 class="meditation-card__title">
-        <span class="meditation-card__icon">✨</span>
         말씀 속 장면
       </h2>
       <p id="passageIntro" class="passage-intro" style="display:none;"></p>
@@ -500,7 +523,6 @@
     <!-- 폴백: 구절 해설 카드 (deep_dive 없을 때만 표시) -->
     <section class="meditation-card" id="commentaryCard" style="display:none;">
       <h2 class="meditation-card__title">
-        <span class="meditation-card__icon">💡</span>
         구절 깊이 들여다보기
       </h2>
       <div class="prose" id="verseCommentary"></div>
@@ -571,7 +593,7 @@
         return;
       }
 
-      // 책 흐름 / 등장인물은 ai 데이터에서 (deep_dive에는 없음)
+      // 책 살펴보기 / 등장인물은 ai 데이터에서 (deep_dive에는 없음)
       if (ai) {
         const _ctxParts = (ai.book_context || '').split('. ');
         const bookOverview = ai.book_overview ||
@@ -652,10 +674,39 @@
         .join('');
     }
 
-    function renderBookContext(text) {
-      if (!text) return;
+    function renderBookContext(value) {
+      if (!value) return;
       document.getElementById('bookContextCard').style.display = '';
-      document.getElementById('bookContext').textContent = text;
+      const target = document.getElementById('bookContext');
+      target.replaceChildren();
+      target.classList.remove('prose');
+
+      // 신 스키마: 객체 {author, date, place, core}
+      if (typeof value === 'object' && !Array.isArray(value)) {
+        const LABELS = {
+          author: '저자',
+          date:   '시기',
+          place:  '기록 장소와 대상',
+          core:   '핵심 내용'
+        };
+        const dl = document.createElement('dl');
+        dl.className = 'book-overview-list';
+        ['author', 'date', 'place', 'core'].forEach(key => {
+          if (!value[key]) return;
+          const dt = document.createElement('dt');
+          dt.textContent = LABELS[key];
+          const dd = document.createElement('dd');
+          dd.textContent = value[key];
+          dl.appendChild(dt);
+          dl.appendChild(dd);
+        });
+        target.appendChild(dl);
+        return;
+      }
+
+      // 옛 스키마: 문자열 (book_overview string 또는 book_context fallback)
+      target.classList.add('prose');
+      target.textContent = String(value);
     }
 
     function renderCommentary(text) {
@@ -679,7 +730,7 @@
       qtData = qt;
       labelEl.textContent = qt.scripture_ref || '말씀 다시 보기';
 
-      // 책 맥락 카드 제목에 책 이름 주입 (예: "룻기의 흐름")
+      // 책 살펴보기 카드 제목에 책 이름 주입 (예: "룻기 살펴보기")
       const bookTitleEl = document.getElementById('bookContextTitle');
       if (bookTitleEl) {
         bookTitleEl.textContent = qt.book_name || '책';
