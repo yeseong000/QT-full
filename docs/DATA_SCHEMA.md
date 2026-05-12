@@ -57,7 +57,7 @@
 
 ### 2. `/data/ai/YYYY-MM-DD.json` (AI 묵상)
 
-GPT가 생성한 묵상 콘텐츠. 자세한 스키마는 `AI_PROMPT.md` 참고.
+GPT가 생성한 묵상 콘텐츠. 생성 프롬프트는 `scripts/generate_ai.py`, 운영 메모는 `AI_PROMPT.md` 참고.
 
 ```json
 {

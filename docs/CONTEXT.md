@@ -102,20 +102,26 @@
 
 ```json
 {
-  "core_summary": ["문장1", "문장2", "문장3", "문장4", "문장5"],
+  "scenes": ["장면1", "장면2", "장면3", "장면4", "장면5"],
   "characters": [
     { "name": "이름", "description": "2-3문장" }
   ],
-  "book_context": "책 전체 맥락 3-4문장",
+  "book_overview": {
+    "author": "저자",
+    "date": "기록 시기",
+    "place": "기록 장소와 대상",
+    "core": "책 전체 핵심 내용 1-2문장"
+  },
+  "passage_intro": "오늘 본문이 책 흐름 어디쯤인지 1문장",
   "verse_commentary": "구절 해설 3-5문장",
   "application": [
-    { "statement": "나는 오늘, ~하겠습니다.", "detail": "보조 설명" }
+    { "statement": "저는 오늘, ~하겠습니다.", "detail": "보조 설명" }
   ],
   "prayer": ["주님,", "문장1", "", "문장2", "..."]
 }
 ```
 
-→ 자세한 건 `docs/AI_PROMPT.md` 참고
+→ 출력 스키마는 `docs/DATA_SCHEMA.md`, 프롬프트는 `scripts/generate_ai.py`, 운영 메모는 `docs/AI_PROMPT.md` 참고
 
 ---
 
