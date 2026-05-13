@@ -66,9 +66,12 @@ GPT가 생성한 묵상 콘텐츠. 생성 프롬프트는 `scripts/generate_ai.p
   "characters": [{ "name": "...", "description": "..." }],
   "book_overview": {
     "author": "저자 (한두 어절 또는 회피 어구)",
-    "date": "기록 시기 한 줄",
-    "place": "기록 장소와 대상 (한 문장)",
-    "core": "책 전체 핵심 내용 (1~2문장)"
+    "date": {
+      "covered": "다룬 시대 (선택, 신약 서신 등은 null)",
+      "written": "기록 시기 한 줄 (필수)"
+    },
+    "place": "기록 장소와 대상 (한 문장, 명사형 종결)",
+    "core": "책 전체 핵심 내용 (1~2문장, 체언 종결)"
   },
   "passage_intro": "오늘 본문이 이 책의 흐름 안에서 어디에 위치하는지 (1문장)",
   "verse_commentary": "...",
@@ -83,6 +86,7 @@ GPT가 생성한 묵상 콘텐츠. 생성 프롬프트는 `scripts/generate_ai.p
 > 프론트엔드에서 새 필드가 없을 경우 자동으로 구 필드에서 분기 처리합니다.
 > 신규 `generate_ai.py` 실행분부터 새 필드가 생성됩니다.
 > 옛 `book_overview`가 문자열 형식인 JSON도 프론트엔드가 자동으로 prose 형태로 폴백 렌더합니다.
+> 옛 `book_overview.date`가 문자열 형식인 경우도 프론트엔드가 단일 줄로 폴백 렌더합니다.
 
 ### 3. `/data/manifest.json` (인덱스)
 

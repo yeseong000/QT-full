@@ -396,24 +396,54 @@
       column-gap: 16px;
       margin: 0;
     }
-    .book-overview-list dt {
+    .book-overview-list > dt {
       font-size: 13px;
       font-weight: 700;
       color: var(--accent-sage-text);
       padding-top: 2px;
       letter-spacing: 0.02em;
     }
-    .book-overview-list dd {
+    .book-overview-list > dd {
       margin: 0;
       font-size: var(--text-body);
       line-height: 1.65;
       color: var(--text-body);
     }
+
+    /* 시기 분기: 점선 브래킷으로 '다룬 시대 / 기록' 두 줄을 묶음 (케이스 ②만) */
+    .date-bracket-wrap {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .date-bracket-svg {
+      width: 14px;
+      height: 34px;
+      flex-shrink: 0;
+      color: var(--accent-sage);
+      opacity: 0.6;
+    }
+    .date-sub-lines > div {
+      font-size: var(--text-body);
+      line-height: 1.5;
+      color: var(--text-body);
+    }
+    .date-sub-lines > div + div {
+      margin-top: 4px;
+    }
+    .date-sub-key {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--accent-sage-text-soft, #6FA797);
+      margin-right: 6px;
+    }
+
     /* 작은/큰 폰트 모드 대응 */
     html[data-font-size="sm"] .book-overview-list { grid-template-columns: 80px 1fr; }
     html[data-font-size="lg"] .book-overview-list { grid-template-columns: 100px 1fr; }
     /* 다크/밤 모드에서 라벨 대비 보강 */
-    html[data-time-slot="night"] .book-overview-list dt { color: #A8D5C2; }
+    html[data-time-slot="night"] .book-overview-list > dt { color: #A8D5C2; }
+    html[data-time-slot="night"] .date-sub-key { color: #88C0AE; }
   </style>
 </head>
 <body>
@@ -691,15 +721,26 @@
         };
         const dl = document.createElement('dl');
         dl.className = 'book-overview-list';
+
         ['author', 'date', 'place', 'core'].forEach(key => {
           if (!value[key]) return;
+
           const dt = document.createElement('dt');
           dt.textContent = LABELS[key];
+
           const dd = document.createElement('dd');
-          dd.textContent = value[key];
+
+          // date는 객체 {covered, written}일 수도, 옛 문자열일 수도 있음
+          if (key === 'date') {
+            appendDateContent(dd, value.date);
+          } else {
+            dd.textContent = value[key];
+          }
+
           dl.appendChild(dt);
           dl.appendChild(dd);
         });
+
         target.appendChild(dl);
         return;
       }
@@ -707,6 +748,64 @@
       // 옛 스키마: 문자열 (book_overview string 또는 book_context fallback)
       target.classList.add('prose');
       target.textContent = String(value);
+    }
+
+    /**
+     * date 필드 렌더링
+     * - 객체 {covered, written}: covered가 있으면 점선 브래킷으로 두 줄 묶음, 없으면 written만 단일 줄
+     * - 문자열 (옛 형식): 단일 줄
+     */
+    function appendDateContent(dd, dateValue) {
+      if (!dateValue) return;
+
+      // 옛 문자열 형식
+      if (typeof dateValue === 'string') {
+        dd.textContent = dateValue;
+        return;
+      }
+
+      const covered = dateValue.covered;
+      const written = dateValue.written;
+
+      // 케이스 ①: 단일 시기 (covered 없음)
+      if (!covered) {
+        dd.textContent = written || '';
+        return;
+      }
+
+      // 케이스 ②: 점선 브래킷 + 두 줄 (다룬 시대 / 기록)
+      const wrap = document.createElement('div');
+      wrap.className = 'date-bracket-wrap';
+
+      // SVG 점선 브래킷 (왼쪽 [ 모양)
+      wrap.innerHTML = `
+        <svg class="date-bracket-svg" viewBox="0 0 14 34" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="2 2">
+          <path d="M10 2 L4 2 L4 32 L10 32"/>
+        </svg>
+      `;
+
+      const lines = document.createElement('div');
+      lines.className = 'date-sub-lines';
+
+      const coveredLine = document.createElement('div');
+      const coveredKey = document.createElement('span');
+      coveredKey.className = 'date-sub-key';
+      coveredKey.textContent = '다룬 시대';
+      coveredLine.appendChild(coveredKey);
+      coveredLine.appendChild(document.createTextNode(covered));
+
+      const writtenLine = document.createElement('div');
+      const writtenKey = document.createElement('span');
+      writtenKey.className = 'date-sub-key';
+      writtenKey.textContent = '기록';
+      writtenLine.appendChild(writtenKey);
+      writtenLine.appendChild(document.createTextNode(written || ''));
+
+      lines.appendChild(coveredLine);
+      lines.appendChild(writtenLine);
+
+      wrap.appendChild(lines);
+      dd.appendChild(wrap);
     }
 
     function renderCommentary(text) {
