@@ -449,6 +449,23 @@
     /* 다크/밤 모드에서 라벨 대비 보강 */
     html[data-time-slot="night"] .book-overview-list > dt { color: #A8D5C2; }
     html[data-time-slot="night"] .date-sub-key { color: #A8D5C2; }
+
+    /* 모바일(<744px): 좁은 화면에서 '시기' 값(예: "BC 6세기경 추정")이 한 줄에
+       들어오도록 라벨 칼럼·내부 간격 축소.
+       104px 라벨 + 16px gap → 88px 라벨 + 12px gap (≈ +20px),
+       브래킷 gap 6→4, 서브 column-gap 10→6 (≈ +6px). 합쳐서 값 셀이 ~25px 넓어짐. */
+    @media (max-width: 743px) {
+      .book-overview-list {
+        grid-template-columns: 88px 1fr;
+        column-gap: 12px;
+      }
+      .date-bracket-wrap {
+        gap: 4px;
+      }
+      .date-sub-lines {
+        column-gap: 6px;
+      }
+    }
   </style>
 </head>
 <body>
