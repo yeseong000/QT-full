@@ -391,13 +391,13 @@
     /* 책 살펴보기 카드 (정의 목록식 dl grid) */
     .book-overview-list {
       display: grid;
-      grid-template-columns: 92px 1fr;
+      grid-template-columns: 104px 1fr;
       row-gap: 14px;
       column-gap: 16px;
       margin: 0;
     }
     .book-overview-list > dt {
-      font-size: 13px;
+      font-size: 15px;          /* 메인 라벨 13 → 15 (본문 톤에 맞춰 키움) */
       font-weight: 700;
       color: var(--accent-sage-text);
       padding-top: 2px;
@@ -418,29 +418,34 @@
     }
     .date-bracket-svg {
       width: 14px;
-      height: 34px;
+      height: 42px;             /* row-gap 키움에 맞춰 34 → 42 */
       flex-shrink: 0;
       color: var(--accent-sage);
       opacity: 0.6;
     }
-    .date-sub-lines > div {
-      font-size: var(--text-body);
-      line-height: 1.5;
-      color: var(--text-body);
-    }
-    .date-sub-lines > div + div {
-      margin-top: 4px;
+    /* 서브 라벨/값을 2칼럼 그리드로 정렬 — 모든 줄에서 값의 시작점이 일치하도록 */
+    .date-sub-lines {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      column-gap: 10px;
+      row-gap: 8px;             /* 줄 사이 여백 4 → 8 (식별성 ↑) */
+      align-items: baseline;
     }
     .date-sub-key {
       font-size: 13px;
       font-weight: 600;
       color: var(--accent-sage-text);
-      margin-right: 6px;
+      white-space: nowrap;
+    }
+    .date-sub-val {
+      font-size: var(--text-body);
+      line-height: 1.5;
+      color: var(--text-body);
     }
 
-    /* 작은/큰 폰트 모드 대응 */
-    html[data-font-size="sm"] .book-overview-list { grid-template-columns: 80px 1fr; }
-    html[data-font-size="lg"] .book-overview-list { grid-template-columns: 100px 1fr; }
+    /* 작은/큰 폰트 모드 대응 — 라벨 칼럼도 비례해서 */
+    html[data-font-size="sm"] .book-overview-list { grid-template-columns: 92px 1fr; }
+    html[data-font-size="lg"] .book-overview-list { grid-template-columns: 116px 1fr; }
     /* 다크/밤 모드에서 라벨 대비 보강 */
     html[data-time-slot="night"] .book-overview-list > dt { color: #A8D5C2; }
     html[data-time-slot="night"] .date-sub-key { color: #A8D5C2; }
@@ -784,25 +789,27 @@
         </svg>
       `;
 
+      // 서브 라벨/값을 2칼럼 그리드의 4개 셀로 — 값 시작점이 두 줄 모두 동일
       const lines = document.createElement('div');
       lines.className = 'date-sub-lines';
 
-      const coveredLine = document.createElement('div');
       const coveredKey = document.createElement('span');
       coveredKey.className = 'date-sub-key';
       coveredKey.textContent = '다룬 시대';
-      coveredLine.appendChild(coveredKey);
-      coveredLine.appendChild(document.createTextNode(covered));
 
-      const writtenLine = document.createElement('div');
+      const coveredVal = document.createElement('span');
+      coveredVal.className = 'date-sub-val';
+      coveredVal.textContent = covered;
+
       const writtenKey = document.createElement('span');
       writtenKey.className = 'date-sub-key';
       writtenKey.textContent = '기록';
-      writtenLine.appendChild(writtenKey);
-      writtenLine.appendChild(document.createTextNode(written || ''));
 
-      lines.appendChild(coveredLine);
-      lines.appendChild(writtenLine);
+      const writtenVal = document.createElement('span');
+      writtenVal.className = 'date-sub-val';
+      writtenVal.textContent = written || '';
+
+      lines.append(coveredKey, coveredVal, writtenKey, writtenVal);
 
       wrap.appendChild(lines);
       dd.appendChild(wrap);
