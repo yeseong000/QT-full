@@ -277,9 +277,11 @@ input, textarea {
   /* ----------------------------------------------------------
      Step-2 (묵상) 페이지 전용 2칼럼 그리드
      - 풀폭: top-bar / page-title / scripture-toggle / summaryCard (폴백)
-     - row 1 좌: 사무엘상 살펴보기 (책 소개)
-     - row 1 우: 깊은 묵상 (5단 호흡) — 데이터 없으면 폴백 카드(구절 해설)가 같은 자리
-     - row 2 풀폭: 등장인물 카드 (안쪽은 인물들을 가로 grid로 배치)
+     - row N   풀폭: 등장인물 카드 (안쪽 인물들은 가로 grid로 배치)
+     - row N+1 좌: 사무엘상 살펴보기 (책 소개)
+     - row N+1 우: 깊은 묵상 (5단 호흡) — 데이터 없으면 폴백 카드(구절 해설)가 같은 자리
+     - 등장인물은 `order: 0` 유지, 살펴보기/깊은 묵상은 `order: 1`로 뒤로 — 모바일은 HTML
+       순서 그대로(살펴보기→인물→깊은 묵상), 태블릿+에서만 인물이 위로 올라감
      - align-items: start로 각 카드는 row 위쪽 정렬 + 자기 height만 차지
      ---------------------------------------------------------- */
   [data-qt-step="meditation"] .app-scroll {
@@ -301,16 +303,18 @@ input, textarea {
   [data-qt-step="meditation"] #summaryCard {
     grid-column: 1 / -1;
   }
-  /* 좌측: 사무엘상 살펴보기 */
+  /* 좌측: 사무엘상 살펴보기 (등장인물 아래로 밀기 위해 order:1) */
   [data-qt-step="meditation"] #bookContextCard {
     grid-column: 1 / 2;
+    order: 1;
   }
   /* 우측: 깊은 묵상 — 또는 폴백(구절 해설). 둘은 동시에 표시되지 않으므로 같은 셀 */
   [data-qt-step="meditation"] #deepDiveCard,
   [data-qt-step="meditation"] #commentaryCard {
     grid-column: 2 / 3;
+    order: 1;
   }
-  /* 등장인물 카드: 풀폭으로 깔고, 안쪽 인물들은 가로 grid로 배치
+  /* 등장인물 카드: 풀폭으로 상단에 깔고(order 기본 0), 안쪽 인물들은 가로 grid로 배치
      (220px 최소폭 → 화면이 넓을수록 자동으로 2~3칼럼) */
   [data-qt-step="meditation"] #charactersCard {
     grid-column: 1 / -1;
