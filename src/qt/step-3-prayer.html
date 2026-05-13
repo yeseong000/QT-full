@@ -93,8 +93,10 @@
     }
     .application-list li {
       counter-increment: app-counter;
-      position: relative;
-      padding: var(--space-5) 0 var(--space-5) 44px;
+      display: flex;
+      align-items: center;             /* 번호 배지를 텍스트 블록 세로 중앙에 정렬 */
+      gap: var(--space-4);
+      padding: var(--space-5) 0;
       border-top: 1px solid var(--border-subtle);
     }
     .application-list li:first-child {
@@ -106,9 +108,7 @@
     }
     .application-list li::before {
       content: counter(app-counter);
-      position: absolute;
-      left: 0;
-      top: var(--space-5);
+      flex-shrink: 0;                  /* flex 아이템으로 배치 — 자동으로 세로 중앙 */
       width: 28px;
       height: 28px;
       border-radius: 50%;
@@ -120,8 +120,9 @@
       font-weight: 700;
       letter-spacing: 0;
     }
-    .application-list li:first-child::before {
-      top: 0;
+    .application-item__content {
+      flex: 1;
+      min-width: 0;                    /* flex 자식이 가로 넘침 안 나게 */
     }
     .application-item__statement {
       font-size: var(--text-body);
@@ -313,8 +314,10 @@
       }
       list.innerHTML = apps.map(a => `
         <li>
-          <div class="application-item__statement">${escapeHTML(a.statement || '')}</div>
-          <div class="application-item__detail">${escapeHTML(a.detail || '')}</div>
+          <div class="application-item__content">
+            <div class="application-item__statement">${escapeHTML(a.statement || '')}</div>
+            <div class="application-item__detail">${escapeHTML(a.detail || '')}</div>
+          </div>
         </li>
       `).join('');
     }
