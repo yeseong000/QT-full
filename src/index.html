@@ -583,10 +583,11 @@
       align-items: center;
       gap: 8px;
       padding: 12px 14px;
-      background: var(--bg-paper);
+      background: var(--time-accent-tint, var(--bg-paper));   /* 시간대별 옅은 tint */
       border-radius: 12px;
       max-width: 280px;
       margin: 0 auto;
+      transition: background-color 200ms ease;
     }
     .qr-url-text {
       flex: 1;
@@ -602,7 +603,7 @@
     .qr-copy-btn {
       background: transparent;
       border: 0;
-      color: var(--accent-sage-text, #9A4F60);
+      color: var(--time-accent, #9A4F60);                     /* 시간대별 액센트 */
       font-size: 13px;
       font-weight: 600;
       padding: 4px 8px;
@@ -610,6 +611,7 @@
       -webkit-tap-highlight-color: transparent;
       flex-shrink: 0;
       font-family: inherit;
+      transition: color 200ms ease;
     }
     .qr-copy-btn:active { opacity: 0.6; }
 
@@ -952,6 +954,23 @@
       document.documentElement.style.setProperty('--sky-color', SKY_COLOR[slot] || '');
       document.documentElement.style.setProperty('--ground-color', GROUND_COLOR[slot] || '');
       document.documentElement.style.setProperty('--letterbox-bg', SKY_COLOR[slot] || '');
+
+      // 시간대별 액센트 (텍스트 버튼·강조 톤) — today-cta hover 톤 재사용
+      // QR 시트 복사 버튼·URL 박스 같은 모달 요소들이 시간대 분위기에 맞춰지도록
+      // documentElement에 변수로 주입 (modal-backdrop이 .app-container 외부라 클래스 셀렉터 미적용)
+      const TIME_ACCENT = {
+        dawn: '#5A7596', morning: '#A85A6E', afternoon: '#9C5A6C',
+        evening: '#9A4F62', night: '#5A7596',
+      };
+      const TIME_ACCENT_TINT = {
+        dawn:      'rgba(110, 132, 168, 0.08)',
+        morning:   'rgba(199, 126, 142, 0.08)',
+        afternoon: 'rgba(188, 115, 131, 0.08)',
+        evening:   'rgba(181, 103, 122, 0.09)',
+        night:     'rgba(110, 132, 168, 0.10)',
+      };
+      document.documentElement.style.setProperty('--time-accent', TIME_ACCENT[slot] || '#9A4F60');
+      document.documentElement.style.setProperty('--time-accent-tint', TIME_ACCENT_TINT[slot] || 'rgba(0,0,0,0.04)');
 
       // PWA standalone에서 OS가 그리는 status bar 위쪽 영역은 theme-color meta로만 색이 결정됨
       const themeColorMeta = document.querySelector('meta[name="theme-color"]');
