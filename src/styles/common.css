@@ -301,8 +301,13 @@ input, textarea {
   [data-qt-step="meditation"] .top-bar,
   [data-qt-step="meditation"] .page-title,
   [data-qt-step="meditation"] .scripture-toggle,
-  [data-qt-step="meditation"] #summaryCard {
+  [data-qt-step="meditation"] #summaryCard,
+  [data-qt-step="meditation"] #followUpCard {
     grid-column: 1 / -1;
+  }
+  /* 더 깊이 묻기는 모든 카드 아래에 풀폭으로 — order:2로 밀어 항상 마지막 */
+  [data-qt-step="meditation"] #followUpCard {
+    order: 2;
   }
   /* 좌측: 사무엘상 살펴보기 (등장인물 아래로 밀기 위해 order:1) */
   [data-qt-step="meditation"] #bookContextCard {
@@ -802,3 +807,143 @@ input, textarea {
 .mt-4 { margin-top: var(--space-4); }
 .mb-4 { margin-bottom: var(--space-4); }
 .mb-6 { margin-bottom: var(--space-6); }
+
+/* ------------------------------------------------------------------
+   더 깊이 묻기 (Follow-up Q&A) — step-2-meditation 전용
+   ------------------------------------------------------------------ */
+.follow-up__hint {
+  margin: var(--space-1) 0 var(--space-4);
+  color: var(--text-secondary);
+  font-size: var(--text-small);
+  line-height: 1.5;
+}
+
+.follow-up__pills {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  align-items: stretch;
+}
+
+.follow-up__pill {
+  appearance: none;
+  width: 100%;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-input);
+  color: var(--text-body);
+  padding: 12px 18px;
+  border-radius: var(--radius-pill);
+  font-size: var(--text-small);
+  font-family: inherit;
+  line-height: 1.4;
+  cursor: pointer;
+  text-align: center;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+  transition:
+    transform var(--duration-base) var(--ease-out),
+    box-shadow var(--duration-base) var(--ease-out),
+    background-color var(--duration-base) var(--ease-out),
+    color var(--duration-base) var(--ease-out),
+    border-color var(--duration-base) var(--ease-out);
+}
+.follow-up__pill:hover {
+  transform: translateY(-1px) scale(1.015);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  border-color: var(--accent-sage-soft);
+  color: var(--accent-sage-text);
+}
+.follow-up__pill:active {
+  transform: translateY(0) scale(0.99);
+}
+.follow-up__pill.is-active {
+  background: var(--accent-sage-soft);
+  border-color: var(--accent-sage);
+  color: var(--accent-sage-text);
+}
+
+.follow-up__answers {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin-top: var(--space-5);
+}
+.follow-up__answers:empty {
+  margin-top: 0;
+}
+
+.follow-up__qa {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.follow-up__q-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+.follow-up__q-label {
+  background: var(--accent-sage-soft);
+  color: var(--accent-sage-text);
+  padding: 6px 14px;
+  border-radius: var(--radius-pill);
+  font-size: var(--text-small);
+  line-height: 1.4;
+  max-width: 85%;
+  text-align: center;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
+.follow-up__answer {
+  align-self: flex-start;
+  max-width: 92%;
+  background: var(--bg-input);
+  color: var(--text-body);
+  padding: var(--space-4) var(--space-5);
+  border-radius: 28px;
+  font-size: var(--text-body);
+  line-height: 1.75;
+  border: 1px solid var(--border-subtle);
+  animation: followUpSlideInLeft 0.4s var(--ease-out);
+  text-align: left;
+}
+
+.follow-up__loading {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 6px;
+  background: var(--bg-input);
+  padding: 14px 20px;
+  border-radius: 28px;
+  border: 1px solid var(--border-subtle);
+  min-height: 28px;
+}
+.follow-up__loading span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--text-secondary);
+  opacity: 0.3;
+  animation: followUpWaveDots 1.4s infinite ease-in-out;
+}
+.follow-up__loading span:nth-child(2) { animation-delay: 0.2s; }
+.follow-up__loading span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes followUpSlideInLeft {
+  from { opacity: 0; transform: translateX(-12px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes followUpWaveDots {
+  0%, 60%, 100% { opacity: 0.3; transform: translateY(0); }
+  30%           { opacity: 1;   transform: translateY(-4px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .follow-up__pill { transition: none; }
+  .follow-up__pill:hover { transform: none; }
+  .follow-up__answer { animation: none; }
+  .follow-up__loading span { animation-duration: 0.01ms; }
+}

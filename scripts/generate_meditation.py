@@ -61,9 +61,14 @@ PROMPT_DIR = PROJECT_ROOT / "prompts" / "breath_5step"
 SYSTEM_PROMPT_PATH = PROMPT_DIR / "_final_system.md"
 FEWSHOT_PATH = PROMPT_DIR / "breath_5step_examples.json"
 
+FOLLOW_UP_PROMPT_PATH = PROJECT_ROOT / "prompts" / "follow_up" / "system.md"
+
 MODEL = "gpt-4o-mini"
 TEMPERATURE = 0.7
 MAX_TOKENS = 1500
+
+FOLLOW_UP_TEMPERATURE = 0.8
+FOLLOW_UP_MAX_TOKENS = 1800
 
 # 가격 (2026년 기준, 백만 토큰당 USD)
 PRICE_INPUT_PER_1M = 0.15
@@ -185,7 +190,7 @@ def calc_cost(usage) -> dict:
     }
 
 
-def call_openai(messages: list, max_retries: int = 1):
+def call_openai(messages: list, max_retries: int = 1, *, temperature: float = TEMPERATURE, max_tokens: int = MAX_TOKENS):
     """OpenAI API 호출 — 실패 시 1회 재시도."""
     try:
         from openai import OpenAI
@@ -208,8 +213,8 @@ def call_openai(messages: list, max_retries: int = 1):
             return client.chat.completions.create(
                 model=MODEL,
                 messages=messages,
-                temperature=TEMPERATURE,
-                max_tokens=MAX_TOKENS,
+                temperature=temperature,
+                max_tokens=max_tokens,
                 response_format={"type": "json_object"},
             )
         except Exception as e:
@@ -218,6 +223,73 @@ def call_openai(messages: list, max_retries: int = 1):
                 log(f"API 호출 실패, 2초 후 재시도 ({attempt + 1}/{max_retries}): {e}", "WARN")
                 time.sleep(2)
     raise RuntimeError(f"API 호출 최종 실패: {last_err}")
+
+
+# ===== 더 깊이 묻기 (Follow-up Q&A) =====
+def generate_follow_up(qt_data: dict, kb: dict | None, deep_dive: dict) -> tuple[list, dict] | tuple[None, None]:
+    """
+    5단 호흡 묵상 직후 호출되는 2차 생성기.
+    본문에서 떠올릴 만한 파생 질문 3개 + 깊이 있는 답변 3개를 만듭니다.
+
+    반환: (follow_up_questions list, cost_info dict) — 실패 시 (None, None)
+    """
+    if not FOLLOW_UP_PROMPT_PATH.exists():
+        log(f"follow-up 시스템 프롬프트가 없습니다: {FOLLOW_UP_PROMPT_PATH} → 건너뜀", "WARN")
+        return None, None
+
+    try:
+        system_prompt = FOLLOW_UP_PROMPT_PATH.read_text(encoding="utf-8")
+        body_text = "\n".join(
+            f"{v['number']} {v['text']}" for v in qt_data.get("verses", [])
+        )
+        payload = {
+            "본문_참조": qt_data.get("scripture_ref", ""),
+            "본문_제목": qt_data.get("title", ""),
+            "본문_내용": body_text,
+            "오륜_질문": qt_data.get("oryun_questions", []),
+            "지식": kb,
+            "이미_다룬_5단": {
+                "장면": deep_dive.get("장면", ""),
+                "질문": deep_dive.get("질문", ""),
+                "맥락": deep_dive.get("맥락", ""),
+                "통찰": deep_dive.get("통찰", ""),
+                "연결": deep_dive.get("연결", ""),
+            },
+        }
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": json.dumps(payload, ensure_ascii=False)},
+        ]
+
+        response = call_openai(
+            messages,
+            max_retries=1,
+            temperature=FOLLOW_UP_TEMPERATURE,
+            max_tokens=FOLLOW_UP_MAX_TOKENS,
+        )
+        raw = response.choices[0].message.content
+        parsed = json.loads(raw)
+        items = parsed.get("follow_up_questions", [])
+
+        # 검증: 3개 + 각 question/answer 채워짐
+        if not isinstance(items, list) or len(items) != 3:
+            log(f"follow-up 검증 실패: 배열 길이 {len(items) if isinstance(items, list) else 'N/A'} (3 기대) → 건너뜀", "WARN")
+            return None, None
+        for i, item in enumerate(items):
+            if not isinstance(item, dict):
+                log(f"follow-up 검증 실패: item[{i}]가 dict 아님 → 건너뜀", "WARN")
+                return None, None
+            q = item.get("question", "").strip() if isinstance(item.get("question"), str) else ""
+            a = item.get("answer", "").strip() if isinstance(item.get("answer"), str) else ""
+            if not q or not a:
+                log(f"follow-up 검증 실패: item[{i}]의 question/answer 비어있음 → 건너뜀", "WARN")
+                return None, None
+
+        cost_info = calc_cost(response.usage)
+        return items, cost_info
+    except Exception as e:
+        log(f"follow-up 생성 실패 (1차 묵상은 유지): {e}", "WARN")
+        return None, None
 
 
 # ===== 검증 =====
@@ -349,6 +421,17 @@ def main() -> int:
         "OK",
     )
 
+    # 5.5. 더 깊이 묻기 (Follow-up Q&A) — 실패해도 본 묵상은 살림
+    log("더 깊이 묻기 생성 중...", "INFO")
+    follow_up_items, follow_up_cost = generate_follow_up(qt_data, kb, deep_dive)
+    if follow_up_items:
+        log(
+            f"더 깊이 묻기 OK · 토큰: {follow_up_cost['total_tokens']} / 비용: 약 {follow_up_cost['cost_krw']:.2f}원",
+            "OK",
+        )
+    else:
+        log("더 깊이 묻기 생성 건너뜀 (5단 호흡은 정상 저장됨)", "WARN")
+
     # 6. 메타데이터 추가
     result = {
         "date": date_str,
@@ -363,6 +446,9 @@ def main() -> int:
         "model": MODEL,
         "_cost": cost_info,
     }
+    if follow_up_items:
+        result["follow_up_questions"] = follow_up_items
+        result["_cost_followup"] = follow_up_cost
 
     # 7. 저장
     if args.dry_run:

@@ -537,10 +537,10 @@
       <div id="charactersList"></div>
     </section>
 
-    <!-- ③ 깊은 묵상 카드 (5단 호흡: 장면·질문·맥락·통찰·연결) -->
+    <!-- ③ 본문 따라가기 카드 (5단 호흡: 장면·질문·맥락·통찰·연결) -->
     <section class="meditation-card" id="deepDiveCard" style="display:none;">
       <h2 class="meditation-card__title">
-        깊은 묵상
+        본문 따라가기
       </h2>
       <div class="deep-dive">
         <div class="deep-dive__step">
@@ -559,6 +559,14 @@
           <div class="deep-dive__body" id="deepDiveBridge"></div>
         </div>
       </div>
+    </section>
+
+    <!-- ④ 떠오르는 질문 카드 (follow-up Q&A) -->
+    <section class="meditation-card" id="followUpCard" style="display:none;">
+      <h2 class="meditation-card__title">떠오르는 질문</h2>
+      <p class="follow-up__hint">본문에서 떠오를 만한 질문을 골라보세요</p>
+      <div class="follow-up__pills" id="followUpPills" role="list"></div>
+      <div class="follow-up__answers" id="followUpAnswers" aria-live="polite"></div>
     </section>
 
     <!-- 폴백: 핵심 요약 카드 (deep_dive 없을 때만 표시) -->
@@ -657,6 +665,7 @@
       // 분기: deep_dive 있으면 5단 호흡 카드, 없으면 종전 두 카드(말씀 속 장면 + 구절 해설)
       if (deepDive) {
         renderDeepDive(deepDive);
+        renderFollowUp(deepDive.follow_up_questions);
       } else if (ai) {
         const _ctxParts = (ai.book_context || '').split('. ');
         const passageIntro = ai.passage_intro ||
@@ -691,6 +700,92 @@
         }
       }
       if (any) document.getElementById('deepDiveCard').style.display = '';
+    }
+
+    // ========== 더 깊이 묻기 (Follow-up Q&A) ==========
+    const FOLLOW_UP_LOADING_MS = 2000;
+    let _followUpItems = [];
+    let _followUpActiveIdx = -1;        // 현재 표시 중인 질문 idx (-1: 없음)
+    let _followUpLoadingTimer = null;   // setTimeout 핸들 — 중간에 다른 Pill 누르면 취소
+    const _followUpSeen = new Set();    // 한 번이라도 답변까지 본 idx — 재방문 시 애니메이션 생략
+
+    function renderFollowUp(items) {
+      if (!Array.isArray(items) || items.length === 0) return;
+      _followUpItems = items;
+      const pillsEl = document.getElementById('followUpPills');
+      pillsEl.innerHTML = items.map((it, i) =>
+        `<button class="follow-up__pill" data-idx="${i}" type="button" role="listitem">${escapeHTML(it.question)}</button>`
+      ).join('');
+      pillsEl.addEventListener('click', onFollowUpPillClick);
+      document.getElementById('followUpCard').style.display = '';
+    }
+
+    function onFollowUpPillClick(e) {
+      const btn = e.target.closest('.follow-up__pill');
+      if (!btn) return;
+      const idx = Number(btn.dataset.idx);
+      const item = _followUpItems[idx];
+      if (!item) return;
+
+      // 같은 Pill 다시 누르면 무동작 (이미 떠 있음)
+      if (idx === _followUpActiveIdx) return;
+
+      // 이전 답변/로딩 즉시 제거 + 진행 중인 로딩 타이머 취소
+      if (_followUpLoadingTimer) {
+        clearTimeout(_followUpLoadingTimer);
+        _followUpLoadingTimer = null;
+      }
+      const answersEl = document.getElementById('followUpAnswers');
+      answersEl.innerHTML = '';
+
+      // 모든 Pill의 active 상태 해제 후 현재 것만 활성화
+      document.querySelectorAll('.follow-up__pill.is-active').forEach(el => el.classList.remove('is-active'));
+      btn.classList.add('is-active');
+      _followUpActiveIdx = idx;
+
+      // 답변 HTML 빌더 (재사용)
+      const answerHTML = String(item.answer || '')
+        .split('\n')
+        .map(line => escapeHTML(line))
+        .join('<br>');
+
+      const qa = document.createElement('div');
+      qa.className = 'follow-up__qa';
+      qa.dataset.idx = String(idx);
+
+      // 한 번 본 답변은 애니메이션 생략 — 질문 chip + 답변 즉시 렌더
+      if (_followUpSeen.has(idx)) {
+        qa.innerHTML = `
+          <div class="follow-up__q-row">
+            <span class="follow-up__q-label">${escapeHTML(item.question)}</span>
+          </div>
+          <div class="follow-up__answer">${answerHTML}</div>
+        `;
+        answersEl.appendChild(qa);
+        return;
+      }
+
+      // 처음 본 질문 — 로딩 애니메이션 후 답변
+      qa.innerHTML = `
+        <div class="follow-up__q-row">
+          <span class="follow-up__q-label">${escapeHTML(item.question)}</span>
+        </div>
+        <div class="follow-up__loading" aria-label="답변 준비 중">
+          <span></span><span></span><span></span>
+        </div>
+      `;
+      answersEl.appendChild(qa);
+
+      _followUpLoadingTimer = setTimeout(() => {
+        _followUpLoadingTimer = null;
+        const loadingEl = qa.querySelector('.follow-up__loading');
+        if (!loadingEl) return;
+        const answerEl = document.createElement('div');
+        answerEl.className = 'follow-up__answer';
+        answerEl.innerHTML = answerHTML;
+        loadingEl.replaceWith(answerEl);
+        _followUpSeen.add(idx);
+      }, FOLLOW_UP_LOADING_MS);
     }
 
     function renderSummary(summary, passageIntro) {
