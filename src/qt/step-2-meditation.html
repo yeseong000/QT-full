@@ -125,41 +125,6 @@
         0 8px 24px rgba(0, 0, 0, 0.42);
     }
 
-    /* 글래스 백드롭 — body 직속에 두는 별도 요소.
-       .scripture-toggle 내부에 ::before로 두면 부모(z=20) stacking context에 갇혀
-       외부 콘텐츠를 backdrop-filter로 흐릴 수 없으므로 분리함. */
-    .scripture-backdrop {
-      position: fixed;
-      inset: 0;
-      background: rgba(45, 58, 50, 0.03);
-      /* 시작 상태: blur 없음 → is-active에서 점진적으로 들어옴 (Apple spring) */
-      backdrop-filter: blur(0px) saturate(100%);
-      -webkit-backdrop-filter: blur(0px) saturate(100%);
-      z-index: 15;                /* scripture-toggle(z=20) 아래 — pill/본문은 또렷 */
-      pointer-events: none;
-      opacity: 0;
-      visibility: hidden;
-      transition:
-        opacity 320ms cubic-bezier(0.32, 0.72, 0, 1),
-        backdrop-filter 320ms cubic-bezier(0.32, 0.72, 0, 1),
-        -webkit-backdrop-filter 320ms cubic-bezier(0.32, 0.72, 0, 1),
-        visibility 0s linear 320ms;
-    }
-    .scripture-backdrop.is-active {
-      opacity: 1;
-      visibility: visible;
-      /* iOS material: blur + saturate(150%)로 vibrancy — 뒤 콘텐츠의 색감을 살림 */
-      backdrop-filter: blur(10px) saturate(150%);
-      -webkit-backdrop-filter: blur(10px) saturate(150%);
-      transition:
-        opacity 320ms cubic-bezier(0.32, 0.72, 0, 1),
-        backdrop-filter 320ms cubic-bezier(0.32, 0.72, 0, 1),
-        -webkit-backdrop-filter 320ms cubic-bezier(0.32, 0.72, 0, 1);
-    }
-    html[data-theme="dark"] .scripture-backdrop {
-      background: rgba(0, 0, 0, 0.22);
-    }
-
     .scripture-toggle__label {
       display: inline-flex;
       align-items: center;
@@ -202,7 +167,17 @@
       max-height: 60vh;
       overflow-y: auto;
       scrollbar-gutter: stable;   /* 스크롤바 거터 항상 예약 → 콘텐츠 좌측 치우침 방지 */
-      box-shadow: var(--shadow-soft);
+      /* 다층 그림자 — 카드가 떠 있는 느낌으로 자연스러운 집중감 (backdrop 없이도 충분) */
+      box-shadow:
+        0 1px 2px rgba(45, 58, 50, 0.04),
+        0 4px 12px rgba(45, 58, 50, 0.08),
+        0 16px 40px rgba(45, 58, 50, 0.12);
+    }
+    html[data-theme="dark"] .scripture-toggle.is-open .scripture-toggle__body {
+      box-shadow:
+        0 1px 2px rgba(0, 0, 0, 0.25),
+        0 4px 12px rgba(0, 0, 0, 0.35),
+        0 16px 40px rgba(0, 0, 0, 0.45);
     }
     .scripture-toggle__inner {
       padding: var(--space-3) 4px var(--space-4);
@@ -469,9 +444,6 @@
   </style>
 </head>
 <body>
-  <!-- 펼침 시 페이지 전체에 깔리는 글래스 백드롭 (pill 외 영역만 흐림) -->
-  <div class="scripture-backdrop" id="scriptureBackdrop" aria-hidden="true"></div>
-
   <div class="app-container" id="appContainer" data-qt-step="meditation">
    <main class="app-scroll">
 
@@ -1037,10 +1009,8 @@
       // 말씀 토글 (클릭/엔터/스페이스)
       const toggle = document.getElementById('scriptureToggle');
       const header = document.getElementById('scriptureToggleHeader');
-      const backdrop = document.getElementById('scriptureBackdrop');
       const doToggle = () => {
         const isOpen = toggle.classList.toggle('is-open');
-        backdrop.classList.toggle('is-active', isOpen);
         toggle.setAttribute('aria-expanded', String(isOpen));
       };
       header.addEventListener('click', doToggle);
