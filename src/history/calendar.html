@@ -101,10 +101,13 @@
     .app-container[data-time-slot="night"] .month-nav__label { color: #FFFFFF; }
     .app-container[data-time-slot="night"] .calendar-weekdays__day { color: rgba(255, 255, 255, 0.65); }
     .app-container[data-time-slot="night"] .calendar-weekdays__day--sun { color: #FFA8A8; }
-    .app-container[data-time-slot="night"] .calendar-cell { color: #FFFFFF; }
+    .app-container[data-time-slot="night"] .calendar-cell { color: rgba(255, 255, 255, 0.7); }
     .app-container[data-time-slot="night"] .calendar-cell--future { color: rgba(255, 255, 255, 0.3); }
-    .app-container[data-time-slot="night"] .calendar-cell--sun { color: #FFA8A8; }
+    .app-container[data-time-slot="night"] .calendar-cell--sun { color: rgba(255, 168, 168, 0.72); }
     .app-container[data-time-slot="night"] .calendar-cell--sun.calendar-cell--future { color: rgba(255, 168, 168, 0.3); }
+    /* night + today (미완료) — 풀 흰색으로 강조 */
+    .app-container[data-time-slot="night"] .calendar-cell--today { color: #FFFFFF; }
+    .app-container[data-time-slot="night"] .calendar-cell--today.calendar-cell--sun { color: #FFA8A8; }
     /* night + completed: sage 배경 위 흰 글자 강제 (sun 셀이라도 동일) */
     .app-container[data-time-slot="night"] .calendar-cell--completed,
     .app-container[data-time-slot="night"] .calendar-cell--completed.calendar-cell--sun { color: #FFFFFF; }
@@ -175,14 +178,14 @@
 
     /* 스트릭 히어로 카드 — 성장 일러스트 중심 (큰 일러스트 + 메시지 + 지표) */
     .streak-hero {
-      padding: 26px 18px 22px;
+      padding: 16px 18px 20px;
       margin-bottom: var(--space-5);
       text-align: center;
     }
     .streak-hero__illust {
-      width: 100px;
-      height: 100px;
-      margin: 0 auto 14px;
+      width: 82px;
+      height: 82px;
+      margin: 0 auto 10px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -300,7 +303,7 @@
       gap: 2px;
       position: relative;
       font-size: 13.5px;
-      color: var(--text-body);
+      color: var(--text-secondary);   /* iOS secondaryLabel 톤 — 미완료는 차분하게 후퇴 */
       border-radius: 10px;
       background: transparent;
       border: 0;
@@ -312,7 +315,7 @@
     }
     .calendar-cell--empty { visibility: hidden; cursor: default; }
     .calendar-cell--future { color: var(--text-placeholder); cursor: default; }
-    .calendar-cell--sun { color: #C27C65; }
+    .calendar-cell--sun { color: rgba(194, 124, 101, 0.72); }
     .calendar-cell--sun.calendar-cell--future { color: rgba(194, 124, 101, 0.4); }
 
     /* 완료한 날 — sage 배경 채움 (Streak Pill 베이스) */
@@ -345,10 +348,14 @@
       border-bottom-left-radius: 0;
     }
 
-    /* 오늘 — 세이지 보더 (완료 아닐 때) */
+    /* 오늘 — 세이지 보더 (완료 아닐 때) — 미완료 셀 톤 다운 속에서도 풀 강조 */
     .calendar-cell--today {
       border: 1.5px solid var(--accent-sage);
       font-weight: 700;
+      color: var(--text-primary);
+    }
+    .calendar-cell--today.calendar-cell--sun {
+      color: #C27C65;  /* 오늘 + 일요일은 코랄 풀 톤 */
     }
     /* 오늘 ∩ 완료 — 보더 대신 안쪽 흰 ring */
     .calendar-cell--today.calendar-cell--completed {
@@ -356,18 +363,27 @@
       box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.7);
     }
 
-    /* 선택된 날 — 다크 채움 (선택 액션 피드백 우선, streak 연결 차단) */
+    /* 선택된 날 공통 — 흰 글자 + 보더 제거 */
     .calendar-cell--selected {
-      background: #2D3A32 !important;
       color: #FFFFFF !important;
       font-weight: 700;
       border-color: transparent !important;
+    }
+    /* 미완료 셀 선택 — 다크 채움 둥근 박스 (streak 메움 차단) */
+    .calendar-cell--selected:not(.calendar-cell--completed) {
+      background: #2D3A32 !important;
       border-radius: 10px !important;
       box-shadow: none !important;
     }
-    .calendar-cell--selected::after { display: none !important; }
-    /* 오늘 ∩ 선택 = 다크 채움 우선 */
-    .calendar-cell--selected.calendar-cell--today {
+    .calendar-cell--selected:not(.calendar-cell--completed)::after { display: none !important; }
+    /* 완료 셀 선택 — sage 알약 유지 + 안쪽 흰 ring으로 선택 표시
+       (border-radius와 ::after는 streak-left/right 클래스가 결정 → 연결 끊김 없음) */
+    .calendar-cell--selected.calendar-cell--completed {
+      background: var(--accent-sage) !important;
+      box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.65) !important;
+    }
+    /* 오늘 ∩ 선택 (미완료) — 다크 채움 우선 */
+    .calendar-cell--selected.calendar-cell--today:not(.calendar-cell--completed) {
       background: #2D3A32 !important;
       border-color: transparent !important;
     }
