@@ -27,7 +27,12 @@ html {
 body {
   font-family: var(--font-sans);
   color: var(--text-body);
+  /* 본문 배경(ambient): 묵상 달력처럼 흐린 사진이 번지는 듯한 메시 그라데이션.
+     --ambient-mesh 는 design-tokens.css에서 정의, --ambient-1/2 는 applyAmbient()가 주입.
+     모바일에선 body가 곧 본문 영역이라 여기서 메시를 사용 (PC는 아래 .app-container에서). */
   background-color: var(--bg-paper);
+  background-image: var(--ambient-mesh);
+  background-attachment: fixed;
   min-height: 100vh;
   min-height: 100dvh;
   line-height: 1.6;
@@ -137,7 +142,13 @@ input, textarea {
    ------------------------------------------------------------------ */
 @media (min-width: 481px) {
   body {
-    background: #D9E3DF;   /* 카드 바깥 배경 */
+    /* 바깥 배경(OUTER) = 본문(--ambient-1/2)보다 훨씬 연한 --ambient-bg-1/2 사용.
+       모바일에선 body가 곧 본문 배경이라 base body의 INNER를 쓰지만, PC는 여기서 OUTER로 덮어씀. */
+    background-image: linear-gradient(
+      180deg,
+      var(--ambient-bg-1, var(--bg-paper)) 0%,
+      var(--ambient-bg-2, var(--bg-paper)) 100%
+    );
     height: 100vh;
     height: 100dvh;
     overflow: hidden;                  /* 외부(페이지) 스크롤 완전 차단 */
@@ -154,7 +165,10 @@ input, textarea {
     min-height: 0;                      /* 페이지 외부 스크롤 방지 */
     max-height: 95vh;
     border-radius: var(--radius-xl);   /* 클린 카드 모서리 */
-    background: var(--bg-paper);
+    /* 카드 안쪽 = 본문 배경. 묵상 달력 풍 메시 그라데이션(흐린 사진 번짐)을 사용.
+       (모바일은 이 컨테이너가 투명이라 body 메시가 그대로 비침 — PC/태블릿만 명시) */
+    background-color: var(--bg-paper);
+    background-image: var(--ambient-mesh);
     overflow: hidden;
     box-shadow: 0 16px 50px rgba(0, 0, 0, 0.18);
     padding: 0;
@@ -390,11 +404,12 @@ input, textarea {
   }
 }
 
-/* 모바일 환경 (480px 이하) - 프레임 없이 풀스크린 */
+/* 모바일 환경 (480px 이하) - 프레임 없이 풀스크린.
+   배경은 base body와 동일한 차분한 시간대 그라데이션 유지 (단색 리셋 X). */
 @media (max-width: 480px) {
   body {
-    /* 모바일에선 기본 배경 */
-    background: var(--bg-paper);
+    background-color: var(--bg-paper);
+    background-image: var(--ambient-mesh);
   }
 }
 
@@ -478,10 +493,26 @@ input, textarea {
    카드
    ------------------------------------------------------------------ */
 .card {
+  /* 콘텐츠 레이어 — 애플 원칙상 또렷하고 불투명하게(가독성 최우선). 유리 ❌
+     깊이는 색 대비가 아니라 부드러운 다층 그림자 + 헤어라인으로 표현. */
   background: var(--bg-card);
   border-radius: var(--radius-lg);
   padding: var(--card-padding);
   margin-bottom: var(--card-gap);
+  border: 0.5px solid rgba(45, 58, 50, 0.05);
+  box-shadow:
+    0 1px 2px rgba(45, 58, 50, 0.04),
+    0 6px 16px rgba(45, 58, 50, 0.06),
+    0 18px 40px rgba(45, 58, 50, 0.05);
+}
+
+/* 다크 모드: 불투명 카드 + 어두운 배경용 진한 drop + 옅은 테두리 */
+html[data-theme="dark"] .card {
+  background: var(--bg-card);
+  border-color: rgba(255, 255, 255, 0.06);
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.35),
+    0 16px 40px rgba(0, 0, 0, 0.45);
 }
 
 .card-header {
@@ -641,13 +672,27 @@ input, textarea {
   width: 52px;
   height: 52px;
   border-radius: 50%;
-  background: var(--bg-card);
-  box-shadow: var(--shadow-float);
+  /* Liquid Glass — 콘텐츠 위에 떠 있는 기능 컨트롤. 배경을 블러로 굴절시키고
+     가장자리 specular 하이라이트로 빛이 맺히는 유리 질감. */
+  background: rgba(255, 255, 255, 0.55);
+  -webkit-backdrop-filter: blur(20px) saturate(1.8);
+  backdrop-filter: blur(20px) saturate(1.8);
+  border: 0.5px solid rgba(255, 255, 255, 0.55);
+  box-shadow:
+    var(--shadow-float),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7);   /* 위쪽 빛 맺힘 */
   display: grid;
   place-items: center;
   color: var(--accent-sage);
   z-index: 50;
   transition: transform var(--duration-fast);
+}
+html[data-theme="dark"] .fab {
+  background: rgba(40, 44, 52, 0.55);
+  border-color: rgba(255, 255, 255, 0.12);
+  box-shadow:
+    var(--shadow-float),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
 }
 .fab:active {
   transform: scale(0.95);
@@ -671,7 +716,12 @@ input, textarea {
 }
 
 .modal-sheet {
-  background: var(--bg-card);
+  /* Liquid Glass 시트 — 콘텐츠 위에 떠오르는 기능 레이어.
+     불투명도 0.82 = 폼/텍스트 가독성 확보하면서 뒤 배경이 은은히 비침. */
+  background: rgba(255, 255, 255, 0.82);
+  -webkit-backdrop-filter: blur(30px) saturate(1.8);
+  backdrop-filter: blur(30px) saturate(1.8);
+  border-top: 0.5px solid rgba(255, 255, 255, 0.6);   /* 위 가장자리 빛 맺힘 */
   border-radius: var(--radius-xl) var(--radius-xl) 0 0;
   width: 100%;
   max-width: var(--app-max-width);
@@ -681,6 +731,10 @@ input, textarea {
   flex-direction: column;
   animation: slideUp var(--duration-slow) var(--ease-out);
   transition: transform var(--duration-base) var(--ease-out);
+}
+html[data-theme="dark"] .modal-sheet {
+  background: rgba(30, 33, 38, 0.82);
+  border-top-color: rgba(255, 255, 255, 0.12);
 }
 .modal-sheet.is-dragging {
   transition: none;

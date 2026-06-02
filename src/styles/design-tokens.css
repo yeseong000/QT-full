@@ -123,6 +123,18 @@
      ------------------------------------------------------------------ */
   --app-max-width: 430px;        /* iPhone 15 Pro Max 실측 폭 */
   --iphone-frame-radius: 48px;   /* iPhone 둥근 모서리 */
+
+  /* ------------------------------------------------------------------
+     12. 시간대 ambient 배경 (common.js applyAmbient()가 --ambient-1/2 주입)
+         묵상 달력 배경처럼 — 흐린 사진이 번지는 듯한 "메시 그라데이션".
+         radial 3겹(시간대 색 2 + 흰 빛 번짐) + 바닥 linear 1겹으로 부드럽게.
+     ------------------------------------------------------------------ */
+  /* 배경은 "콘텐츠 레이어의 캔버스" — 애플 원칙상 조용히 물러나야(defer) 한다.
+     화려한 메시 대신, 시간대 색 두 톤이 부드럽게 고이는 차분한 저대비 그라데이션. */
+  --ambient-mesh:
+    radial-gradient(125% 90% at 28% 4%,  var(--ambient-1, var(--bg-paper)) 0%, transparent 68%),
+    radial-gradient(120% 88% at 84% 100%, var(--ambient-2, var(--bg-paper)) 0%, transparent 70%),
+    linear-gradient(180deg, var(--ambient-1, var(--bg-paper)) 0%, var(--ambient-2, var(--bg-paper)) 100%);
 }
 
 /* ==========================================================================
@@ -177,6 +189,9 @@ html[data-theme="dark"] {
   --bg-soft: #252930;              /* 거의 중성 다크 (네이비 hint만 살짝) */
   --bg-input: #22262A;
 
+  /* 다크 모드: 메시 빛 번짐을 약하게 (밝은 글로우가 어두운 배경을 뜨게 하지 않도록) */
+  --ambient-glow: rgba(255, 255, 255, 0.06);
+
   --text-primary: #E8E9EC;
   --text-body: #CBCDD2;
   --text-secondary: #9B9DA5;       /* 4.5:1 대비 확보 — 보조 안내문 가독성 (sage hue 제거) */
@@ -209,9 +224,17 @@ html[data-theme="dark"] {
                    0 12px 32px rgba(0, 0, 0, 0.40);
 }
 
-/* PC 프레임 바깥 배경 — 테마 온도에 맞춤 */
+/* PC 프레임 바깥 배경 — 다크 시간대(밤·여명)의 깊은 ambient 그라데이션 사용.
+   --ambient-1/2 는 common.js의 applyAmbient()가 시간대별로 주입(밤·여명 = 깊은 네이비/남보라). */
 @media (min-width: 481px) {
-  html[data-theme="dark"] body { background: #0E1011 !important; }
+  html[data-theme="dark"] body {
+    background-color: var(--bg-paper);
+    background-image: linear-gradient(
+      180deg,
+      var(--ambient-bg-1, #0E1011) 0%,
+      var(--ambient-bg-2, #0E1011) 100%
+    ) !important;
+  }
 }
 
 /* ==========================================================================
