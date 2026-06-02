@@ -206,17 +206,19 @@
       max-height: 60vh;
       overflow-y: auto;
       scrollbar-gutter: stable;   /* 스크롤바 거터 항상 예약 → 콘텐츠 좌측 치우침 방지 */
-      /* 다층 그림자 — 카드가 떠 있는 느낌으로 자연스러운 집중감 (backdrop 없이도 충분) */
+      /* 가독성 강화: 옅은 보더로 카드 경계 명확 + 다층 그림자 점진 확장 */
+      border: 0.5px solid rgba(45, 58, 50, 0.08);
       box-shadow:
-        0 1px 2px rgba(45, 58, 50, 0.04),
-        0 4px 12px rgba(45, 58, 50, 0.08),
-        0 16px 40px rgba(45, 58, 50, 0.12);
+        0 1px 2px rgba(45, 58, 50, 0.05),
+        0 6px 16px rgba(45, 58, 50, 0.12),
+        0 24px 56px rgba(45, 58, 50, 0.16);
     }
     html[data-theme="dark"] .scripture-toggle.is-open .scripture-toggle__body {
+      border: 0.5px solid rgba(110, 132, 168, 0.20);
       box-shadow:
-        0 1px 2px rgba(0, 0, 0, 0.25),
-        0 4px 12px rgba(0, 0, 0, 0.35),
-        0 16px 40px rgba(0, 0, 0, 0.45);
+        0 1px 2px rgba(0, 0, 0, 0.30),
+        0 6px 16px rgba(0, 0, 0, 0.42),
+        0 24px 56px rgba(0, 0, 0, 0.55);
     }
     .scripture-toggle__inner {
       padding: var(--space-3) 4px var(--space-4);
