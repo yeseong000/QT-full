@@ -125,35 +125,21 @@
         0 8px 24px rgba(0, 0, 0, 0.42);
     }
 
-    /* 글래스 백드롭 — 기본은 backdrop-filter 없이 dim만 (iOS Safari sticky/backdrop-filter
-       충돌 회피). PC에서만 blur 추가로 vibrancy 부여. saturate 모두 제거. */
-    .scripture-backdrop {
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, 0);
-      z-index: 15;
-      pointer-events: none;
-      opacity: 0;
-      visibility: hidden;
-      transition:
-        opacity 320ms cubic-bezier(0.32, 0.72, 0, 1),
-        background 320ms cubic-bezier(0.32, 0.72, 0, 1),
-        visibility 0s linear 320ms;
-    }
-    /* 모바일(<744px) — backdrop-filter 없이 dim만 (본문 안전) */
-    .scripture-backdrop.is-active {
-      opacity: 1;
-      visibility: visible;
-      background: rgba(0, 0, 0, 0.08);
-    }
-    html[data-theme="dark"] .scripture-backdrop.is-active {
-      background: rgba(0, 0, 0, 0.22);
-    }
-    /* PC(≥744px) — blur 8px + 시각적으로 더 자연스러운 sage 톤 dim */
+    /* 글래스 백드롭 — 모바일은 일반 웹사이트 흐름 존중 (display:none),
+       PC(≥744px)만 sticky pill과 자연스럽게 어울리는 blur backdrop 활성 */
+    .scripture-backdrop { display: none; }
     @media (min-width: 744px) {
       .scripture-backdrop {
+        display: block;
+        position: fixed;
+        inset: 0;
+        background: rgba(45, 58, 50, 0.04);
         backdrop-filter: blur(0px);
         -webkit-backdrop-filter: blur(0px);
+        z-index: 15;
+        pointer-events: none;
+        opacity: 0;
+        visibility: hidden;
         transition:
           opacity 320ms cubic-bezier(0.32, 0.72, 0, 1),
           backdrop-filter 320ms cubic-bezier(0.32, 0.72, 0, 1),
@@ -162,6 +148,8 @@
           visibility 0s linear 320ms;
       }
       .scripture-backdrop.is-active {
+        opacity: 1;
+        visibility: visible;
         background: rgba(45, 58, 50, 0.10);
         backdrop-filter: blur(8px);
         -webkit-backdrop-filter: blur(8px);
