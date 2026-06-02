@@ -491,10 +491,10 @@
   </style>
 </head>
 <body>
-  <!-- PC(≥744px) 전용 글래스 백드롭 — 모바일은 CSS에서 display:none 처리 (본문 가림 방지) -->
-  <div class="scripture-backdrop" id="scriptureBackdrop" aria-hidden="true"></div>
-
   <div class="app-container" id="appContainer" data-qt-step="meditation">
+   <!-- 글래스 백드롭 — .app-container 안에 둬서 sticky 자식과 같은 stacking context 공유
+        (iOS Safari에서 body 직속에 두면 sticky가 backdrop 뒤로 갈리는 버그 회피) -->
+   <div class="scripture-backdrop" id="scriptureBackdrop" aria-hidden="true"></div>
    <main class="app-scroll">
 
     <!-- 상단바 (X · 진행 단계 2/4 · 가가) -->
