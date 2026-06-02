@@ -125,6 +125,45 @@
         0 8px 24px rgba(0, 0, 0, 0.42);
     }
 
+    /* 글래스 백드롭 — PC(≥744px) 전용. 모바일은 본문 가림 위험 때문에 끔.
+       saturate 제거 → 시간대 일러스트의 핑크/사프란 spread 글로우 없음 */
+    .scripture-backdrop { display: none; }
+    @media (min-width: 744px) {
+      .scripture-backdrop {
+        display: block;
+        position: fixed;
+        inset: 0;
+        background: rgba(45, 58, 50, 0.04);
+        backdrop-filter: blur(0px);
+        -webkit-backdrop-filter: blur(0px);
+        z-index: 15;
+        pointer-events: none;
+        opacity: 0;
+        visibility: hidden;
+        transition:
+          opacity 320ms cubic-bezier(0.32, 0.72, 0, 1),
+          backdrop-filter 320ms cubic-bezier(0.32, 0.72, 0, 1),
+          -webkit-backdrop-filter 320ms cubic-bezier(0.32, 0.72, 0, 1),
+          background 320ms cubic-bezier(0.32, 0.72, 0, 1),
+          visibility 0s linear 320ms;
+      }
+      .scripture-backdrop.is-active {
+        opacity: 1;
+        visibility: visible;
+        background: rgba(45, 58, 50, 0.10);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        transition:
+          opacity 320ms cubic-bezier(0.32, 0.72, 0, 1),
+          backdrop-filter 320ms cubic-bezier(0.32, 0.72, 0, 1),
+          -webkit-backdrop-filter 320ms cubic-bezier(0.32, 0.72, 0, 1),
+          background 320ms cubic-bezier(0.32, 0.72, 0, 1);
+      }
+      html[data-theme="dark"] .scripture-backdrop.is-active {
+        background: rgba(0, 0, 0, 0.28);
+      }
+    }
+
     .scripture-toggle__label {
       display: inline-flex;
       align-items: center;
@@ -444,6 +483,9 @@
   </style>
 </head>
 <body>
+  <!-- PC(≥744px) 전용 글래스 백드롭 — 모바일은 CSS에서 display:none 처리 (본문 가림 방지) -->
+  <div class="scripture-backdrop" id="scriptureBackdrop" aria-hidden="true"></div>
+
   <div class="app-container" id="appContainer" data-qt-step="meditation">
    <main class="app-scroll">
 
@@ -1009,8 +1051,10 @@
       // 말씀 토글 (클릭/엔터/스페이스)
       const toggle = document.getElementById('scriptureToggle');
       const header = document.getElementById('scriptureToggleHeader');
+      const backdrop = document.getElementById('scriptureBackdrop');
       const doToggle = () => {
         const isOpen = toggle.classList.toggle('is-open');
+        if (backdrop) backdrop.classList.toggle('is-active', isOpen);
         toggle.setAttribute('aria-expanded', String(isOpen));
       };
       header.addEventListener('click', doToggle);
