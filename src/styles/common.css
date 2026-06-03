@@ -353,6 +353,11 @@ html.is-pwa .app-container {
   [data-qt-step="meditation"] #charactersCard {
     grid-column: 1 / -1;
   }
+  /* 장면 일러스트 카드: 풀폭 + grid margin-bottom 무력화 */
+  [data-qt-step="meditation"] #sceneCard {
+    grid-column: 1 / -1;
+    margin-bottom: 0;
+  }
   [data-qt-step="meditation"] #charactersList {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
