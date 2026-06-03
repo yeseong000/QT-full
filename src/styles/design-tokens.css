@@ -259,10 +259,10 @@ html[data-time-slot="night"] .scripture-toggle__body {
    홈(.app-container[data-qt-step] 아님)은 밤 배경 이미지를 그대로 유지. */
 @media (min-width: 481px) {
   html[data-time-slot="night"] body {
-    background: #1B2540 !important;
+    background: #131B2E !important;
   }
   html[data-time-slot="night"] .app-container[data-qt-step] {
-    background-color: #1B2540;
+    background-color: #131B2E;
     background-image: none;
   }
 }
