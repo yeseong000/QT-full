@@ -696,10 +696,11 @@ html[data-theme="dark"] .card {
 }
 
 /* PWA standalone(폰 전용): 시스템 chrome이 없으니 상하 padding을 타이트하게 — "다음" 버튼 위아래 여백 축소.
-   PC/태블릿 프레임 모드(481px+)는 자체 padding 규칙이 있어 영향 안 받음. */
+   PC/태블릿 프레임 모드(481px+)는 자체 padding 규칙이 있어 영향 안 받음.
+   iPhone 17 등 home indicator inset이 큰 기기에서 safe-area-inset 적용 시 "Safari 주소창처럼" 빈 띠가 생기는 문제 → 고정 12px로. */
 @media (display-mode: standalone) and (max-width: 480px) {
   .bottom-nav {
-    padding: 8px 20px calc(4px + env(safe-area-inset-bottom, 0));
+    padding: 8px 20px 12px;
   }
 }
 
