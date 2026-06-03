@@ -370,73 +370,72 @@
     }
 
     /* ------------------------------------------------------------------
-       장면 일러스트 — 본문 따라가기 하단 펼침/닫기 (기본 닫힘)
+       장면 일러스트 — 히어로 카드 (말씀 속 인물들 ↔ 본문 따라가기 사이)
+       액자(카드)가 모던·미니멀을 담당, 그림은 따뜻함을 담당 → 둘 공존
        ------------------------------------------------------------------ */
-    .scene-illust {
-      margin-top: var(--space-5);
-      padding-top: var(--space-5);
-      border-top: 1px solid var(--border-subtle);
+    .scene-card {
+      margin-bottom: var(--card-gap);
+      border-radius: var(--radius-lg);
+      overflow: hidden;                 /* 둥근 모서리로 이미지 클립 */
+      background: var(--bg-card);
+      border: 0.5px solid rgba(45, 58, 50, 0.08);
+      /* 다층 그림자 + 상단 미세 하이라이트(리퀴드 글라스 힌트) */
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.5),
+        0 1px 2px rgba(45, 58, 50, 0.05),
+        0 6px 16px rgba(45, 58, 50, 0.10),
+        0 20px 48px rgba(45, 58, 50, 0.10);
     }
-    .scene-illust__toggle {
+    /* 상단 바 — 우측 셰브론으로 펼침/닫기 (기본 펼침) */
+    .scene-card__bar {
       display: flex;
       align-items: center;
       justify-content: space-between;
       width: 100%;
       gap: var(--space-3);
-      padding: 12px 14px;
-      background: var(--bg-soft);
+      padding: 12px 16px;
+      background: transparent;
       border: none;
-      border-radius: var(--radius-md);
       cursor: pointer;
       -webkit-tap-highlight-color: transparent;
-      transition: transform var(--duration-fast), background var(--duration-base);
+      user-select: none;
+      transition: transform var(--duration-fast);
     }
-    .scene-illust__toggle:active { transform: scale(0.985); }
-    .scene-illust__label {
+    .scene-card__bar:active { transform: scale(0.99); }
+    .scene-card__title {
       display: inline-flex;
       align-items: center;
-      gap: 8px;
-      font-size: var(--text-body);
+      gap: 7px;
+      font-size: var(--text-small);
       font-weight: 600;
-      color: var(--text-primary);
+      color: var(--text-secondary);
       letter-spacing: -0.01em;
     }
-    .scene-illust__chevron {
+    .scene-card__chevron {
       width: 18px;
       height: 18px;
       color: var(--text-secondary);
-      transition: transform var(--duration-base) var(--ease-out);
       flex-shrink: 0;
+      transform: rotate(180deg);        /* 기본 펼침 → 위쪽 화살표(닫기 유도) */
+      transition: transform var(--duration-base) var(--ease-out);
     }
-    .scene-illust.is-open .scene-illust__chevron { transform: rotate(180deg); }
-    /* absolute 아님 — 카드 흐름 안에서 부드럽게 펼침 */
-    .scene-illust__body {
-      max-height: 0;
+    .scene-card.is-collapsed .scene-card__chevron { transform: rotate(0deg); }
+    .scene-card__body {
       overflow: hidden;
+      max-height: 1400px;               /* 기본 펼침 */
       transition: max-height var(--duration-slow) var(--ease-out);
     }
-    .scene-illust.is-open .scene-illust__body { max-height: 1400px; }
-    .scene-illust__inner { padding-top: var(--space-4); }
-    .scene-illust__img {
+    .scene-card.is-collapsed .scene-card__body { max-height: 0; }
+    .scene-card__img {
       display: block;
       width: 100%;
       height: auto;
-      border-radius: var(--radius-md);
+    }
+    html[data-time-slot="night"] .scene-card {
+      border: 0.5px solid rgba(110, 132, 168, 0.20);
       box-shadow:
-        0 1px 2px rgba(45, 58, 50, 0.05),
-        0 6px 16px rgba(45, 58, 50, 0.10),
-        0 16px 40px rgba(45, 58, 50, 0.10);
-    }
-    .scene-illust__caption {
-      margin-top: var(--space-3);
-      font-size: var(--text-small);
-      color: var(--text-secondary);
-      line-height: 1.6;
-      text-align: center;
-    }
-    html[data-time-slot="night"] .scene-illust__toggle { background: rgba(255, 255, 255, 0.06); }
-    html[data-time-slot="night"] .scene-illust__img {
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+        inset 0 1px 0 rgba(255, 255, 255, 0.06),
+        0 8px 24px rgba(0, 0, 0, 0.5);
     }
 
     /* 말씀 탭 (오늘 범위 / 전체 장) */
@@ -674,6 +673,19 @@
       <div id="charactersList"></div>
     </section>
 
+    <!-- ②.5 장면 일러스트 — 히어로 카드 + 우측 펼침/닫기 셰브론 (기본 펼침) -->
+    <section class="scene-card" id="sceneCard" hidden>
+      <button class="scene-card__bar" id="sceneCardToggle" type="button" aria-expanded="true" aria-controls="sceneCardBody">
+        <span class="scene-card__title">🎬 오늘의 장면</span>
+        <svg class="scene-card__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="6 9 12 15 18 9"/>
+        </svg>
+      </button>
+      <div class="scene-card__body" id="sceneCardBody">
+        <img class="scene-card__img" id="sceneCardImg" alt="오늘 말씀 본문의 장면 일러스트" loading="lazy">
+      </div>
+    </section>
+
     <!-- ③ 본문 따라가기 카드 (5단 호흡: 장면·질문·맥락·통찰·연결) -->
     <section class="meditation-card" id="deepDiveCard" style="display:none;">
       <h2 class="meditation-card__title">
@@ -694,21 +706,6 @@
         </div>
         <div class="deep-dive__step">
           <div class="deep-dive__body" id="deepDiveBridge"></div>
-        </div>
-      </div>
-
-      <!-- 장면 일러스트 (펼침/닫기 · 기본 닫힘) — 그림 파일이 있을 때만 JS가 노출 -->
-      <div class="scene-illust" id="sceneIllust" hidden>
-        <button class="scene-illust__toggle" id="sceneIllustToggle" type="button" aria-expanded="false" aria-controls="sceneIllustBody">
-          <span class="scene-illust__label">🎬 오늘의 장면 그림 보기</span>
-          <svg class="scene-illust__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="6 9 12 15 18 9"/>
-          </svg>
-        </button>
-        <div class="scene-illust__body" id="sceneIllustBody">
-          <div class="scene-illust__inner">
-            <img class="scene-illust__img" id="sceneIllustImg" alt="오늘 말씀 본문의 장면 일러스트" loading="lazy">
-          </div>
         </div>
       </div>
     </section>
@@ -858,11 +855,11 @@
     }
 
     // ========== 장면 일러스트 로드 ==========
-    // src/images/scenes/{date}.{확장자}를 차례로 탐색 — 있으면 #sceneIllust 노출, 없으면 계속 숨김
+    // src/images/scenes/{date}.{확장자}를 차례로 탐색 — 있으면 #sceneCard 노출, 없으면 계속 숨김
     function loadSceneImage(dateStr) {
       if (!dateStr) return;
-      const wrap = document.getElementById('sceneIllust');
-      const img = document.getElementById('sceneIllustImg');
+      const wrap = document.getElementById('sceneCard');
+      const img = document.getElementById('sceneCardImg');
       if (!wrap || !img) return;
 
       const exts = ['png', 'jpg', 'jpeg', 'webp'];
@@ -1316,13 +1313,13 @@
         }
       });
 
-      // 장면 일러스트 펼침/닫기 (기본 닫힘)
-      const sceneToggle = document.getElementById('sceneIllustToggle');
+      // 장면 카드 펼침/닫기 (기본 펼침 — 이용자가 닫을 수 있음)
+      const sceneToggle = document.getElementById('sceneCardToggle');
       if (sceneToggle) {
         sceneToggle.addEventListener('click', () => {
-          const wrap = document.getElementById('sceneIllust');
-          const open = wrap.classList.toggle('is-open');
-          sceneToggle.setAttribute('aria-expanded', String(open));
+          const card = document.getElementById('sceneCard');
+          const collapsed = card.classList.toggle('is-collapsed');
+          sceneToggle.setAttribute('aria-expanded', String(!collapsed));
         });
       }
     }
@@ -1382,123 +1379,5 @@
     })();
   </script>
   <!-- ▲▲▲ [임시] 비교 토글 끝 ▲▲▲ -->
-
-  <!-- ▼▼▼ [임시] PWA 디버그 칩 — iOS PWA 캐시/SW/is-pwa 상태 실시간 표시. 해결 후 삭제. ▼▼▼ -->
-  <style>
-    #__pwaDebug {
-      position: fixed;
-      top: calc(env(safe-area-inset-top, 0) + 8px);
-      right: 8px;
-      z-index: 99999;
-      background: rgba(0, 0, 0, 0.85);
-      color: #fff;
-      font-family: ui-monospace, Menlo, monospace;
-      font-size: 10px;
-      line-height: 1.35;
-      padding: 6px 8px;
-      border-radius: 6px;
-      max-width: 60vw;
-      pointer-events: auto;
-      cursor: pointer;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-      transition: opacity 200ms;
-    }
-    #__pwaDebug.collapsed {
-      opacity: 0.4;
-      max-width: 60px;
-      overflow: hidden;
-      white-space: nowrap;
-      text-overflow: ellipsis;
-    }
-    #__pwaDebug b { color: #4FC3F7; font-weight: 700; }
-    #__pwaDebug .ok { color: #69F0AE; }
-    #__pwaDebug .bad { color: #FF8A80; }
-  </style>
-  <div id="__pwaDebug" title="탭해서 축소/확장">초기화 중…</div>
-  <script>
-    (function() {
-      var chip = document.getElementById('__pwaDebug');
-      chip.addEventListener('click', function() { chip.classList.toggle('collapsed'); });
-
-      var swVersion = null, swCacheName = null;
-
-      function askSWVersion() {
-        if (!navigator.serviceWorker || !navigator.serviceWorker.controller) return;
-        try {
-          var mc = new MessageChannel();
-          mc.port1.onmessage = function(e) {
-            if (e.data) {
-              swVersion = e.data.version || null;
-              swCacheName = e.data.cacheName || null;
-            }
-          };
-          navigator.serviceWorker.controller.postMessage({ type: 'GET_VERSION' }, [mc.port2]);
-        } catch (e) {}
-      }
-
-      function tag(label, value, ok) {
-        var cls = ok === true ? 'ok' : (ok === false ? 'bad' : '');
-        return '<b>' + label + '</b> <span class="' + cls + '">' + value + '</span>';
-      }
-
-      function update() {
-        var lines = [];
-
-        // PWA 감지
-        var navStandalone = navigator.standalone === true;
-        var mqStandalone = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || false;
-        var isPwaClass = document.documentElement.classList.contains('is-pwa');
-        var isPwa = navStandalone || mqStandalone;
-        lines.push(tag('PWA', (isPwa ? 'Y' : 'N') + ' (nav=' + (navStandalone ? 'Y' : 'N') + ' mq=' + (mqStandalone ? 'Y' : 'N') + ')', isPwa));
-        lines.push(tag('.is-pwa class', isPwaClass ? 'Y' : 'N', isPwaClass));
-
-        // Service Worker 상태
-        var swStatus, swOk;
-        if (!('serviceWorker' in navigator)) {
-          swStatus = '미지원'; swOk = false;
-        } else if (navigator.serviceWorker.controller) {
-          swStatus = 'controlled ✓'; swOk = true;
-        } else {
-          swStatus = '미등록/미제어'; swOk = false;
-        }
-        lines.push(tag('SW', swStatus, swOk));
-        if (swVersion) lines.push(tag('SW ver', swVersion, true));
-
-        // bottom-nav 실측
-        var nav = document.querySelector('.bottom-nav');
-        if (nav) {
-          var cs = getComputedStyle(nav);
-          var pb = cs.paddingBottom;
-          var pbNum = parseFloat(pb);
-          // 기대치: PWA에서 12px (override), base는 14+34=48px
-          var padOk = pbNum < 20;
-          lines.push(tag('pad-bot', pb, padOk));
-        }
-
-        // .app-container height
-        var c = document.querySelector('.app-container');
-        if (c) {
-          var ch = c.getBoundingClientRect().height.toFixed(0);
-          var ih = window.innerHeight;
-          var heightOk = Math.abs(ch - ih) < 20;
-          lines.push(tag('container h', ch + ' (inner=' + ih + ')', heightOk));
-        }
-
-        chip.innerHTML = lines.join('<br>');
-      }
-
-      // 처음/주기 + SW controller 변경 시 즉시
-      askSWVersion();
-      update();
-      setInterval(function() { askSWVersion(); update(); }, 1500);
-
-      if (navigator.serviceWorker) {
-        navigator.serviceWorker.addEventListener('controllerchange', function() {
-          setTimeout(function() { askSWVersion(); update(); }, 50);
-        });
-      }
-    })();
-  </script>
-  <!-- ▲▲▲ [임시] PWA 디버그 칩 끝 ▲▲▲ -->
 </body>
 </html>
