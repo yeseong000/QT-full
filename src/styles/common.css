@@ -104,9 +104,12 @@ input, textarea {
    common.js의 setupAppHeight IIFE가 window.innerHeight를 --app-height로 동기화 → 그 값을 사용.
    일반 브라우저는 영향 없음 (이 미디어 쿼리 미적용). */
 /* iOS Safari는 @media (display-mode: standalone)이 false 반환하는 경우 있어 → common.js의 detectPWA가
-   부착한 html.is-pwa 클래스 선택자로 매칭 (iOS PWA + Android Chrome PWA 둘 다 커버) */
+   부착한 html.is-pwa 클래스 선택자로 매칭 (iOS PWA + Android Chrome PWA 둘 다 커버).
+   100dvh는 iOS PWA에서 status bar 영역(~62px)을 빼고 짧게 계산되어 컨테이너 아래에 빈 띠 생김.
+   → 100lvh(largest viewport)로 강제: full screen 사용. status bar 영역은 메타 status-bar-style이 처리. */
 html.is-pwa .app-container {
-  height: var(--app-height, 100dvh);
+  height: 100vh;       /* fallback */
+  height: 100lvh;      /* iOS PWA: status bar 영역까지 포함한 full viewport */
 }
 
 /* 스크롤 영역: 세이프 에어리어 전면 대응 */
