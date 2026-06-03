@@ -738,19 +738,22 @@
       _followUpItems = items;
       const pillsEl = document.getElementById('followUpPills');
       pillsEl.innerHTML = items.map((it, i) =>
-        `<button class="follow-up__pill" data-main="${i}" type="button" role="listitem">${escapeHTML(it.question)}</button>`
+        `<button class="follow-up__pill" data-main="${i}" type="button" role="listitem">${escapeHTML(stripMd(it.question))}</button>`
       ).join('');
       pillsEl.addEventListener('click', onFollowUpMainClick);
       document.getElementById('followUpCard').style.display = '';
     }
 
-    function htmlAnswer(text) {
-      // 마크다운 강조 표기 제거 (GPT가 가끔 답변에 **굵게** 같은 마크업을 넣을 때 평문으로 정리)
-      const plain = String(text || '')
+    // 마크다운 강조 표기 제거 (GPT가 가끔 **굵게** 같은 마크업을 넣을 때 평문으로 정리)
+    function stripMd(text) {
+      return String(text || '')
         .replace(/\*\*(.+?)\*\*/g, '$1')   // **굵게** → 굵게
         .replace(/__(.+?)__/g, '$1')        // __굵게__ → 굵게
-        .replace(/\*(?!\s)([^*\n]+?)\*/g, '$1');  // *기울임* → 기울임 (단어 사이만)
-      return plain.split('\n').map(line => escapeHTML(line)).join('<br>');
+        .replace(/\*(?!\s)([^*\n]+?)\*/g, '$1');  // *기울임* → 기울임
+    }
+
+    function htmlAnswer(text) {
+      return stripMd(text).split('\n').map(line => escapeHTML(line)).join('<br>');
     }
 
     // ===== 메인 Pill 클릭 =====
@@ -786,7 +789,7 @@
       qa.dataset.main = String(mainIdx);
       qa.innerHTML = `
         <div class="follow-up__q-row">
-          <span class="follow-up__q-label">${escapeHTML(item.question)}</span>
+          <span class="follow-up__q-label">${escapeHTML(stripMd(item.question))}</span>
         </div>
         <div class="follow-up__answer-slot"></div>
       `;
@@ -825,7 +828,7 @@
       chipsEl.className = 'follow-up__follow-chips';
       chipsEl.dataset.main = String(mainIdx);
       chipsEl.innerHTML = followUps.map((fu, j) =>
-        `<button class="follow-up__follow-chip" data-main="${mainIdx}" data-follow="${j}" type="button">${escapeHTML(fu.question)}</button>`
+        `<button class="follow-up__follow-chip" data-main="${mainIdx}" data-follow="${j}" type="button">${escapeHTML(stripMd(fu.question))}</button>`
       ).join('');
       answersEl.appendChild(chipsEl);
       chipsEl.addEventListener('click', onFollowUpFollowClick);
@@ -868,7 +871,7 @@
       qa.dataset.follow = String(followIdx);
       qa.innerHTML = `
         <div class="follow-up__q-row">
-          <span class="follow-up__q-label">${escapeHTML(fu.question)}</span>
+          <span class="follow-up__q-label">${escapeHTML(stripMd(fu.question))}</span>
         </div>
         <div class="follow-up__answer-slot"></div>
       `;
