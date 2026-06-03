@@ -34,6 +34,15 @@ function applyTheme(theme) {
   if (iosBar) iosBar.setAttribute('content', t === 'dark' ? 'black-translucent' : 'default');
 }
 
+// PWA standalone 모드 감지 — iOS Safari는 @media (display-mode: standalone) 미디어쿼리가
+// false를 반환하는 경우가 있어 navigator.standalone과 OR로 체크.
+// 매치되면 html.is-pwa 클래스 부착 → CSS는 이 클래스 선택자로 PWA 전용 규칙 매칭(미디어쿼리 우회).
+(function detectPWA() {
+  var mqMatches = window.matchMedia && window.matchMedia('(display-mode: standalone)').matches;
+  var iosStandalone = navigator.standalone === true;
+  if (mqMatches || iosStandalone) document.documentElement.classList.add('is-pwa');
+})();
+
 // 폰트 크기 즉시 적용
 (function applyStoredFontSize() {
   try {
