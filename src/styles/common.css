@@ -332,15 +332,17 @@ input, textarea {
   [data-qt-step="meditation"] #followUpCard {
     order: 2;
   }
-  /* 좌측: 사무엘상 살펴보기 (등장인물 아래로 밀기 위해 order:1) */
+  /* 사무엘상 살펴보기 — 전체폭(인물들처럼). 내부 항목은 가로 배치(step-2 인라인 CSS).
+     등장인물 아래로 밀기 위해 order:1 */
   [data-qt-step="meditation"] #bookContextCard {
-    grid-column: 1 / 2;
+    grid-column: 1 / -1;
     order: 1;
   }
-  /* 우측: 깊은 묵상 — 또는 폴백(구절 해설). 둘은 동시에 표시되지 않으므로 같은 셀 */
+  /* 본문 따라가기(깊은 묵상) — 또는 폴백(구절 해설). 살펴보기 바로 아래에 전체폭으로.
+     둘은 동시에 표시되지 않으므로 같은 흐름. (이전엔 우측 2칼럼이었으나 본문이 길어져 세로 스택으로) */
   [data-qt-step="meditation"] #deepDiveCard,
   [data-qt-step="meditation"] #commentaryCard {
-    grid-column: 2 / 3;
+    grid-column: 1 / -1;
     order: 1;
   }
   /* 등장인물 카드: 풀폭으로 상단에 깔고(order 기본 0), 안쪽 인물들은 가로 grid로 배치

@@ -432,32 +432,30 @@
       color: var(--text-body);
     }
 
-    /* 시기 분기: 점선 브래킷으로 '다룬 시대 / 기록' 두 줄을 묶음 (케이스 ②만) */
+    /* 시기 분기: '다룬 시대 / 기록'을 라벨 ↑ 값 ↓ 형태로 stack
+       (좁은 화면에서 값이 어색하게 줄바꿈되던 문제 해결) */
     .date-bracket-wrap {
-      display: flex;
-      align-items: center;
-      gap: 6px;
+      display: block;
     }
+    /* 옛 SVG 브래킷은 더 이상 사용 안 함 — 시각적 노이즈 줄이기 */
     .date-bracket-svg {
-      width: 14px;
-      height: 42px;             /* row-gap 키움에 맞춰 34 → 42 */
-      flex-shrink: 0;
-      color: var(--accent-sage);
-      opacity: 0.6;
+      display: none;
     }
-    /* 서브 라벨/값을 2칼럼 그리드로 정렬 — 모든 줄에서 값의 시작점이 일치하도록 */
+    /* 4개 셀(다룬시대 → 값 → 기록 → 값)을 1칼럼으로 stack */
     .date-sub-lines {
       display: grid;
-      grid-template-columns: auto 1fr;
-      column-gap: 10px;
-      row-gap: 8px;             /* 줄 사이 여백 4 → 8 (식별성 ↑) */
-      align-items: baseline;
+      grid-template-columns: 1fr;
+      row-gap: 2px;
     }
     .date-sub-key {
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 600;
       color: var(--accent-sage-text);
       white-space: nowrap;
+      margin-top: 8px;            /* 그룹 사이 분리 */
+    }
+    .date-sub-key:first-child {
+      margin-top: 0;               /* 첫 라벨은 위 여백 X */
     }
     .date-sub-val {
       font-size: var(--text-body);
@@ -481,12 +479,26 @@
         grid-template-columns: 88px 1fr;
         column-gap: 12px;
       }
-      .date-bracket-wrap {
-        gap: 4px;
+      /* date-sub-lines는 1칼럼이라 column-gap 불필요 */
+    }
+
+    /* 태블릿·PC(744px+): 살펴보기 카드가 전체폭이 되므로(common.css), 내부 항목을
+       '말씀 속 인물들'처럼 가로로 배치. dl의 dt/dd 쌍을 각 칼럼(라벨 위·값 아래)으로
+       흐르게 해서 세로 길이를 크게 줄임. (font-size sm/lg 변형의 칼럼 정의도 함께 덮음) */
+    @media (min-width: 744px) {
+      .book-overview-list,
+      html[data-font-size="sm"] .book-overview-list,
+      html[data-font-size="lg"] .book-overview-list {
+        grid-template-columns: none;
+        grid-auto-flow: column;
+        grid-auto-columns: minmax(0, 1fr);
+        grid-template-rows: auto auto;
+        column-gap: var(--space-6);
+        row-gap: 6px;
+        align-items: start;
       }
-      .date-sub-lines {
-        column-gap: 6px;
-      }
+      /* 라벨(dt)과 값(dd) 모두 칼럼 안에서 위쪽 정렬, 값은 윗여백 제거 */
+      .book-overview-list > dt { padding-top: 0; }
     }
   </style>
 </head>
