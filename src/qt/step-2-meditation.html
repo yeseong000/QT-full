@@ -47,7 +47,7 @@
     html[data-time-slot="morning"]   body { background-color: #EFE6CD; }
     html[data-time-slot="afternoon"] body { background-color: #ECE3D2; }
     html[data-time-slot="evening"]   body { background-color: #F5C672; }
-    html[data-time-slot="night"]     body { background-color: #2A3A5C; }
+    html[data-time-slot="night"]     body { background-color: #131B2E; }
     /* step 페이지: common.css의 ambient mesh 그라데이션 끔 — 시간대 단색으로 깔끔하게 */
     html[data-time-slot] body { background-image: none; }
     html[data-time-slot="night"] { color: #FFFFFF; }
@@ -57,8 +57,9 @@
     html[data-time-slot="night"] .progress-dot.active { background: #A8B5D0; }
     html[data-time-slot="night"] .card,
     html[data-time-slot="night"] .meditation-card {
-      background: rgba(14, 24, 46, 0.66);
-      border: 0.5px solid rgba(255, 255, 255, 0.14);
+      background: #232F4B;
+      border: 1px solid rgba(126, 150, 196, 0.18);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
     }
 
     /* ========== 2단계 전용 ========== */
@@ -469,8 +470,8 @@
     html[data-font-size="sm"] .book-overview-list { grid-template-columns: 92px 1fr; }
     html[data-font-size="lg"] .book-overview-list { grid-template-columns: 116px 1fr; }
     /* 다크/밤 모드에서 라벨 대비 보강 */
-    html[data-time-slot="night"] .book-overview-list > dt { color: #A8D5C2; }
-    html[data-time-slot="night"] .date-sub-key { color: #A8D5C2; }
+    html[data-time-slot="night"] .book-overview-list > dt { color: #A8B5D0; }
+    html[data-time-slot="night"] .date-sub-key { color: #A8B5D0; }
 
     /* 모바일(<744px): 좁은 화면에서 '시기' 값(예: "BC 6세기경 추정")이 한 줄에
        들어오도록 라벨 칼럼·내부 간격 축소.
