@@ -700,10 +700,10 @@ html[data-theme="dark"] .card {
 
 /* PWA standalone(폰 전용): 시스템 chrome이 없으니 상하 padding을 타이트하게 — "다음" 버튼 위아래 여백 축소.
    PC/태블릿 프레임 모드(481px+)는 자체 padding 규칙이 있어 영향 안 받음.
-   padding-bottom 12px — 홈 인디케이터 위로 충분히 띄움. (container=lvh 적용 후엔 진짜 12px만 보임) */
+   padding-bottom 20px — Apple HIG 기반 편안한 네이티브 앱 느낌 여백 (container=lvh 적용 후 기준). */
 @media (max-width: 480px) {
   html.is-pwa .bottom-nav {
-    padding: 8px 20px 12px;
+    padding: 8px 20px 20px;
   }
 }
 
