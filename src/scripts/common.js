@@ -42,15 +42,15 @@ function applyTheme(theme) {
   } catch(e) {}
 })();
 
-// 폰트 스타일 즉시 적용 (기본: 세리프)
+// 폰트 스타일 즉시 적용 (기본: 기본=Pretendard 산세리프. 세리프는 사용자가 직접 선택 시에만)
 (function applyStoredFontStyle() {
   try {
-    const style = localStorage.getItem('settings.fontStyle') || 'noto-serif';
+    const style = localStorage.getItem('settings.fontStyle') || 'pretendard';
     if (style !== 'pretendard') {
       document.documentElement.setAttribute('data-font-style', style);
     }
   } catch(e) {
-    document.documentElement.setAttribute('data-font-style', 'noto-serif');
+    document.documentElement.removeAttribute('data-font-style');
   }
 })();
 
@@ -146,7 +146,7 @@ if (typeof window !== 'undefined') {
 try { localStorage.removeItem('settings.background'); } catch (e) {}
 
 function applyFontStyle(style) {
-  const s = style || Storage.get('settings.fontStyle', 'noto-serif') || 'noto-serif';
+  const s = style || Storage.get('settings.fontStyle', 'pretendard') || 'pretendard';
   if (s === 'pretendard') {
     document.documentElement.removeAttribute('data-font-style');
   } else {

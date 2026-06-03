@@ -313,7 +313,7 @@ const Storage = {
   getSettings() {
     return {
       fontSize: this.get('settings.fontSize', 'md'),
-      fontStyle: this.get('settings.fontStyle', 'noto-serif'),
+      fontStyle: this.get('settings.fontStyle', 'pretendard'),
     };
   },
 

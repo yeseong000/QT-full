@@ -877,10 +877,10 @@
           <div class="font-row">
             <span class="font-row__label">모양</span>
             <div class="font-seg" id="fontStyleGrid">
-              <button class="font-seg__btn" type="button" data-font-style="noto-serif"
-                      style="font-family:'Noto Serif KR',serif;">세리프</button>
               <button class="font-seg__btn" type="button" data-font-style="pretendard"
                       style="font-family:'Pretendard Variable',sans-serif;">기본</button>
+              <button class="font-seg__btn" type="button" data-font-style="noto-serif"
+                      style="font-family:'Noto Serif KR',serif;">세리프</button>
             </div>
           </div>
         </div>
@@ -1189,7 +1189,7 @@
     function openSettingsModal() {
       stagedSettings = {
         fontSize:   Storage.get('settings.fontSize',   'md')      || 'md',
-        fontStyle:  Storage.get('settings.fontStyle',  'noto-serif') || 'noto-serif',
+        fontStyle:  Storage.get('settings.fontStyle',  'pretendard') || 'pretendard',
       };
       syncSelectorUI();
       applyPreviewToModal(stagedSettings);
@@ -1580,7 +1580,7 @@
 
     // ========== 폰트 스타일 선택기 ==========
     function setupFontStyleSelector() {
-      const current = Storage.get('settings.fontStyle', 'noto-serif') || 'noto-serif';
+      const current = Storage.get('settings.fontStyle', 'pretendard') || 'pretendard';
       const options = document.querySelectorAll('#fontStyleGrid .font-seg__btn');
       options.forEach(opt => {
         if (opt.dataset.fontStyle === current) opt.classList.add('is-selected');
