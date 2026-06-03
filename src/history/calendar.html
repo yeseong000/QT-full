@@ -1298,17 +1298,19 @@
         renderUnderlines(record);
         renderReflection(record);
         renderQuestions(qt, record);
-        startBtn.style.display = 'none';
       } else {
         // 기록 없음 + 본문 있음: 본문만 보여주고 시작 버튼
         hideAllSections();
         renderSummary(qt); // 핵심 요약은 본문이 있으면 보여줘도 됨
-        startBtn.style.display = '';
-        startBtn.onclick = () => {
-          sessionStorage.setItem('qtDate', date);
-          window.location.href = '../qt/step-1-scripture.html';
-        };
       }
+
+      // 완료 여부와 무관하게 시작/다시 묵상 버튼 노출 — 묵상한 날도 다시 펼쳐볼 수 있게
+      startBtn.textContent = isCompleted ? '다시 묵상하기' : '묵상 시작하기';
+      startBtn.style.display = '';
+      startBtn.onclick = () => {
+        sessionStorage.setItem('qtDate', date);
+        window.location.href = '../qt/step-1-scripture.html';
+      };
 
       const card = document.getElementById('previewCard');
       card.classList.add('is-visible');

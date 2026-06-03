@@ -68,7 +68,7 @@ TEMPERATURE = 0.7
 MAX_TOKENS = 1500
 
 FOLLOW_UP_TEMPERATURE = 0.8
-FOLLOW_UP_MAX_TOKENS = 1800
+FOLLOW_UP_MAX_TOKENS = 6000   # v3: 메인 3 + 꼬리 6 = 9 답변 × ~400자 ≈ 5400 토큰
 
 # 가격 (2026년 기준, 백만 토큰당 USD)
 PRICE_INPUT_PER_1M = 0.15
@@ -190,8 +190,8 @@ def calc_cost(usage) -> dict:
     }
 
 
-def call_openai(messages: list, max_retries: int = 1, *, temperature: float = TEMPERATURE, max_tokens: int = MAX_TOKENS):
-    """OpenAI API 호출 — 실패 시 1회 재시도."""
+def call_openai(messages: list, max_retries: int = 1, *, temperature: float = TEMPERATURE, max_tokens: int = MAX_TOKENS, response_format: dict | None = None):
+    """OpenAI API 호출 — 실패 시 1회 재시도. response_format으로 스키마 강제 가능."""
     try:
         from openai import OpenAI
     except ImportError:
@@ -206,6 +206,7 @@ def call_openai(messages: list, max_retries: int = 1, *, temperature: float = TE
             "OPENAI_API_KEY가 없습니다. .env 파일에 추가하거나 환경변수로 설정해주세요."
         )
 
+    rf = response_format if response_format is not None else {"type": "json_object"}
     client = OpenAI(api_key=api_key)
     last_err: Exception | None = None
     for attempt in range(max_retries + 1):
@@ -215,7 +216,7 @@ def call_openai(messages: list, max_retries: int = 1, *, temperature: float = TE
                 messages=messages,
                 temperature=temperature,
                 max_tokens=max_tokens,
-                response_format={"type": "json_object"},
+                response_format=rf,
             )
         except Exception as e:
             last_err = e
@@ -261,29 +262,85 @@ def generate_follow_up(qt_data: dict, kb: dict | None, deep_dive: dict) -> tuple
             {"role": "user", "content": json.dumps(payload, ensure_ascii=False)},
         ]
 
+        # OpenAI Structured Output — follow_ups 배열을 스키마로 강제
+        schema = {
+            "type": "object",
+            "properties": {
+                "follow_up_questions": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "question": {"type": "string"},
+                            "answer": {"type": "string"},
+                            "follow_ups": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "question": {"type": "string"},
+                                        "answer": {"type": "string"},
+                                    },
+                                    "required": ["question", "answer"],
+                                    "additionalProperties": False,
+                                },
+                            },
+                        },
+                        "required": ["question", "answer", "follow_ups"],
+                        "additionalProperties": False,
+                    },
+                }
+            },
+            "required": ["follow_up_questions"],
+            "additionalProperties": False,
+        }
+        response_format = {
+            "type": "json_schema",
+            "json_schema": {
+                "name": "follow_up_questions_response",
+                "strict": True,
+                "schema": schema,
+            },
+        }
+
         response = call_openai(
             messages,
             max_retries=1,
             temperature=FOLLOW_UP_TEMPERATURE,
             max_tokens=FOLLOW_UP_MAX_TOKENS,
+            response_format=response_format,
         )
         raw = response.choices[0].message.content
         parsed = json.loads(raw)
         items = parsed.get("follow_up_questions", [])
 
-        # 검증: 3개 + 각 question/answer 채워짐
+        # 검증: 메인 3개 + 각 메인의 꼬리 2개, 모두 question/answer 채워짐
         if not isinstance(items, list) or len(items) != 3:
-            log(f"follow-up 검증 실패: 배열 길이 {len(items) if isinstance(items, list) else 'N/A'} (3 기대) → 건너뜀", "WARN")
+            log(f"follow-up 검증 실패: 메인 배열 길이 {len(items) if isinstance(items, list) else 'N/A'} (3 기대) → 건너뜀", "WARN")
             return None, None
         for i, item in enumerate(items):
             if not isinstance(item, dict):
-                log(f"follow-up 검증 실패: item[{i}]가 dict 아님 → 건너뜀", "WARN")
+                log(f"follow-up 검증 실패: 메인[{i}]가 dict 아님 → 건너뜀", "WARN")
                 return None, None
             q = item.get("question", "").strip() if isinstance(item.get("question"), str) else ""
             a = item.get("answer", "").strip() if isinstance(item.get("answer"), str) else ""
             if not q or not a:
-                log(f"follow-up 검증 실패: item[{i}]의 question/answer 비어있음 → 건너뜀", "WARN")
+                log(f"follow-up 검증 실패: 메인[{i}]의 question/answer 비어있음 → 건너뜀", "WARN")
                 return None, None
+            # 꼬리 검증
+            follow_ups = item.get("follow_ups")
+            if not isinstance(follow_ups, list) or len(follow_ups) != 2:
+                log(f"follow-up 검증 실패: 메인[{i}]의 꼬리 배열 길이 {len(follow_ups) if isinstance(follow_ups, list) else 'N/A'} (2 기대) → 건너뜀", "WARN")
+                return None, None
+            for j, fu in enumerate(follow_ups):
+                if not isinstance(fu, dict):
+                    log(f"follow-up 검증 실패: 메인[{i}].꼬리[{j}]가 dict 아님 → 건너뜀", "WARN")
+                    return None, None
+                fq = fu.get("question", "").strip() if isinstance(fu.get("question"), str) else ""
+                fa = fu.get("answer", "").strip() if isinstance(fu.get("answer"), str) else ""
+                if not fq or not fa:
+                    log(f"follow-up 검증 실패: 메인[{i}].꼬리[{j}]의 question/answer 비어있음 → 건너뜀", "WARN")
+                    return None, None
 
         cost_info = calc_cost(response.usage)
         return items, cost_info
