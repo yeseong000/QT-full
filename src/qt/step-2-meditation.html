@@ -745,7 +745,12 @@
     }
 
     function htmlAnswer(text) {
-      return String(text || '').split('\n').map(line => escapeHTML(line)).join('<br>');
+      // 마크다운 강조 표기 제거 (GPT가 가끔 답변에 **굵게** 같은 마크업을 넣을 때 평문으로 정리)
+      const plain = String(text || '')
+        .replace(/\*\*(.+?)\*\*/g, '$1')   // **굵게** → 굵게
+        .replace(/__(.+?)__/g, '$1')        // __굵게__ → 굵게
+        .replace(/\*(?!\s)([^*\n]+?)\*/g, '$1');  // *기울임* → 기울임 (단어 사이만)
+      return plain.split('\n').map(line => escapeHTML(line)).join('<br>');
     }
 
     // ===== 메인 Pill 클릭 =====
