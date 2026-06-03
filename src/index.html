@@ -79,7 +79,7 @@
     /* ========== 홈 전용 스타일 ========== */
 
     /* 시간대별 배경 (3-layer):
-       - layer 2 (PNG): center -260px → 화면 위로 약 30% 시프트 (카드에 가려지는 부분 줄임)
+       - layer 2 (PNG): center -200px → 화면 위로 약 23% 시프트 (카드에 가려지는 부분 줄임, 밤 시간 달 잘림 방지)
        - layer 3 (fallback gradient): PNG 없는 영역 채움
        - layer 1 (단순 2-stop linear 페이드): 위쪽 45%는 완전 투명(PNG 그대로),
          45%~100% 55% 폭에서 매끈하게 색상 alpha 0 → 1로 보간
@@ -102,7 +102,7 @@
         url('images/%EA%B1%B0%EB%A3%A9%ED%95%9C%20%EC%83%88%EB%B2%BD%20%EB%AA%A8%EB%B0%94%EC%9D%BC%20.png'),
         linear-gradient(180deg, #7C74A2 0%, #B8A0BC 50%, #E5D0C0 100%);
       background-size: 100% 100px, 100% 100%, cover, 100% 100%;
-      background-position: top, center, center -260px, center;
+      background-position: top, center, center -200px, center;
       background-repeat: no-repeat;
     }
     .app-container[data-time-slot="morning"] {
@@ -113,7 +113,7 @@
         url('images/%EC%9D%80%ED%98%9C%EB%A1%9C%EC%9A%B4%20%EC%95%84%EC%B9%A8%20%EB%AA%A8%EB%B0%94%EC%9D%BC%20.png'),
         linear-gradient(180deg, #F1D8CB 0%, #F5DECC 50%, #EFE6CD 100%);
       background-size: 100% 100px, 100% 100%, cover, 100% 100%;
-      background-position: top, center, center -260px, center;
+      background-position: top, center, center -200px, center;
       background-repeat: no-repeat;
     }
     .app-container[data-time-slot="afternoon"] {
@@ -124,7 +124,7 @@
         url('images/%ED%8F%89%EC%95%88%ED%95%9C%20%EC%98%A4%ED%9B%84%20%EB%AA%A8%EB%B0%94%EC%9D%BC.png'),
         linear-gradient(180deg, #E6E9ED 0%, #E0E2D8 50%, #ECE3D2 100%);
       background-size: 100% 100px, 100% 100%, cover, 100% 100%;
-      background-position: top, center, center -260px, center;
+      background-position: top, center, center -200px, center;
       background-repeat: no-repeat;
     }
     .app-container[data-time-slot="evening"] {
@@ -135,7 +135,7 @@
         url('images/%EC%98%A8%EC%9C%A0%ED%95%9C%20%EC%A0%80%EB%85%81%20%EB%AA%A8%EB%B0%94%EC%9D%BC.png'),
         linear-gradient(180deg, #DEAD98 0%, #DFA982 60%, #F5C672 100%);
       background-size: 100% 100px, 100% 100%, cover, 100% 100%;
-      background-position: top, center, center -260px, center;
+      background-position: top, center, center -200px, center;
       background-repeat: no-repeat;
     }
     .app-container[data-time-slot="night"] {
@@ -146,7 +146,7 @@
         url('images/%EA%B3%A0%EC%9A%94%ED%95%9C%20%EB%B0%A4%20%EB%AA%A8%EB%B0%94%EC%9D%BC%20.png'),
         linear-gradient(180deg, #082252 0%, #1B2A4A 50%, #2A3A5C 100%);
       background-size: 100% 100px, 100% 100%, cover, 100% 100%;
-      background-position: top, center, center -260px, center;
+      background-position: top, center, center -200px, center;
       background-repeat: no-repeat;
     }
 
@@ -732,7 +732,8 @@
          스크롤 비활성화 — PWA/네이티브 앱처럼 한 화면에 고정. */
       html[data-layout-mode="adaptive"] #appContainer .today-card {
         margin-top: auto;
-        margin-bottom: max(24px, env(safe-area-inset-bottom, 0));
+        /* 카드를 화면 바닥에 더 가깝게 (safe-area-inset-bottom에서 ~16px 빼서 내림). 최소 8px 여백 보장. */
+        margin-bottom: max(8px, calc(env(safe-area-inset-bottom, 0) - 16px));
       }
     }
 
