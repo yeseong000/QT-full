@@ -100,6 +100,15 @@ input, textarea {
   position: relative;        /* 내부 absolute(FAB) 기준점 */
 }
 
+/* iOS PWA standalone: 100dvh가 첫 렌더 시 ~10px 빗나가 하단 영역이 위로 떠 보이는 버그 보정.
+   common.js의 setupAppHeight IIFE가 window.innerHeight를 --app-height로 동기화 → 그 값을 사용.
+   일반 브라우저는 영향 없음 (이 미디어 쿼리 미적용). */
+@media (display-mode: standalone) {
+  .app-container {
+    height: var(--app-height, 100dvh);
+  }
+}
+
 /* 스크롤 영역: 세이프 에어리어 전면 대응 */
 .app-scroll {
   flex: 1 1 auto;

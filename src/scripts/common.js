@@ -54,6 +54,23 @@ function applyTheme(theme) {
   }
 })();
 
+// iOS PWA standalone 모드의 viewport height 버그 보정:
+// 첫 렌더 시 100dvh가 ~10px 빗나가 하단 영역이 위로 떠 보이는 문제.
+// window.innerHeight를 --app-height에 동기화 → common.css의 @media (display-mode: standalone)
+// 안에서 .app-container { height: var(--app-height, 100dvh) }로 사용.
+// 즉시 + rAF + 100ms + 300ms 시점에 반복 호출 → iOS가 viewport를 안정화하는 타이밍 따라잡기.
+(function setupAppHeight() {
+  function setAppHeight() {
+    document.documentElement.style.setProperty('--app-height', window.innerHeight + 'px');
+  }
+  setAppHeight();
+  if (typeof requestAnimationFrame === 'function') requestAnimationFrame(setAppHeight);
+  setTimeout(setAppHeight, 100);
+  setTimeout(setAppHeight, 300);
+  window.addEventListener('resize', setAppHeight);
+  window.addEventListener('orientationchange', setAppHeight);
+})();
+
 // 시간대 기반 자동 배경
 //   22:00–07:00 → dark, 그 외 → default(light)
 function pickAutoTheme(date = new Date()) {
