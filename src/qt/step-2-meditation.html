@@ -38,6 +38,12 @@
       document.documentElement.setAttribute('data-uses-time-slot', 'true');
       var meta = document.querySelector('meta[name="theme-color"]');
       if (meta) meta.setAttribute('content', SLOT_COLOR[slot]);
+
+      // ★ PWA 모드 감지 — first paint 전 html.is-pwa 부착 (common.js 캐시/지연 로딩 우회).
+      // iOS 26은 display-mode: standalone이 false 반환(browser로 잡힘) → navigator.standalone OR로 체크.
+      if (window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true) {
+        document.documentElement.classList.add('is-pwa');
+      }
     })();
   </script>
 
