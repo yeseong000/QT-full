@@ -32,6 +32,12 @@
                : (hour >= 17 && hour < 22) ? 'evening'
                : 'night';
       document.documentElement.setAttribute('data-time-slot', slot);
+      // 시스템 주소창/상태바 색을 본문 시간대 색과 일치시킴 (PWA에서 상단 색 어긋남 제거).
+      // data-uses-time-slot 신호 → common.js의 applyTheme이 meta theme-color를 덮어쓰지 않음.
+      var SLOT_COLOR = { dawn:'#E5D0C0', morning:'#EFE6CD', afternoon:'#ECE3D2', evening:'#F5C672', night:'#2A3A5C' };
+      document.documentElement.setAttribute('data-uses-time-slot', 'true');
+      var meta = document.querySelector('meta[name="theme-color"]');
+      if (meta) meta.setAttribute('content', SLOT_COLOR[slot]);
     })();
   </script>
 
@@ -449,7 +455,23 @@
     // ========== 오늘의 질문 (주만나 크롤링) ==========
     async function setupQuestions() {
       const container = document.getElementById('questionsContainer');
-      const data = await Common.loadJSON(`../../data/qt/${TODAY}.json`);
+
+      // 새벽(자정~크롤링 전)엔 오늘 파일이 아직 없으므로, 본문·묵상과 동일하게
+      // 최근 며칠치로 폴백해 전날 질문을 그대로 보여준다. (특정 날짜를 콕 집어 열람 중일 땐 폴백 안 함)
+      const HAS_EXPLICIT_DATE = !!sessionStorage.getItem('qtDate');
+      let data = await Common.loadJSON(`../../data/qt/${TODAY}.json`);
+      if ((!data || !Array.isArray(data.oryun_questions) || data.oryun_questions.length === 0) && !HAS_EXPLICIT_DATE) {
+        for (let i = 1; i <= 3; i++) {
+          const d = new Date(new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' }));
+          d.setDate(d.getDate() - i);
+          const fallbackDate = d.toLocaleDateString('sv-SE');
+          const prev = await Common.loadJSON(`../../data/qt/${fallbackDate}.json`);
+          if (prev && Array.isArray(prev.oryun_questions) && prev.oryun_questions.length > 0) {
+            data = prev;
+            break;
+          }
+        }
+      }
       const questions = (data && Array.isArray(data.oryun_questions)) ? data.oryun_questions : [];
 
       if (questions.length === 0) {
@@ -457,7 +479,10 @@
         return;
       }
 
-      const record = Storage.getDailyRecord(TODAY);
+      // 화면에 띄운 질문이 실제로 "어느 날짜의 질문"인지. 새벽 폴백 중이면 전날 날짜가 됨.
+      // 답변은 이 날짜의 기록에 저장한다 — 5/13 새벽에 보이는 5/12 질문 답변은 5/12에, 5/13 진짜 질문 답변만 5/13에.
+      const questionsDate = (data && data.date) ? data.date : TODAY;
+      const record = Storage.getDailyRecord(questionsDate);
       const savedAnswers = Array.isArray(record.questionAnswers) ? record.questionAnswers : [];
 
       container.innerHTML = questions.map((q, i) => `
@@ -477,10 +502,10 @@
         setupAutoSaveTextarea(textarea, {
           maxHeight: 240,
           onSave: (val) => {
-            const cur = Storage.getDailyRecord(TODAY);
+            const cur = Storage.getDailyRecord(questionsDate);
             const arr = Array.isArray(cur.questionAnswers) ? [...cur.questionAnswers] : [];
             arr[idx] = val;
-            Storage.setDailyRecord(TODAY, { questionAnswers: arr });
+            Storage.setDailyRecord(questionsDate, { questionAnswers: arr });
           },
         });
       });

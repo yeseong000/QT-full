@@ -32,6 +32,12 @@
                : (hour >= 17 && hour < 22) ? 'evening'
                : 'night';
       document.documentElement.setAttribute('data-time-slot', slot);
+      // 시스템 주소창/상태바 색을 본문 시간대 색과 일치시킴 (PWA에서 상단 색 어긋남 제거).
+      // data-uses-time-slot 신호 → common.js의 applyTheme이 meta theme-color를 덮어쓰지 않음.
+      var SLOT_COLOR = { dawn:'#E5D0C0', morning:'#EFE6CD', afternoon:'#ECE3D2', evening:'#F5C672', night:'#2A3A5C' };
+      document.documentElement.setAttribute('data-uses-time-slot', 'true');
+      var meta = document.querySelector('meta[name="theme-color"]');
+      if (meta) meta.setAttribute('content', SLOT_COLOR[slot]);
     })();
   </script>
 
@@ -718,89 +724,167 @@
       if (any) document.getElementById('deepDiveCard').style.display = '';
     }
 
-    // ========== 더 깊이 묻기 (Follow-up Q&A) ==========
+    // ========== 떠오르는 질문 v3 — 메인 + 꼬리 (Gemini 패턴) ==========
     const FOLLOW_UP_LOADING_MS = 2000;
     let _followUpItems = [];
-    let _followUpActiveIdx = -1;        // 현재 표시 중인 질문 idx (-1: 없음)
-    let _followUpLoadingTimer = null;   // setTimeout 핸들 — 중간에 다른 Pill 누르면 취소
-    const _followUpSeen = new Set();    // 한 번이라도 답변까지 본 idx — 재방문 시 애니메이션 생략
+    let _followUpActiveMain = -1;      // 현재 활성 메인 idx (-1: 없음)
+    let _followUpActiveFollow = -1;    // 현재 활성 꼬리 idx (-1: 없음)
+    let _followUpLoadingTimer = null;
+    const _followUpSeenMain = new Set();    // 메인 idx 한 번이라도 본 거
+    const _followUpSeenFollow = new Set();  // "mainIdx-followIdx" 한 번이라도 본 거
 
     function renderFollowUp(items) {
       if (!Array.isArray(items) || items.length === 0) return;
       _followUpItems = items;
       const pillsEl = document.getElementById('followUpPills');
       pillsEl.innerHTML = items.map((it, i) =>
-        `<button class="follow-up__pill" data-idx="${i}" type="button" role="listitem">${escapeHTML(it.question)}</button>`
+        `<button class="follow-up__pill" data-main="${i}" type="button" role="listitem">${escapeHTML(it.question)}</button>`
       ).join('');
-      pillsEl.addEventListener('click', onFollowUpPillClick);
+      pillsEl.addEventListener('click', onFollowUpMainClick);
       document.getElementById('followUpCard').style.display = '';
     }
 
-    function onFollowUpPillClick(e) {
+    function htmlAnswer(text) {
+      return String(text || '').split('\n').map(line => escapeHTML(line)).join('<br>');
+    }
+
+    // ===== 메인 Pill 클릭 =====
+    function onFollowUpMainClick(e) {
       const btn = e.target.closest('.follow-up__pill');
       if (!btn) return;
-      const idx = Number(btn.dataset.idx);
-      const item = _followUpItems[idx];
+      const mainIdx = Number(btn.dataset.main);
+      const item = _followUpItems[mainIdx];
       if (!item) return;
+      if (mainIdx === _followUpActiveMain) return;  // 같은 메인 다시 → 무동작
 
-      // 같은 Pill 다시 누르면 무동작 (이미 떠 있음)
-      if (idx === _followUpActiveIdx) return;
-
-      // 이전 답변/로딩 즉시 제거 + 진행 중인 로딩 타이머 취소
-      if (_followUpLoadingTimer) {
-        clearTimeout(_followUpLoadingTimer);
-        _followUpLoadingTimer = null;
-      }
+      // 진행 중 로딩 취소 + 이전 흐름 모두 초기화
+      if (_followUpLoadingTimer) { clearTimeout(_followUpLoadingTimer); _followUpLoadingTimer = null; }
       const answersEl = document.getElementById('followUpAnswers');
       answersEl.innerHTML = '';
 
-      // 모든 Pill의 active 상태 해제 후 현재 것만 활성화
+      // 메인 활성 상태 갱신
       document.querySelectorAll('.follow-up__pill.is-active').forEach(el => el.classList.remove('is-active'));
       btn.classList.add('is-active');
-      _followUpActiveIdx = idx;
+      _followUpActiveMain = mainIdx;
+      _followUpActiveFollow = -1;
 
-      // 답변 HTML 빌더 (재사용)
-      const answerHTML = String(item.answer || '')
-        .split('\n')
-        .map(line => escapeHTML(line))
-        .join('<br>');
+      // 메인 답변 렌더
+      renderMainAnswer(mainIdx, item);
+    }
+
+    function renderMainAnswer(mainIdx, item) {
+      const answersEl = document.getElementById('followUpAnswers');
+      const answerHTML = htmlAnswer(item.answer);
 
       const qa = document.createElement('div');
       qa.className = 'follow-up__qa';
-      qa.dataset.idx = String(idx);
-
-      // 한 번 본 답변은 애니메이션 생략 — 질문 chip + 답변 즉시 렌더
-      if (_followUpSeen.has(idx)) {
-        qa.innerHTML = `
-          <div class="follow-up__q-row">
-            <span class="follow-up__q-label">${escapeHTML(item.question)}</span>
-          </div>
-          <div class="follow-up__answer">${answerHTML}</div>
-        `;
-        answersEl.appendChild(qa);
-        return;
-      }
-
-      // 처음 본 질문 — 로딩 애니메이션 후 답변
+      qa.dataset.main = String(mainIdx);
       qa.innerHTML = `
         <div class="follow-up__q-row">
           <span class="follow-up__q-label">${escapeHTML(item.question)}</span>
         </div>
+        <div class="follow-up__answer-slot"></div>
+      `;
+      answersEl.appendChild(qa);
+      const slot = qa.querySelector('.follow-up__answer-slot');
+
+      // 한 번 본 메인 → 즉시 표시
+      if (_followUpSeenMain.has(mainIdx)) {
+        slot.innerHTML = `<div class="follow-up__answer">${answerHTML}</div>`;
+        renderFollowChips(mainIdx, item);
+        return;
+      }
+
+      // 처음 보는 메인 → wave-dot → 답변
+      slot.innerHTML = `
         <div class="follow-up__loading" aria-label="답변 준비 중">
           <span></span><span></span><span></span>
         </div>
       `;
-      answersEl.appendChild(qa);
-
       _followUpLoadingTimer = setTimeout(() => {
         _followUpLoadingTimer = null;
-        const loadingEl = qa.querySelector('.follow-up__loading');
-        if (!loadingEl) return;
-        const answerEl = document.createElement('div');
-        answerEl.className = 'follow-up__answer';
-        answerEl.innerHTML = answerHTML;
-        loadingEl.replaceWith(answerEl);
-        _followUpSeen.add(idx);
+        if (!slot.isConnected) return;
+        slot.innerHTML = `<div class="follow-up__answer">${answerHTML}</div>`;
+        _followUpSeenMain.add(mainIdx);
+        renderFollowChips(mainIdx, item);
+      }, FOLLOW_UP_LOADING_MS);
+    }
+
+    // ===== 꼬리 chip 렌더 =====
+    function renderFollowChips(mainIdx, item) {
+      const answersEl = document.getElementById('followUpAnswers');
+      const followUps = Array.isArray(item.follow_ups) ? item.follow_ups : [];
+      if (followUps.length === 0) return;
+
+      const chipsEl = document.createElement('div');
+      chipsEl.className = 'follow-up__follow-chips';
+      chipsEl.dataset.main = String(mainIdx);
+      chipsEl.innerHTML = followUps.map((fu, j) =>
+        `<button class="follow-up__follow-chip" data-main="${mainIdx}" data-follow="${j}" type="button">${escapeHTML(fu.question)}</button>`
+      ).join('');
+      answersEl.appendChild(chipsEl);
+      chipsEl.addEventListener('click', onFollowUpFollowClick);
+    }
+
+    // ===== 꼬리 chip 클릭 =====
+    function onFollowUpFollowClick(e) {
+      const btn = e.target.closest('.follow-up__follow-chip');
+      if (!btn) return;
+      const mainIdx = Number(btn.dataset.main);
+      const followIdx = Number(btn.dataset.follow);
+      const item = _followUpItems[mainIdx];
+      if (!item) return;
+      const fu = item.follow_ups?.[followIdx];
+      if (!fu) return;
+      if (mainIdx === _followUpActiveMain && followIdx === _followUpActiveFollow) return; // 같은 꼬리 무동작
+
+      // 진행 중 로딩 취소
+      if (_followUpLoadingTimer) { clearTimeout(_followUpLoadingTimer); _followUpLoadingTimer = null; }
+
+      // 이전 꼬리 답변 제거 (있다면)
+      const answersEl = document.getElementById('followUpAnswers');
+      answersEl.querySelectorAll('.follow-up__qa--follow').forEach(el => el.remove());
+
+      // 꼬리 chip 활성 갱신 (현재 메인의 꼬리만)
+      const chipsContainer = btn.closest('.follow-up__follow-chips');
+      if (chipsContainer) {
+        chipsContainer.querySelectorAll('.follow-up__follow-chip.is-active').forEach(el => el.classList.remove('is-active'));
+      }
+      btn.classList.add('is-active');
+      _followUpActiveFollow = followIdx;
+
+      // 꼬리 답변 렌더
+      const seenKey = `${mainIdx}-${followIdx}`;
+      const answerHTML = htmlAnswer(fu.answer);
+
+      const qa = document.createElement('div');
+      qa.className = 'follow-up__qa follow-up__qa--follow';
+      qa.dataset.main = String(mainIdx);
+      qa.dataset.follow = String(followIdx);
+      qa.innerHTML = `
+        <div class="follow-up__q-row">
+          <span class="follow-up__q-label">${escapeHTML(fu.question)}</span>
+        </div>
+        <div class="follow-up__answer-slot"></div>
+      `;
+      answersEl.appendChild(qa);
+      const slot = qa.querySelector('.follow-up__answer-slot');
+
+      if (_followUpSeenFollow.has(seenKey)) {
+        slot.innerHTML = `<div class="follow-up__answer">${answerHTML}</div>`;
+        return;
+      }
+
+      slot.innerHTML = `
+        <div class="follow-up__loading" aria-label="답변 준비 중">
+          <span></span><span></span><span></span>
+        </div>
+      `;
+      _followUpLoadingTimer = setTimeout(() => {
+        _followUpLoadingTimer = null;
+        if (!slot.isConnected) return;
+        slot.innerHTML = `<div class="follow-up__answer">${answerHTML}</div>`;
+        _followUpSeenFollow.add(seenKey);
       }, FOLLOW_UP_LOADING_MS);
     }
 

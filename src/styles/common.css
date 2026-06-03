@@ -671,6 +671,14 @@ html[data-theme="dark"] .card {
   flex: 1;
 }
 
+/* PWA standalone(폰 전용): 시스템 chrome이 없으니 상하 padding을 타이트하게 — "다음" 버튼 위아래 여백 축소.
+   PC/태블릿 프레임 모드(481px+)는 자체 padding 규칙이 있어 영향 안 받음. */
+@media (display-mode: standalone) and (max-width: 480px) {
+  .bottom-nav {
+    padding: 8px 20px calc(4px + env(safe-area-inset-bottom, 0));
+  }
+}
+
 /* ------------------------------------------------------------------
    플로팅 버튼 (FAB) - 하단 네비 위 위치 (app-container 내 absolute)
    ------------------------------------------------------------------ */
@@ -1014,4 +1022,63 @@ html[data-theme="dark"] .modal-sheet {
     animation: none;
     opacity: 0.65;
   }
+  .follow-up__follow-chip { transition: none; }
+  .follow-up__follow-chip:hover { transform: none; }
+}
+
+/* ===== v3 꼬리 chip (메인 답변 아래 등장하는 파생 질문) ===== */
+.follow-up__follow-chips {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+  animation: followUpSlideInLeft 0.35s var(--ease-out);
+}
+.follow-up__follow-chip {
+  appearance: none;
+  max-width: 92%;
+  border: 1px solid var(--border-subtle);
+  background: transparent;
+  color: var(--text-secondary);
+  padding: 8px 14px;
+  border-radius: var(--radius-pill);
+  font-size: calc(var(--text-small) - 1px);
+  font-family: inherit;
+  line-height: 1.4;
+  cursor: pointer;
+  text-align: left;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+  transition:
+    background-color var(--duration-base) var(--ease-out),
+    color var(--duration-base) var(--ease-out),
+    border-color var(--duration-base) var(--ease-out),
+    transform var(--duration-base) var(--ease-out);
+}
+.follow-up__follow-chip::before {
+  content: "↳ ";
+  color: var(--accent-sage);
+  margin-right: 4px;
+}
+.follow-up__follow-chip:hover {
+  background: var(--bg-input);
+  border-color: var(--accent-sage-soft);
+  color: var(--accent-sage-text);
+  transform: translateY(-1px);
+}
+.follow-up__follow-chip:active {
+  transform: translateY(0);
+}
+.follow-up__follow-chip.is-active {
+  background: var(--accent-sage-soft);
+  border-color: var(--accent-sage);
+  color: var(--accent-sage-text);
+}
+
+/* 꼬리 답변 영역 — 메인 답변과 살짝 들여쓰기로 구분 */
+.follow-up__qa--follow {
+  margin-top: var(--space-2);
+  padding-left: var(--space-3);
+  border-left: 2px solid var(--accent-sage-soft);
 }
