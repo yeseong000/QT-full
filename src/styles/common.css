@@ -956,6 +956,13 @@ html[data-theme="dark"] .modal-sheet {
   border-color: var(--accent-sage);
   color: var(--accent-sage-text);
 }
+/* PC·태블릿(744px+): 질문 칩 글씨를 본문(본문 따라가기·살펴보기)과 동일한 --text-body로.
+   모바일(≤743px)은 기존 --text-small(콤팩트) 유지. */
+@media (min-width: 744px) {
+  .follow-up__pill {
+    font-size: var(--text-body);
+  }
+}
 
 .follow-up__answers {
   display: flex;
