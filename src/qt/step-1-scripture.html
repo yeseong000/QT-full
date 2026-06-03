@@ -49,6 +49,8 @@
     html[data-time-slot="afternoon"] body { background-color: #ECE3D2; }
     html[data-time-slot="evening"]   body { background-color: #F5C672; }
     html[data-time-slot="night"]     body { background-color: #2A3A5C; }
+    /* step 페이지: common.css의 ambient mesh 그라데이션 끔 — 시간대 단색으로 깔끔하게 */
+    html[data-time-slot] body { background-image: none; }
 
     /* 야간 시간대 텍스트 흰색 처리 */
     html[data-time-slot="night"] { color: #FFFFFF; }
