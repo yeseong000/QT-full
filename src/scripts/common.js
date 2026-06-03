@@ -276,3 +276,22 @@ if (typeof window !== 'undefined') {
     });
   });
 }
+
+// ───────────────────────────────────────────────────────────────────────────
+// Service Worker 등록 — iOS PWA snapshot 캐시 우회 (network-first 전략)
+//
+// 왜: iOS Safari PWA가 홈 아이콘 launch 시 옛 HTML/CSS/JS를 끈질기게 캐시(WebKit #199110).
+//     SW가 모든 fetch를 가로채 항상 네트워크 우선 → 새 배포 자동 반영.
+// 어떻게: '/sw.js' 등록 → 첫 방문엔 일반 HTTP, 두 번째 방문부터 SW 제어.
+// 한 번 설치되면 사용자 추가 행동 없이 영구 작동.
+// ───────────────────────────────────────────────────────────────────────────
+if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+      .then((reg) => {
+        // 1시간마다 SW 업데이트 체크 (새 SW가 origin에 있으면 background install)
+        setInterval(() => { reg.update().catch(() => {}); }, 60 * 60 * 1000);
+      })
+      .catch((err) => { /* SW 등록 실패해도 앱은 정상 동작 */ });
+  });
+}
