@@ -508,7 +508,7 @@
     /* 책 살펴보기 카드 (정의 목록식 dl grid) */
     .book-overview-list {
       display: grid;
-      grid-template-columns: 104px 1fr;
+      grid-template-columns: 100px 1fr;
       row-gap: 14px;
       column-gap: 16px;
       margin: 0;
@@ -559,8 +559,8 @@
     }
 
     /* 작은/큰 폰트 모드 대응 — 라벨 칼럼도 비례해서 */
-    html[data-font-size="sm"] .book-overview-list { grid-template-columns: 92px 1fr; }
-    html[data-font-size="lg"] .book-overview-list { grid-template-columns: 116px 1fr; }
+    html[data-font-size="sm"] .book-overview-list { grid-template-columns: 88px 1fr; }
+    html[data-font-size="lg"] .book-overview-list { grid-template-columns: 112px 1fr; }
     /* 다크/밤 모드에서 라벨 대비 보강 */
     /* 밤: 살펴보기 라벨을 또렷하게 — 밝은 페리윙클 칩(전 기기, 인물 이름표와 통일) */
     html[data-time-slot="night"] .book-overview-list > dt {
@@ -589,7 +589,7 @@
        브래킷 gap 6→4, 서브 column-gap 10→6 (≈ +6px). 합쳐서 값 셀이 ~25px 넓어짐. */
     @media (max-width: 743px) {
       .book-overview-list {
-        grid-template-columns: 88px 1fr;
+        grid-template-columns: 84px 1fr;
         column-gap: 12px;
       }
       /* date-sub-lines는 1칼럼이라 column-gap 불필요 */
@@ -1106,7 +1106,7 @@
         const LABELS = {
           author: '저자',
           date:   '시기',
-          place:  '기록 장소와 대상',
+          place:  '기록장소<br>및 대상',
           core:   '핵심 내용'
         };
         const dl = document.createElement('dl');
@@ -1116,7 +1116,7 @@
           if (!value[key]) return;
 
           const dt = document.createElement('dt');
-          dt.textContent = LABELS[key];
+          dt.innerHTML = LABELS[key];
 
           const dd = document.createElement('dd');
 
