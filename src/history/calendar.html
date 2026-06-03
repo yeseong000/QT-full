@@ -124,6 +124,26 @@
     .app-container[data-time-slot="night"] .preview-emotion-chip { background: rgba(255, 255, 255, 0.12); color: #FFFFFF; }
     .app-container[data-time-slot="night"] .calendar-hint { color: rgba(255, 255, 255, 0.85); }
     .app-container[data-time-slot="night"] .calendar-empty { color: rgba(255, 255, 255, 0.7); }
+    /* night — 묵상 모아보기 시트 (다크 네이비 surface) */
+    .app-container[data-time-slot="night"] .archive-sheet__panel {
+      background: #1B2236;
+      box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.45);
+    }
+    .app-container[data-time-slot="night"] .archive-sheet__handle { background: rgba(255, 255, 255, 0.24); }
+    .app-container[data-time-slot="night"] .archive-sheet__title { color: #FFFFFF; }
+    .app-container[data-time-slot="night"] .archive-sheet__close { color: rgba(255, 255, 255, 0.75); }
+    .app-container[data-time-slot="night"] .archive-sheet__close:active { background: rgba(255, 255, 255, 0.12); }
+    .app-container[data-time-slot="night"] .archive-sheet__count { color: rgba(255, 255, 255, 0.62); }
+    .app-container[data-time-slot="night"] .archive-item { background: rgba(255, 255, 255, 0.06); }
+    .app-container[data-time-slot="night"] .archive-item:active { background: rgba(255, 255, 255, 0.12); }
+    .app-container[data-time-slot="night"] .archive-item__date { color: rgba(255, 255, 255, 0.6); }
+    .app-container[data-time-slot="night"] .archive-item__title { color: #FFFFFF; }
+    .app-container[data-time-slot="night"] .archive-item__title--loading { color: rgba(255, 255, 255, 0.45); }
+    .app-container[data-time-slot="night"] .archive-item__ref { color: rgba(255, 255, 255, 0.6); }
+    .app-container[data-time-slot="night"] .archive-item__emotion-chip { background: rgba(168, 181, 208, 0.18); color: #FFFFFF; }
+    .app-container[data-time-slot="night"] .archive-empty { color: rgba(255, 255, 255, 0.7); }
+    .app-container[data-time-slot="night"] .archive-empty__title { color: #FFFFFF; }
+    .app-container[data-time-slot="night"] .archive-empty__desc { color: rgba(255, 255, 255, 0.6); }
 
     /* 미리보기 카드 등장 시 스크롤바로 인한 폭 변화 방지 */
     .app-scroll {
@@ -234,12 +254,15 @@
       flex-shrink: 0;
     }
 
-    /* 월 이동 (상단 헤더 내부) */
+    /* 월 이동 (상단 헤더 내부) — 화살표를 라벨 양옆으로 모은 중앙 컴팩트 스테퍼.
+       양 끝 고정(space-between)을 버려 이전달 화살표가 헤더 뒤로가기 화살표 밑에서
+       세로로 겹쳐 보이던 문제를 제거. */
     .month-nav {
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      padding: 0 var(--space-2);
+      justify-content: center;
+      gap: var(--space-1);
+      padding: 0;
       margin-bottom: 0;
     }
     .month-nav__btn {
@@ -267,6 +290,8 @@
       font-weight: 600;
       color: var(--text-primary);
       letter-spacing: -0.01em;
+      min-width: 122px;
+      text-align: center;
     }
 
     /* 달력 카드 — 화면에서 가장 비중 있게 */
