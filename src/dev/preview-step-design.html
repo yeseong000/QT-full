@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#D9E3DF">
+  <title>step 페이지 시간대별 디자인 미리보기 · 주만나</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Apple SD Gothic Neo', 'Pretendard', sans-serif;
+      background: #D9E3DF;
+      color: #2D2E33;
+      min-height: 100vh;
+      padding: 24px 16px 60px;
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 1300px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      font-size: 22px;
+      margin-bottom: 8px;
+      letter-spacing: -0.02em;
+    }
+    .lead {
+      font-size: 14px;
+      color: #555;
+      max-width: 760px;
+      margin-bottom: 28px;
+    }
+    .lead strong { color: #2D2E33; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 28px 20px;
+    }
+
+    .card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .phone {
+      width: 100%;
+      max-width: 280px;
+      aspect-ratio: 9 / 19.5;
+      border-radius: 36px;
+      box-shadow: 0 12px 32px rgba(0,0,0,0.18), 0 2px 6px rgba(0,0,0,0.10);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    /* ===== ① 위쪽 띠 ===== */
+    .top {
+      position: relative;
+      height: 14%;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      padding: 0 18px 6px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+    .top .time { font-variant-numeric: tabular-nums; }
+    .top .status { letter-spacing: 0.5px; font-size: 10px; opacity: 0.85; }
+    /* Dynamic Island 시뮬레이션 */
+    .top::before {
+      content: '';
+      position: absolute;
+      top: 14px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 86px;
+      height: 24px;
+      background: #000;
+      border-radius: 999px;
+    }
+    .top .marker {
+      position: absolute;
+      top: 4px;
+      left: 8px;
+      font-size: 10px;
+      opacity: 0.45;
+      font-weight: 700;
+    }
+
+    /* ===== ② 본문 ===== */
+    .body {
+      flex: 1;
+      position: relative;
+      padding: 16px 18px 8px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .body .marker {
+      position: absolute;
+      top: 6px;
+      left: 8px;
+      font-size: 10px;
+      opacity: 0.35;
+      font-weight: 700;
+    }
+    .body .heading {
+      font-size: 13px;
+      font-weight: 700;
+      margin-top: 18px;
+      letter-spacing: -0.01em;
+    }
+    .body .verse {
+      font-size: 11px;
+      line-height: 1.6;
+      opacity: 0.85;
+    }
+    .body .verse strong { font-weight: 600; }
+
+    /* ===== ③ 아래쪽 띠 ===== */
+    .bottom {
+      position: relative;
+      padding: 10px 18px 24px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .bottom .marker {
+      position: absolute;
+      top: 0;
+      left: 8px;
+      font-size: 10px;
+      opacity: 0.45;
+      font-weight: 700;
+    }
+    .bottom .back {
+      width: 36px;
+      height: 36px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.55);
+      border: 0.5px solid rgba(0,0,0,0.08);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+    }
+    .bottom .next {
+      flex: 1;
+      background: #BC7383;
+      color: #FFF;
+      padding: 10px 0;
+      border-radius: 999px;
+      text-align: center;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+    /* 홈 인디케이터 라인 (iPhone 하단) */
+    .phone::after {
+      content: '';
+      position: absolute;
+      bottom: 6px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 110px;
+      height: 4px;
+      border-radius: 4px;
+      background: rgba(0,0,0,0.4);
+    }
+
+    /* ===== 시간대별 색 (위/본문/아래 모두 같은 색) ===== */
+    .phone.dawn      { background: #E5D0C0; color: #2D2E33; }
+    .phone.morning   { background: #EFE6CD; color: #2D2E33; }
+    .phone.afternoon { background: #ECE3D2; color: #2D2E33; }
+    .phone.evening   { background: #F5C672; color: #2D2E33; }
+    .phone.night     { background: #2A3A5C; color: #FFFFFF; }
+
+    .phone.night .bottom .back { background: rgba(255,255,255,0.10); border-color: rgba(255,255,255,0.15); color: rgba(255,255,255,0.92); }
+    .phone.night .bottom .next { background: #6E84A8; }
+    .phone.night::after { background: rgba(255,255,255,0.55); }
+
+    /* ===== 카드 라벨 ===== */
+    .label {
+      text-align: center;
+      margin-top: 14px;
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+    .label small {
+      display: block;
+      font-weight: 500;
+      color: #666;
+      font-size: 11px;
+      margin-top: 3px;
+      letter-spacing: 0;
+    }
+
+    /* ===== 안내 박스 ===== */
+    .legend {
+      max-width: 760px;
+      margin: 28px auto 0;
+      padding: 14px 18px;
+      background: #FFF;
+      border-radius: 12px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+      font-size: 13px;
+      line-height: 1.7;
+    }
+    .legend ul { margin-left: 1.2em; }
+    .legend li { margin-bottom: 4px; }
+    .legend code {
+      background: #F0F4F2;
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-family: ui-monospace, Menlo, monospace;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>step 페이지 시간대별 디자인 미리보기</h1>
+    <p class="lead">
+      step-1(말씀) ~ step-4(기록)에서 <strong>위쪽 띠 ① · 본문 ② · 아래쪽 띠 ③</strong> 이 모두 같은 시간대 색으로 연결되는 모습.
+      실제 iPhone PWA에서는 ① 영역에 시계 · 배터리 · Dynamic Island, ③ 영역 맨 아래에 홈 인디케이터가 OS에서 표시됩니다 (아래 목업처럼).
+    </p>
+
+    <div class="grid">
+      <div class="card">
+        <div class="phone dawn">
+          <div class="top"><span class="marker">①</span><span class="time">5:30</span><span class="status">●●● ▒ 78%</span></div>
+          <div class="body">
+            <span class="marker">②</span>
+            <div class="heading">큰 사명으로 이끄는<br>작은 순종</div>
+            <div class="verse">14&nbsp; 다윗은 막내라 장성한 세 사람은 사울을 따랐고</div>
+            <div class="verse">15&nbsp; 다윗은 사울에게로 왕래하며 …</div>
+          </div>
+          <div class="bottom"><span class="marker">③</span><div class="back">‹</div><div class="next">다음</div></div>
+        </div>
+        <div class="label">새벽 4–7시 <small>#E5D0C0</small></div>
+      </div>
+
+      <div class="card">
+        <div class="phone morning">
+          <div class="top"><span class="marker">①</span><span class="time">9:15</span><span class="status">●●● ▒ 78%</span></div>
+          <div class="body">
+            <span class="marker">②</span>
+            <div class="heading">큰 사명으로 이끄는<br>작은 순종</div>
+            <div class="verse">14&nbsp; 다윗은 막내라 장성한 세 사람은 사울을 따랐고</div>
+            <div class="verse">15&nbsp; 다윗은 사울에게로 왕래하며 …</div>
+          </div>
+          <div class="bottom"><span class="marker">③</span><div class="back">‹</div><div class="next">다음</div></div>
+        </div>
+        <div class="label">아침 7–12시 <small>#EFE6CD</small></div>
+      </div>
+
+      <div class="card">
+        <div class="phone afternoon">
+          <div class="top"><span class="marker">①</span><span class="time">14:00</span><span class="status">●●● ▒ 78%</span></div>
+          <div class="body">
+            <span class="marker">②</span>
+            <div class="heading">큰 사명으로 이끄는<br>작은 순종</div>
+            <div class="verse">14&nbsp; 다윗은 막내라 장성한 세 사람은 사울을 따랐고</div>
+            <div class="verse">15&nbsp; 다윗은 사울에게로 왕래하며 …</div>
+          </div>
+          <div class="bottom"><span class="marker">③</span><div class="back">‹</div><div class="next">다음</div></div>
+        </div>
+        <div class="label">오후 12–17시 <small>#ECE3D2</small></div>
+      </div>
+
+      <div class="card">
+        <div class="phone evening">
+          <div class="top"><span class="marker">①</span><span class="time">18:30</span><span class="status">●●● ▒ 78%</span></div>
+          <div class="body">
+            <span class="marker">②</span>
+            <div class="heading">큰 사명으로 이끄는<br>작은 순종</div>
+            <div class="verse">14&nbsp; 다윗은 막내라 장성한 세 사람은 사울을 따랐고</div>
+            <div class="verse">15&nbsp; 다윗은 사울에게로 왕래하며 …</div>
+          </div>
+          <div class="bottom"><span class="marker">③</span><div class="back">‹</div><div class="next">다음</div></div>
+        </div>
+        <div class="label">저녁 17–22시 <small>#F5C672</small></div>
+      </div>
+
+      <div class="card">
+        <div class="phone night">
+          <div class="top"><span class="marker">①</span><span class="time">23:45</span><span class="status">●●● ▒ 78%</span></div>
+          <div class="body">
+            <span class="marker">②</span>
+            <div class="heading">큰 사명으로 이끄는<br>작은 순종</div>
+            <div class="verse">14&nbsp; 다윗은 막내라 장성한 세 사람은 사울을 따랐고</div>
+            <div class="verse">15&nbsp; 다윗은 사울에게로 왕래하며 …</div>
+          </div>
+          <div class="bottom"><span class="marker">③</span><div class="back">‹</div><div class="next">다음</div></div>
+        </div>
+        <div class="label">밤 22–4시 <small>#2A3A5C</small></div>
+      </div>
+    </div>
+
+    <div class="legend">
+      <strong>참고</strong>
+      <ul>
+        <li>① <strong>위쪽 띠</strong> — iOS 상태바 영역. <code>meta theme-color</code>가 이 색을 결정.</li>
+        <li>② <strong>본문</strong> — step 페이지 본문 배경(<code>body { background-color }</code>).</li>
+        <li>③ <strong>아래쪽 띠</strong> — "다음" 버튼이 있는 <code>.bottom-nav</code>. 배경 <code>transparent</code>라 본문 색이 비침.</li>
+        <li>iPhone PWA에서 ③ 맨 아래 흰 막대는 OS의 홈 인디케이터(이 미리보기에선 시뮬레이션).</li>
+        <li>홈(<code>index.html</code>)은 그라데이션 일러스트 디자인이라 이 패턴 적용 안 함 — 사용자 결정.</li>
+      </ul>
+    </div>
+  </div>
+</body>
+</html>
