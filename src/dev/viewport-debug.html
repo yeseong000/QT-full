@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+  <meta name="theme-color" content="#FFFFFF">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Viewport Debug">
+  <title>PWA Viewport Debug · 주만나</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      width: 100%;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #FFFBE5;
+    }
+
+    body {
+      min-height: 100vh;
+      padding: 12px 12px 200px;
+    }
+
+    h1 {
+      font-size: 18px;
+      margin-bottom: 12px;
+      color: #1a1a1a;
+    }
+
+    /* ===== 시각화 마커 ===== */
+
+    /* 빨간 선: 화면 실제 바닥 (position:fixed bottom:0) — 절대 기준 */
+    .marker-screen-bottom {
+      position: fixed;
+      left: 0; right: 0; bottom: 0;
+      height: 4px;
+      background: #E53935;
+      z-index: 100;
+    }
+    .marker-screen-bottom-label {
+      position: fixed;
+      left: 8px; bottom: 8px;
+      background: #E53935;
+      color: white;
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 3px;
+      z-index: 101;
+      font-weight: 700;
+    }
+
+    /* viewport unit 끝선 (body 기준 absolute) */
+    .marker {
+      position: absolute;
+      left: 0; right: 0;
+      height: 2px;
+      margin-top: -2px;
+      z-index: 90;
+    }
+    .marker-label {
+      position: absolute;
+      right: 8px;
+      transform: translateY(-100%);
+      font-size: 10px;
+      padding: 1px 5px;
+      color: white;
+      border-radius: 3px;
+      font-family: ui-monospace, Menlo, monospace;
+      font-weight: 700;
+    }
+
+    .m-vh        { background: #FB8C00; top: 100vh; }
+    .m-vh-l      { color: white; background: #FB8C00; top: calc(100vh - 12px); }
+    .m-dvh       { background: #1E88E5; top: 100dvh; }
+    .m-dvh-l     { color: white; background: #1E88E5; top: calc(100dvh - 12px); }
+    .m-svh       { background: #43A047; top: 100svh; }
+    .m-svh-l     { color: white; background: #43A047; top: calc(100svh - 12px); }
+    .m-lvh       { background: #8E24AA; top: 100lvh; }
+    .m-lvh-l     { color: white; background: #8E24AA; top: calc(100lvh - 12px); }
+    .m-ih        { background: #D81B60; }    /* JS로 top 세팅 */
+    .m-ih-l      { color: white; background: #D81B60; }  /* JS로 top 세팅 */
+
+    /* ===== 정보 카드 ===== */
+    .info {
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin-bottom: 8px;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .info h3 {
+      font-size: 13px;
+      margin-bottom: 4px;
+      color: #444;
+      letter-spacing: 0.3px;
+      text-transform: uppercase;
+    }
+    .info dl {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 2px 12px;
+      font-family: ui-monospace, Menlo, monospace;
+      font-size: 12px;
+    }
+    .info dt { color: #777; }
+    .info dd { font-weight: 700; color: #1a1a1a; }
+    .info .diff {
+      margin-top: 6px;
+      padding-top: 6px;
+      border-top: 1px dashed #ddd;
+      color: #c0392b;
+      font-size: 12px;
+    }
+
+    .legend {
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin-bottom: 8px;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+    .legend-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 3px;
+    }
+    .legend-swatch {
+      width: 24px;
+      height: 4px;
+      flex-shrink: 0;
+    }
+    .legend-note {
+      margin-top: 6px;
+      color: #666;
+      font-size: 11px;
+    }
+  </style>
+</head>
+<body>
+  <h1>PWA Viewport Debug</h1>
+
+  <div class="legend">
+    <strong style="font-size: 13px;">화면 바닥에 보이는 선들:</strong>
+    <div class="legend-row"><div class="legend-swatch" style="background:#E53935"></div> <strong>빨강</strong> = screen bottom (실제 viewport 바닥, position:fixed)</div>
+    <div class="legend-row"><div class="legend-swatch" style="background:#1E88E5"></div> 파랑 = 100dvh 끝점</div>
+    <div class="legend-row"><div class="legend-swatch" style="background:#43A047"></div> 초록 = 100svh 끝점 (작은 viewport)</div>
+    <div class="legend-row"><div class="legend-swatch" style="background:#8E24AA"></div> 보라 = 100lvh 끝점 (큰 viewport)</div>
+    <div class="legend-row"><div class="legend-swatch" style="background:#FB8C00"></div> 주황 = 100vh 끝점 (legacy)</div>
+    <div class="legend-row"><div class="legend-swatch" style="background:#D81B60"></div> 분홍 = window.innerHeight 끝점</div>
+    <div class="legend-note">→ <strong>빨강(실제 바닥)</strong>과 다른 선이 떨어져 있으면 그 단위는 화면을 다 못 채우는 것. 떨어진 거리 = 사용자가 보는 "빈 띠"의 크기.</div>
+  </div>
+
+  <div class="info">
+    <h3>Mode</h3>
+    <dl>
+      <dt>standalone:</dt><dd id="standalone">—</dd>
+      <dt>fullscreen:</dt><dd id="fullscreen">—</dd>
+      <dt>navigator.standalone:</dt><dd id="navStandalone">—</dd>
+    </dl>
+  </div>
+
+  <div class="info">
+    <h3>Window / Screen</h3>
+    <dl>
+      <dt>window.innerHeight:</dt><dd id="innerHeight">—</dd>
+      <dt>window.innerWidth:</dt><dd id="innerWidth">—</dd>
+      <dt>window.outerHeight:</dt><dd id="outerHeight">—</dd>
+      <dt>screen.height:</dt><dd id="screenHeight">—</dd>
+      <dt>screen.availHeight:</dt><dd id="screenAvailHeight">—</dd>
+      <dt>devicePixelRatio:</dt><dd id="dpr">—</dd>
+    </dl>
+  </div>
+
+  <div class="info">
+    <h3>Viewport units (실측 px)</h3>
+    <dl>
+      <dt>100vh:</dt><dd id="vh100">—</dd>
+      <dt>100dvh:</dt><dd id="dvh100">—</dd>
+      <dt>100svh:</dt><dd id="svh100">—</dd>
+      <dt>100lvh:</dt><dd id="lvh100">—</dd>
+    </dl>
+    <div class="diff" id="diffViewport">—</div>
+  </div>
+
+  <div class="info">
+    <h3>Safe Area Insets</h3>
+    <dl>
+      <dt>top:</dt><dd id="saTop">—</dd>
+      <dt>bottom:</dt><dd id="saBottom">—</dd>
+      <dt>left:</dt><dd id="saLeft">—</dd>
+      <dt>right:</dt><dd id="saRight">—</dd>
+    </dl>
+  </div>
+
+  <div class="info">
+    <h3>Visual Viewport API</h3>
+    <dl>
+      <dt>height:</dt><dd id="vvHeight">—</dd>
+      <dt>width:</dt><dd id="vvWidth">—</dd>
+      <dt>offsetTop:</dt><dd id="vvOffsetTop">—</dd>
+      <dt>offsetLeft:</dt><dd id="vvOffsetLeft">—</dd>
+      <dt>scale:</dt><dd id="vvScale">—</dd>
+    </dl>
+  </div>
+
+  <div class="info">
+    <h3>Document</h3>
+    <dl>
+      <dt>documentElement.clientHeight:</dt><dd id="docClientHeight">—</dd>
+      <dt>body.clientHeight:</dt><dd id="bodyClientHeight">—</dd>
+    </dl>
+  </div>
+
+  <div class="info">
+    <h3>User Agent / Platform</h3>
+    <dl>
+      <dt>userAgent:</dt><dd id="ua" style="word-break: break-all; font-size:11px;">—</dd>
+      <dt>platform:</dt><dd id="platform">—</dd>
+    </dl>
+  </div>
+
+  <!-- ===== 측정용 hidden 요소 (각 viewport unit으로 실제 px 측정) ===== -->
+  <div id="measure-vh"  style="position:absolute; visibility:hidden; height:100vh;  top:0; left:0; width:1px;"></div>
+  <div id="measure-dvh" style="position:absolute; visibility:hidden; height:100dvh; top:0; left:0; width:1px;"></div>
+  <div id="measure-svh" style="position:absolute; visibility:hidden; height:100svh; top:0; left:0; width:1px;"></div>
+  <div id="measure-lvh" style="position:absolute; visibility:hidden; height:100lvh; top:0; left:0; width:1px;"></div>
+
+  <!-- ===== 시각화 마커들 ===== -->
+  <div class="marker m-vh"></div>
+  <div class="marker-label m-vh-l">100vh</div>
+  <div class="marker m-dvh"></div>
+  <div class="marker-label m-dvh-l">100dvh</div>
+  <div class="marker m-svh"></div>
+  <div class="marker-label m-svh-l">100svh</div>
+  <div class="marker m-lvh"></div>
+  <div class="marker-label m-lvh-l">100lvh</div>
+  <div class="marker m-ih" id="markerIH"></div>
+  <div class="marker-label m-ih-l" id="markerIHLabel">innerHeight</div>
+
+  <div class="marker-screen-bottom"></div>
+  <div class="marker-screen-bottom-label">↑ screen bottom (실제 viewport 바닥)</div>
+
+  <script>
+    function $(id) { return document.getElementById(id); }
+
+    function update() {
+      $('standalone').textContent = window.matchMedia('(display-mode: standalone)').matches;
+      $('fullscreen').textContent = window.matchMedia('(display-mode: fullscreen)').matches;
+      $('navStandalone').textContent = navigator.standalone !== undefined ? navigator.standalone : '(미지원)';
+
+      $('innerHeight').textContent = window.innerHeight + ' px';
+      $('innerWidth').textContent = window.innerWidth + ' px';
+      $('outerHeight').textContent = window.outerHeight + ' px';
+      $('screenHeight').textContent = screen.height + ' px';
+      $('screenAvailHeight').textContent = screen.availHeight + ' px';
+      $('dpr').textContent = window.devicePixelRatio;
+
+      var vh  = $('measure-vh').getBoundingClientRect().height;
+      var dvh = $('measure-dvh').getBoundingClientRect().height;
+      var svh = $('measure-svh').getBoundingClientRect().height;
+      var lvh = $('measure-lvh').getBoundingClientRect().height;
+      $('vh100').textContent  = vh.toFixed(2)  + ' px';
+      $('dvh100').textContent = dvh.toFixed(2) + ' px';
+      $('svh100').textContent = svh.toFixed(2) + ' px';
+      $('lvh100').textContent = lvh.toFixed(2) + ' px';
+
+      var ih = window.innerHeight;
+      var diffs = [];
+      if (Math.abs(dvh - ih) > 0.5)  diffs.push('100dvh vs innerHeight: ' + (dvh - ih).toFixed(1) + 'px');
+      if (Math.abs(lvh - svh) > 0.5) diffs.push('lvh - svh: ' + (lvh - svh).toFixed(1) + 'px (URL bar 영향 추정)');
+      if (Math.abs(lvh - dvh) > 0.5) diffs.push('lvh - dvh: ' + (lvh - dvh).toFixed(1) + 'px');
+      $('diffViewport').textContent = diffs.length ? diffs.join(' | ') : '모두 일치';
+
+      // Safe area insets — probe 요소로 측정
+      var probe = document.createElement('div');
+      probe.style.cssText = 'position:absolute;visibility:hidden;width:1px;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)';
+      document.body.appendChild(probe);
+      var cs = getComputedStyle(probe);
+      $('saTop').textContent    = cs.paddingTop;
+      $('saBottom').textContent = cs.paddingBottom;
+      $('saLeft').textContent   = cs.paddingLeft;
+      $('saRight').textContent  = cs.paddingRight;
+      document.body.removeChild(probe);
+
+      if (window.visualViewport) {
+        $('vvHeight').textContent     = window.visualViewport.height + ' px';
+        $('vvWidth').textContent      = window.visualViewport.width + ' px';
+        $('vvOffsetTop').textContent  = window.visualViewport.offsetTop + ' px';
+        $('vvOffsetLeft').textContent = window.visualViewport.offsetLeft + ' px';
+        $('vvScale').textContent      = window.visualViewport.scale;
+      } else {
+        $('vvHeight').textContent = '(API 미지원)';
+      }
+
+      $('docClientHeight').textContent  = document.documentElement.clientHeight + ' px';
+      $('bodyClientHeight').textContent = document.body.clientHeight + ' px';
+
+      $('ua').textContent = navigator.userAgent;
+      $('platform').textContent = navigator.platform || '(미지원)';
+
+      // innerHeight marker 위치
+      $('markerIH').style.top = ih + 'px';
+      $('markerIHLabel').style.top = (ih - 12) + 'px';
+    }
+
+    update();
+    window.addEventListener('resize', update);
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', update);
+      window.visualViewport.addEventListener('scroll', update);
+    }
+    setTimeout(update, 100);
+    setTimeout(update, 500);
+    setTimeout(update, 1500);
+  </script>
+</body>
+</html>
