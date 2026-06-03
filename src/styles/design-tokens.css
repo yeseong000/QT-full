@@ -245,6 +245,20 @@ html[data-time-slot="night"] {
   --text-secondary: #B6BAC6;
 }
 
+/* 밤 PC/프레임(481px+): 프레임 안팎을 같은 딥네이비 한 톤으로 통일 →
+   기존 '바깥 그라데이션 + 중성 회색 프레임 + 네이비 카드'의 과한 4단계 색차 제거.
+   카드는 그림자 + 한 단계 lift(#232F4B)로만 떠보이게 (사용자 요청: 색이 아닌 그림자 분리).
+   홈(.app-container[data-qt-step] 아님)은 밤 배경 이미지를 그대로 유지. */
+@media (min-width: 481px) {
+  html[data-time-slot="night"] body {
+    background: #131B2E !important;
+  }
+  html[data-time-slot="night"] .app-container[data-qt-step] {
+    background-color: #131B2E;
+    background-image: none;
+  }
+}
+
 /* ==========================================================================
    감소된 모션
    ========================================================================== */
