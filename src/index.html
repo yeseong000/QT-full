@@ -150,6 +150,80 @@
       background-repeat: no-repeat;
     }
 
+    /* 시간대별 PNG를 변수로 등록.
+       --slot-png        : 모바일 원본(세로 길쭉, blur 배경/소형 프레임용)
+       --slot-png-tablet : 태블릿/PC 전용(2:3, 744px+ cover용) */
+    .app-container[data-time-slot="dawn"] {
+      --slot-png: url('images/%EA%B1%B0%EB%A3%A9%ED%95%9C%20%EC%83%88%EB%B2%BD%20%EB%AA%A8%EB%B0%94%EC%9D%BC%20.png');
+      --slot-png-tablet: url('images/%EC%83%88%EB%B2%BD_%ED%83%9C%EB%B8%94%EB%A6%BF.png');
+    }
+    .app-container[data-time-slot="morning"] {
+      --slot-png: url('images/%EC%9D%80%ED%98%9C%EB%A1%9C%EC%9A%B4%20%EC%95%84%EC%B9%A8%20%EB%AA%A8%EB%B0%94%EC%9D%BC%20.png');
+      --slot-png-tablet: url('images/%EC%95%84%EC%B9%A8_%ED%83%9C%EB%B8%94%EB%A6%BF.png');
+    }
+    .app-container[data-time-slot="afternoon"] {
+      --slot-png: url('images/%ED%8F%89%EC%95%88%ED%95%9C%20%EC%98%A4%ED%9B%84%20%EB%AA%A8%EB%B0%94%EC%9D%BC.png');
+      --slot-png-tablet: url('images/%EC%98%A4%ED%9B%84_%ED%83%9C%EB%B8%94%EB%A6%BF.png');
+    }
+    .app-container[data-time-slot="evening"] {
+      --slot-png: url('images/%EC%98%A8%EC%9C%A0%ED%95%9C%20%EC%A0%80%EB%85%81%20%EB%AA%A8%EB%B0%94%EC%9D%BC.png');
+      --slot-png-tablet: url('images/%EC%A0%80%EB%85%81_%ED%83%9C%EB%B8%94%EB%A6%BF.png');
+    }
+    .app-container[data-time-slot="night"] {
+      --slot-png: url('images/%EA%B3%A0%EC%9A%94%ED%95%9C%20%EB%B0%A4%20%EB%AA%A8%EB%B0%94%EC%9D%BC%20.png');
+      --slot-png-tablet: url('images/%EB%B0%A4_%ED%83%9C%EB%B8%94%EB%A6%BF.png');
+    }
+
+    /* 태블릿/PC 프레임(481px+): 세로로 긴 PNG(1600×3600, 비율 0.44)를 가로로 넓은
+       카드에 맞추면 (1) cover는 과확대 (2) 축소하면 좌우 여백 발생.
+       → iOS 앨범아트 방식: 같은 이미지를 흐림(blur)으로 꽉 채워 배경(::before)을 만들고,
+         그 위에 선명한 이미지를 축소·하단쪽 정렬(::after)로 얹어 좌우를 자연스럽게 잇는다.
+       모바일(≤480px)은 pseudo-element 미적용 → 기존 그대로. */
+    @media (min-width: 481px) {
+      .app-container[data-time-slot]::before,
+      .app-container[data-time-slot]::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        z-index: 0;                 /* .app-scroll(z-index:1) 콘텐츠보다 아래 */
+        border-radius: inherit;
+        background-repeat: no-repeat;
+        pointer-events: none;
+      }
+      /* ::before — 흐린 배경: 빈 좌우/상단을 같은 이미지 blur로 채워 여백을 없앤다 */
+      .app-container[data-time-slot]::before {
+        background-image: var(--slot-png);
+        background-size: cover;
+        background-position: center;
+        filter: blur(34px) saturate(1.06);
+        transform: scale(1.15);     /* blur 가장자리가 프레임 밖까지 덮도록 */
+      }
+      /* ::after — 선명한 본 이미지(축소 + 더 아래로).
+         좌우 가장자리는 가로 mask로 살짝 페이드시켜 blur 배경과 매끄럽게 연결.
+         ▸ background-size 82% : 작을수록 멀리(작게), 클수록 크게
+         ▸ background-position …% : 숫자를 낮출수록 이미지가 더 아래로 내려감 */
+      .app-container[data-time-slot]::after {
+        background-image: var(--slot-png);
+        background-size: 82% auto;
+        background-position: center 62%;
+        -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 7%, #000 93%, transparent 100%);
+                mask-image: linear-gradient(90deg, transparent 0, #000 7%, #000 93%, transparent 100%);
+      }
+    }
+
+    /* 744px+ (아이패드·PC 넓은 프레임): 전 시간대 전용 태블릿 이미지(2:3, 0.667)를
+       blur 꼼수 없이 깔끔한 cover로 표시. 이미지가 프레임 비율과 거의 같아 여백/잘림 없음. */
+    @media (min-width: 744px) {
+      .app-container[data-time-slot]::before { display: none; } /* blur 안전망 끔 */
+      .app-container[data-time-slot]::after {
+        background-image: var(--slot-png-tablet);
+        background-size: cover;
+        background-position: center;
+        -webkit-mask-image: none;
+                mask-image: none;
+      }
+    }
+
     /* 콘텐츠는 PNG 배경 위에 layered + flex column으로 카드를 하단 안전 영역에 자동 정렬 */
     .app-scroll {
       position: relative;
