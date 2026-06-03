@@ -245,16 +245,24 @@ html[data-time-slot="night"] {
   --text-secondary: #B6BAC6;
 }
 
-/* 밤 PC/프레임(481px+): 프레임 안팎을 같은 딥네이비 한 톤으로 통일 →
+/* 밤: 카드 내부 구분선/헤어라인을 네이비 카드 위에서 보이도록 페리윙클 톤으로 밝힘
+   (다크 기본 --border-subtle(#353740)은 네이비 카드에서 안 보임) */
+html[data-time-slot="night"] .meditation-card,
+html[data-time-slot="night"] .card,
+html[data-time-slot="night"] .scripture-toggle__body {
+  --border-subtle: rgba(168, 181, 208, 0.22);
+}
+
+/* 밤 PC/프레임(481px+): 프레임 안팎을 같은 네이비 한 톤으로 통일 →
    기존 '바깥 그라데이션 + 중성 회색 프레임 + 네이비 카드'의 과한 4단계 색차 제거.
    카드는 그림자 + 한 단계 lift(#232F4B)로만 떠보이게 (사용자 요청: 색이 아닌 그림자 분리).
    홈(.app-container[data-qt-step] 아님)은 밤 배경 이미지를 그대로 유지. */
 @media (min-width: 481px) {
   html[data-time-slot="night"] body {
-    background: #131B2E !important;
+    background: #1B2540 !important;
   }
   html[data-time-slot="night"] .app-container[data-qt-step] {
-    background-color: #131B2E;
+    background-color: #1B2540;
     background-image: none;
   }
 }
