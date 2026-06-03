@@ -218,7 +218,7 @@
       .app-container[data-time-slot]::after {
         background-image: var(--slot-png-tablet);
         background-size: cover;
-        background-position: center;
+        background-position: center 62%;  /* 살짝 위로 올려 풍경(나무·노을)이 카드 위로 더 보이게 */
         -webkit-mask-image: none;
                 mask-image: none;
       }
@@ -1595,5 +1595,37 @@
       });
     }
   </script>
+
+  <!-- ▼▼▼ [임시] 시간대 5종 순환 테스트 토글 — URL ?compare=1 일 때만 표시. 테스트 끝나면 삭제 ▼▼▼ -->
+  <button id="slotCycleBtn" type="button" hidden
+    style="position:fixed; right:14px; bottom:14px; z-index:99999; padding:9px 15px; border-radius:999px;
+           background:rgba(0,0,0,0.6); color:#fff; font-size:13px; font-weight:700;
+           border:1px solid rgba(255,255,255,0.3); -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px);
+           box-shadow:0 4px 16px rgba(0,0,0,0.35); cursor:pointer;">시간대 ▸</button>
+  <script>
+    (function () {
+      if (!/[?&]compare/.test(location.search)) return;   // 일반 사용자에겐 미표시
+      var btn = document.getElementById('slotCycleBtn');
+      var app = document.getElementById('appContainer');
+      if (!btn || !app) return;
+      var SLOTS = ['dawn', 'morning', 'afternoon', 'evening', 'night'];
+      var NAMES = { dawn: '🌅 새벽', morning: '🌤️ 아침', afternoon: '☀️ 오후', evening: '🌇 저녁', night: '🌙 밤' };
+      var DARK  = { dawn: true, night: true };
+      function cur() { return app.getAttribute('data-time-slot') || 'afternoon'; }
+      function apply(slot) {
+        app.setAttribute('data-time-slot', slot);
+        if (DARK[slot]) document.documentElement.setAttribute('data-theme', 'dark');
+        else document.documentElement.removeAttribute('data-theme');
+        btn.textContent = NAMES[slot] + '  ▸ 다음';
+      }
+      btn.hidden = false;
+      apply(cur());
+      btn.addEventListener('click', function () {
+        var i = SLOTS.indexOf(cur());
+        apply(SLOTS[(i + 1) % SLOTS.length]);
+      });
+    })();
+  </script>
+  <!-- ▲▲▲ [임시] 시간대 테스트 토글 끝 ▲▲▲ -->
 </body>
 </html>
