@@ -6,14 +6,24 @@
   <meta name="theme-color" content="#FFFFFF">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <meta name="apple-mobile-web-app-title" content="Viewport Debug">
-  <title>PWA Viewport Debug · 주만나</title>
+  <meta name="apple-mobile-web-app-title" content="Viewport Debug v2">
+  <title>PWA Viewport Debug v2 · 주만나</title>
+
+  <!-- ★★★ detectPWA — common.js와 동일 로직. CSSOM 이전에 클래스 부착되어야 .bottom-nav 시뮬 박스가 정확히 매칭됨. -->
+  <script>
+    (function detectPWA() {
+      var mqMatches = window.matchMedia && window.matchMedia('(display-mode: standalone)').matches;
+      var iosStandalone = navigator.standalone === true;
+      if (mqMatches || iosStandalone) document.documentElement.classList.add('is-pwa');
+    })();
+  </script>
+
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     html, body {
       width: 100%;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
       background: #FFFBE5;
     }
 
@@ -24,13 +34,21 @@
 
     h1 {
       font-size: 18px;
-      margin-bottom: 12px;
+      margin-bottom: 6px;
       color: #1a1a1a;
     }
+    .version-tag {
+      display: inline-block;
+      background: #1976D2;
+      color: white;
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      margin-bottom: 12px;
+      font-weight: 700;
+    }
 
-    /* ===== 시각화 마커 ===== */
-
-    /* 빨간 선: 화면 실제 바닥 (position:fixed bottom:0) — 절대 기준 */
+    /* ===== 시각화 마커 (이전 v1과 동일) ===== */
     .marker-screen-bottom {
       position: fixed;
       left: 0; right: 0; bottom: 0;
@@ -49,8 +67,6 @@
       z-index: 101;
       font-weight: 700;
     }
-
-    /* viewport unit 끝선 (body 기준 absolute) */
     .marker {
       position: absolute;
       left: 0; right: 0;
@@ -69,17 +85,31 @@
       font-family: ui-monospace, Menlo, monospace;
       font-weight: 700;
     }
+    .m-dvh   { background: #1E88E5; top: 100dvh; }
+    .m-dvh-l { color: white; background: #1E88E5; top: calc(100dvh - 12px); }
+    .m-lvh   { background: #8E24AA; top: 100lvh; }
+    .m-lvh-l { color: white; background: #8E24AA; top: calc(100lvh - 12px); }
+    .m-ih    { background: #D81B60; }
+    .m-ih-l  { color: white; background: #D81B60; }
 
-    .m-vh        { background: #FB8C00; top: 100vh; }
-    .m-vh-l      { color: white; background: #FB8C00; top: calc(100vh - 12px); }
-    .m-dvh       { background: #1E88E5; top: 100dvh; }
-    .m-dvh-l     { color: white; background: #1E88E5; top: calc(100dvh - 12px); }
-    .m-svh       { background: #43A047; top: 100svh; }
-    .m-svh-l     { color: white; background: #43A047; top: calc(100svh - 12px); }
-    .m-lvh       { background: #8E24AA; top: 100lvh; }
-    .m-lvh-l     { color: white; background: #8E24AA; top: calc(100lvh - 12px); }
-    .m-ih        { background: #D81B60; }    /* JS로 top 세팅 */
-    .m-ih-l      { color: white; background: #D81B60; }  /* JS로 top 세팅 */
+    /* ===== ★★★ .bottom-nav 시뮬레이션 (핵심 테스트) ===== */
+    /* base 규칙 — common.css의 .bottom-nav와 동일 */
+    .test-bottom-nav {
+      padding: 14px 20px calc(14px + env(safe-area-inset-bottom, 0));
+      background: #E53935;  /* 빨강 = base 규칙 적용 중 = 버그 */
+      color: white;
+      font-weight: 700;
+      text-align: center;
+      border-radius: 8px;
+      margin: 12px 0;
+    }
+    /* PWA 오버라이드 — html.is-pwa로 매칭 */
+    @media (max-width: 480px) {
+      html.is-pwa .test-bottom-nav {
+        padding: 8px 20px 12px;
+        background: #2E7D32;  /* 초록 = PWA 오버라이드 적용 = 정상 */
+      }
+    }
 
     /* ===== 정보 카드 ===== */
     .info {
@@ -107,13 +137,9 @@
     }
     .info dt { color: #777; }
     .info dd { font-weight: 700; color: #1a1a1a; }
-    .info .diff {
-      margin-top: 6px;
-      padding-top: 6px;
-      border-top: 1px dashed #ddd;
-      color: #c0392b;
-      font-size: 12px;
-    }
+    .info .true  { color: #2E7D32; }
+    .info .false { color: #999; }
+    .info .alert { color: #E53935; }
 
     .legend {
       background: white;
@@ -140,31 +166,67 @@
       color: #666;
       font-size: 11px;
     }
+
+    /* 큰 결과 박스 */
+    .big-result {
+      padding: 16px;
+      border-radius: 8px;
+      margin: 12px 0;
+      text-align: center;
+      font-size: 14px;
+      font-weight: 700;
+      color: white;
+    }
+    .big-result.ok    { background: #2E7D32; }
+    .big-result.fail  { background: #E53935; }
   </style>
 </head>
 <body>
   <h1>PWA Viewport Debug</h1>
+  <span class="version-tag">v2 · 2026-06-03</span>
+
+  <!-- ===== 핵심 결과 ===== -->
+  <div class="big-result" id="bigResult">측정 중...</div>
+
+  <!-- ===== ★★★ 시뮬레이션 박스 — 빨강 vs 초록으로 즉시 판단 ===== -->
+  <div class="test-bottom-nav">↑↑↑ 이 박스: 빨강이면 base 규칙 / 초록이면 PWA 오버라이드 ↑↑↑</div>
 
   <div class="legend">
-    <strong style="font-size: 13px;">화면 바닥에 보이는 선들:</strong>
-    <div class="legend-row"><div class="legend-swatch" style="background:#E53935"></div> <strong>빨강</strong> = screen bottom (실제 viewport 바닥, position:fixed)</div>
-    <div class="legend-row"><div class="legend-swatch" style="background:#1E88E5"></div> 파랑 = 100dvh 끝점</div>
-    <div class="legend-row"><div class="legend-swatch" style="background:#43A047"></div> 초록 = 100svh 끝점 (작은 viewport)</div>
-    <div class="legend-row"><div class="legend-swatch" style="background:#8E24AA"></div> 보라 = 100lvh 끝점 (큰 viewport)</div>
-    <div class="legend-row"><div class="legend-swatch" style="background:#FB8C00"></div> 주황 = 100vh 끝점 (legacy)</div>
-    <div class="legend-row"><div class="legend-swatch" style="background:#D81B60"></div> 분홍 = window.innerHeight 끝점</div>
-    <div class="legend-note">→ <strong>빨강(실제 바닥)</strong>과 다른 선이 떨어져 있으면 그 단위는 화면을 다 못 채우는 것. 떨어진 거리 = 사용자가 보는 "빈 띠"의 크기.</div>
+    <strong style="font-size: 13px;">색 의미:</strong>
+    <div class="legend-row"><div class="legend-swatch" style="background:#E53935"></div> <strong>빨강 박스</strong> = base 규칙 = 버그 그대로</div>
+    <div class="legend-row"><div class="legend-swatch" style="background:#2E7D32"></div> <strong>초록 박스</strong> = PWA 오버라이드 적용됨 = 정상</div>
+    <div class="legend-note">이 박스 색깔이 가장 빠른 진단입니다.</div>
   </div>
 
+  <!-- ===== PWA 감지 결과 ===== -->
   <div class="info">
-    <h3>Mode</h3>
+    <h3>★ PWA 감지 결과</h3>
     <dl>
-      <dt>standalone:</dt><dd id="standalone">—</dd>
-      <dt>fullscreen:</dt><dd id="fullscreen">—</dd>
+      <dt>display-mode: standalone:</dt><dd id="mqStandalone">—</dd>
+      <dt>display-mode: fullscreen:</dt><dd id="mqFullscreen">—</dd>
+      <dt>display-mode: minimal-ui:</dt><dd id="mqMinimalUi">—</dd>
+      <dt>display-mode: browser:</dt><dd id="mqBrowser">—</dd>
+      <dt>display-mode: window-controls-overlay:</dt><dd id="mqWCO">—</dd>
+      <dt>display-mode: tabbed:</dt><dd id="mqTabbed">—</dd>
       <dt>navigator.standalone:</dt><dd id="navStandalone">—</dd>
+      <dt>html.is-pwa class 부착됨?:</dt><dd id="hasPwaClass">—</dd>
+    </dl>
+    <div style="margin-top:8px; padding-top:8px; border-top:1px dashed #ddd; font-family: ui-monospace, Menlo, monospace; font-size: 12px;">
+      <strong>html className:</strong> <span id="htmlClass">—</span>
+    </div>
+  </div>
+
+  <!-- ===== 시뮬레이션 박스 computed style ===== -->
+  <div class="info">
+    <h3>★ 시뮬레이션 박스의 실제 적용된 CSS</h3>
+    <dl>
+      <dt>padding (computed):</dt><dd id="testPadding">—</dd>
+      <dt>background (computed):</dt><dd id="testBg">—</dd>
+      <dt>높이 (전체):</dt><dd id="testHeight">—</dd>
     </dl>
   </div>
 
+  <!-- ===== 이하 v1과 동일한 정보 카드들 ===== -->
   <div class="info">
     <h3>Window / Screen</h3>
     <dl>
@@ -185,7 +247,6 @@
       <dt>100svh:</dt><dd id="svh100">—</dd>
       <dt>100lvh:</dt><dd id="lvh100">—</dd>
     </dl>
-    <div class="diff" id="diffViewport">—</div>
   </div>
 
   <div class="info">
@@ -193,67 +254,95 @@
     <dl>
       <dt>top:</dt><dd id="saTop">—</dd>
       <dt>bottom:</dt><dd id="saBottom">—</dd>
-      <dt>left:</dt><dd id="saLeft">—</dd>
-      <dt>right:</dt><dd id="saRight">—</dd>
     </dl>
   </div>
 
   <div class="info">
-    <h3>Visual Viewport API</h3>
-    <dl>
-      <dt>height:</dt><dd id="vvHeight">—</dd>
-      <dt>width:</dt><dd id="vvWidth">—</dd>
-      <dt>offsetTop:</dt><dd id="vvOffsetTop">—</dd>
-      <dt>offsetLeft:</dt><dd id="vvOffsetLeft">—</dd>
-      <dt>scale:</dt><dd id="vvScale">—</dd>
-    </dl>
-  </div>
-
-  <div class="info">
-    <h3>Document</h3>
-    <dl>
-      <dt>documentElement.clientHeight:</dt><dd id="docClientHeight">—</dd>
-      <dt>body.clientHeight:</dt><dd id="bodyClientHeight">—</dd>
-    </dl>
-  </div>
-
-  <div class="info">
-    <h3>User Agent / Platform</h3>
+    <h3>User Agent</h3>
     <dl>
       <dt>userAgent:</dt><dd id="ua" style="word-break: break-all; font-size:11px;">—</dd>
-      <dt>platform:</dt><dd id="platform">—</dd>
     </dl>
   </div>
 
-  <!-- ===== 측정용 hidden 요소 (각 viewport unit으로 실제 px 측정) ===== -->
+  <!-- 측정용 hidden 요소 -->
   <div id="measure-vh"  style="position:absolute; visibility:hidden; height:100vh;  top:0; left:0; width:1px;"></div>
   <div id="measure-dvh" style="position:absolute; visibility:hidden; height:100dvh; top:0; left:0; width:1px;"></div>
   <div id="measure-svh" style="position:absolute; visibility:hidden; height:100svh; top:0; left:0; width:1px;"></div>
   <div id="measure-lvh" style="position:absolute; visibility:hidden; height:100lvh; top:0; left:0; width:1px;"></div>
 
-  <!-- ===== 시각화 마커들 ===== -->
-  <div class="marker m-vh"></div>
-  <div class="marker-label m-vh-l">100vh</div>
   <div class="marker m-dvh"></div>
   <div class="marker-label m-dvh-l">100dvh</div>
-  <div class="marker m-svh"></div>
-  <div class="marker-label m-svh-l">100svh</div>
   <div class="marker m-lvh"></div>
   <div class="marker-label m-lvh-l">100lvh</div>
   <div class="marker m-ih" id="markerIH"></div>
   <div class="marker-label m-ih-l" id="markerIHLabel">innerHeight</div>
-
   <div class="marker-screen-bottom"></div>
-  <div class="marker-screen-bottom-label">↑ screen bottom (실제 viewport 바닥)</div>
+  <div class="marker-screen-bottom-label">↑ 실제 화면 바닥</div>
 
   <script>
     function $(id) { return document.getElementById(id); }
+    function bool(v, lbl) {
+      var span = document.createElement('span');
+      span.className = v ? 'true' : 'false';
+      span.textContent = lbl || (v ? 'true' : 'false');
+      return span;
+    }
+    function setBool(id, v) {
+      var dd = $(id);
+      dd.innerHTML = '';
+      dd.appendChild(bool(v));
+    }
 
     function update() {
-      $('standalone').textContent = window.matchMedia('(display-mode: standalone)').matches;
-      $('fullscreen').textContent = window.matchMedia('(display-mode: fullscreen)').matches;
-      $('navStandalone').textContent = navigator.standalone !== undefined ? navigator.standalone : '(미지원)';
+      // 각 display-mode
+      var mqs = {
+        standalone: window.matchMedia('(display-mode: standalone)').matches,
+        fullscreen: window.matchMedia('(display-mode: fullscreen)').matches,
+        minimalUi:  window.matchMedia('(display-mode: minimal-ui)').matches,
+        browser:    window.matchMedia('(display-mode: browser)').matches,
+        wco:        window.matchMedia('(display-mode: window-controls-overlay)').matches,
+        tabbed:     window.matchMedia('(display-mode: tabbed)').matches
+      };
+      setBool('mqStandalone', mqs.standalone);
+      setBool('mqFullscreen', mqs.fullscreen);
+      setBool('mqMinimalUi', mqs.minimalUi);
+      setBool('mqBrowser', mqs.browser);
+      setBool('mqWCO', mqs.wco);
+      setBool('mqTabbed', mqs.tabbed);
 
+      var navStandalone = navigator.standalone === true;
+      setBool('navStandalone', navStandalone);
+
+      var hasClass = document.documentElement.classList.contains('is-pwa');
+      setBool('hasPwaClass', hasClass);
+
+      $('htmlClass').textContent = document.documentElement.className || '(없음)';
+
+      // 시뮬레이션 박스 computed
+      var el = document.querySelector('.test-bottom-nav');
+      var cs = getComputedStyle(el);
+      $('testPadding').textContent = cs.padding;
+      $('testBg').textContent = cs.backgroundColor;
+      $('testHeight').textContent = el.getBoundingClientRect().height.toFixed(1) + ' px';
+
+      // 큰 결과 박스
+      var bg = cs.backgroundColor;
+      // rgb(46, 125, 50) = 초록 (#2E7D32), rgb(229, 57, 53) = 빨강 (#E53935)
+      var isGreen = bg.indexOf('46') >= 0 && bg.indexOf('125') >= 0;
+      var isRed = bg.indexOf('229') >= 0;
+      var result = $('bigResult');
+      if (isGreen) {
+        result.textContent = '✅ html.is-pwa 클래스 매칭 성공 — PWA 오버라이드 적용 중 (정상)';
+        result.className = 'big-result ok';
+      } else if (isRed) {
+        result.textContent = '❌ base 규칙 적용 중 — html.is-pwa 매칭 실패 (버그)';
+        result.className = 'big-result fail';
+      } else {
+        result.textContent = '? 알 수 없는 색: ' + bg;
+        result.className = 'big-result fail';
+      }
+
+      // 나머지 정보
       $('innerHeight').textContent = window.innerHeight + ' px';
       $('innerWidth').textContent = window.innerWidth + ' px';
       $('outerHeight').textContent = window.outerHeight + ' px';
@@ -261,63 +350,30 @@
       $('screenAvailHeight').textContent = screen.availHeight + ' px';
       $('dpr').textContent = window.devicePixelRatio;
 
-      var vh  = $('measure-vh').getBoundingClientRect().height;
-      var dvh = $('measure-dvh').getBoundingClientRect().height;
-      var svh = $('measure-svh').getBoundingClientRect().height;
-      var lvh = $('measure-lvh').getBoundingClientRect().height;
-      $('vh100').textContent  = vh.toFixed(2)  + ' px';
-      $('dvh100').textContent = dvh.toFixed(2) + ' px';
-      $('svh100').textContent = svh.toFixed(2) + ' px';
-      $('lvh100').textContent = lvh.toFixed(2) + ' px';
+      $('vh100').textContent  = $('measure-vh').getBoundingClientRect().height.toFixed(2) + ' px';
+      $('dvh100').textContent = $('measure-dvh').getBoundingClientRect().height.toFixed(2) + ' px';
+      $('svh100').textContent = $('measure-svh').getBoundingClientRect().height.toFixed(2) + ' px';
+      $('lvh100').textContent = $('measure-lvh').getBoundingClientRect().height.toFixed(2) + ' px';
 
-      var ih = window.innerHeight;
-      var diffs = [];
-      if (Math.abs(dvh - ih) > 0.5)  diffs.push('100dvh vs innerHeight: ' + (dvh - ih).toFixed(1) + 'px');
-      if (Math.abs(lvh - svh) > 0.5) diffs.push('lvh - svh: ' + (lvh - svh).toFixed(1) + 'px (URL bar 영향 추정)');
-      if (Math.abs(lvh - dvh) > 0.5) diffs.push('lvh - dvh: ' + (lvh - dvh).toFixed(1) + 'px');
-      $('diffViewport').textContent = diffs.length ? diffs.join(' | ') : '모두 일치';
-
-      // Safe area insets — probe 요소로 측정
       var probe = document.createElement('div');
       probe.style.cssText = 'position:absolute;visibility:hidden;width:1px;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)';
       document.body.appendChild(probe);
-      var cs = getComputedStyle(probe);
-      $('saTop').textContent    = cs.paddingTop;
-      $('saBottom').textContent = cs.paddingBottom;
-      $('saLeft').textContent   = cs.paddingLeft;
-      $('saRight').textContent  = cs.paddingRight;
+      var cs2 = getComputedStyle(probe);
+      $('saTop').textContent = cs2.paddingTop;
+      $('saBottom').textContent = cs2.paddingBottom;
       document.body.removeChild(probe);
 
-      if (window.visualViewport) {
-        $('vvHeight').textContent     = window.visualViewport.height + ' px';
-        $('vvWidth').textContent      = window.visualViewport.width + ' px';
-        $('vvOffsetTop').textContent  = window.visualViewport.offsetTop + ' px';
-        $('vvOffsetLeft').textContent = window.visualViewport.offsetLeft + ' px';
-        $('vvScale').textContent      = window.visualViewport.scale;
-      } else {
-        $('vvHeight').textContent = '(API 미지원)';
-      }
-
-      $('docClientHeight').textContent  = document.documentElement.clientHeight + ' px';
-      $('bodyClientHeight').textContent = document.body.clientHeight + ' px';
-
       $('ua').textContent = navigator.userAgent;
-      $('platform').textContent = navigator.platform || '(미지원)';
 
-      // innerHeight marker 위치
-      $('markerIH').style.top = ih + 'px';
-      $('markerIHLabel').style.top = (ih - 12) + 'px';
+      $('markerIH').style.top = window.innerHeight + 'px';
+      $('markerIHLabel').style.top = (window.innerHeight - 12) + 'px';
     }
 
     update();
     window.addEventListener('resize', update);
-    if (window.visualViewport) {
-      window.visualViewport.addEventListener('resize', update);
-      window.visualViewport.addEventListener('scroll', update);
-    }
+    if (window.visualViewport) window.visualViewport.addEventListener('resize', update);
     setTimeout(update, 100);
     setTimeout(update, 500);
-    setTimeout(update, 1500);
   </script>
 </body>
 </html>
