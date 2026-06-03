@@ -71,7 +71,7 @@
     .app-container[data-time-slot="night"]     .bg-overlay { background: rgba(0, 0, 0, 0.40); }
 
     /* ---------- 글래스 카드 베이스 ----------
-       모든 카드(.streak-hero, .calendar, .preview-card, .calendar-empty, .calendar-hint)는
+       모든 카드(.streak-metrics, .calendar, .preview-card, .calendar-empty, .calendar-hint)는
        이 베이스 위에서 렌더됨. 다크 톤(night)에선 글래스 톤만 다르게 분기. */
     .glass-card {
       background: rgba(255, 255, 255, 0.85);
@@ -99,6 +99,7 @@
     .app-container[data-time-slot="night"] .month-nav__btn { color: rgba(255, 255, 255, 0.92); }
     .app-container[data-time-slot="night"] .month-nav__btn:disabled { color: rgba(255, 255, 255, 0.25); }
     .app-container[data-time-slot="night"] .month-nav__label { color: #FFFFFF; }
+    .app-container[data-time-slot="night"] .calendar-weekdays { border-bottom-color: rgba(255, 255, 255, 0.14); }
     .app-container[data-time-slot="night"] .calendar-weekdays__day { color: rgba(255, 255, 255, 0.65); }
     .app-container[data-time-slot="night"] .calendar-weekdays__day--sun { color: #FFA8A8; }
     .app-container[data-time-slot="night"] .calendar-cell { color: rgba(255, 255, 255, 0.7); }
@@ -111,7 +112,6 @@
     /* night + completed: sage 배경 위 흰 글자 강제 (sun 셀이라도 동일) */
     .app-container[data-time-slot="night"] .calendar-cell--completed,
     .app-container[data-time-slot="night"] .calendar-cell--completed.calendar-cell--sun { color: #FFFFFF; }
-    .app-container[data-time-slot="night"] .streak-hero__message { color: #FFFFFF; }
     .app-container[data-time-slot="night"] .streak-metric__value { color: #FFFFFF; }
     .app-container[data-time-slot="night"] .streak-metric__unit { color: rgba(255, 255, 255, 0.65); }
     .app-container[data-time-slot="night"] .streak-metric__divider { background: rgba(255, 255, 255, 0.18); }
@@ -176,32 +176,29 @@
     .header-action-btn svg { width: 22px; height: 22px; }
     .header-action-btn:active { background: var(--accent-sage-soft); }
 
-    /* 스트릭 히어로 카드 — 성장 일러스트 중심 (큰 일러스트 + 메시지 + 지표) */
-    .streak-hero {
-      padding: 16px 18px 20px;
-      margin-bottom: var(--space-5);
+    /* 상단 헤더 — 월 이동 + 성장 꽃 (카드 없이 떠 있는 영역) */
+    .month-hero {
       text-align: center;
+      margin-bottom: var(--space-3);
     }
-    .streak-hero__illust {
-      width: 82px;
-      height: 82px;
-      margin: 0 auto 10px;
+    .month-hero__illust {
+      width: 92px;
+      height: 92px;
+      margin: 4px auto 0;
       display: flex;
       align-items: center;
       justify-content: center;
     }
-    .streak-hero__illust svg {
+    .month-hero__illust svg {
       width: 100%;
       height: 100%;
       display: block;
     }
-    .streak-hero__message {
-      font-size: 15px;
-      font-weight: 600;
-      color: var(--text-primary);
-      letter-spacing: -0.015em;
-      margin-bottom: 18px;
-      line-height: 1.5;
+
+    /* 지표 섹션 카드 (회 묵상 · 일 연속) — 비중을 줄여 달력에 시선이 가도록 */
+    .streak-metrics {
+      padding: 11px 18px;
+      margin-bottom: var(--space-4);
     }
     .streak-hero__metrics {
       display: flex;
@@ -213,18 +210,18 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 4px;
+      gap: 3px;
       max-width: 50%;
     }
     .streak-metric__value {
-      font-size: 26px;
+      font-size: 21px;
       font-weight: 700;
       color: var(--text-primary);
       letter-spacing: -0.025em;
       line-height: 1;
     }
     .streak-metric__unit {
-      font-size: 12px;
+      font-size: 11.5px;
       color: var(--text-secondary);
       font-weight: 500;
       letter-spacing: -0.005em;
@@ -232,18 +229,18 @@
     .streak-metric__divider {
       width: 0.5px;
       align-self: center;
-      height: 28px;
+      height: 24px;
       background: rgba(0, 0, 0, 0.10);
       flex-shrink: 0;
     }
 
-    /* 월 이동 */
+    /* 월 이동 (상단 헤더 내부) */
     .month-nav {
       display: flex;
       align-items: center;
       justify-content: space-between;
       padding: 0 var(--space-2);
-      margin-bottom: var(--space-3);
+      margin-bottom: 0;
     }
     .month-nav__btn {
       width: 40px;
@@ -272,9 +269,9 @@
       letter-spacing: -0.01em;
     }
 
-    /* 달력 카드 */
+    /* 달력 카드 — 화면에서 가장 비중 있게 */
     .calendar {
-      padding: 18px 14px 14px;
+      padding: 18px 16px 16px;
       margin-bottom: var(--space-5);
     }
     .calendar-weekdays {
@@ -284,7 +281,9 @@
       font-size: 11.5px;
       color: var(--text-secondary);
       font-weight: 500;
+      padding-bottom: var(--space-2);
       margin-bottom: var(--space-2);
+      border-bottom: 0.5px solid rgba(0, 0, 0, 0.07);
     }
     .calendar-weekdays__day { padding: 4px 0; }
     .calendar-weekdays__day--sun { color: #C27C65; }
@@ -292,7 +291,7 @@
     .calendar-grid {
       display: grid;
       grid-template-columns: repeat(7, 1fr);
-      gap: 4px;
+      gap: 5px;
     }
     .calendar-cell {
       aspect-ratio: 1;
@@ -302,7 +301,7 @@
       justify-content: center;
       gap: 2px;
       position: relative;
-      font-size: 13.5px;
+      font-size: 14.5px;
       color: var(--text-secondary);   /* iOS secondaryLabel 톤 — 미완료는 차분하게 후퇴 */
       border-radius: 10px;
       background: transparent;
@@ -544,8 +543,8 @@
         max-height: 60vh;
         overflow-y: auto;
       }
-      .streak-hero {
-        margin-bottom: var(--space-3);
+      .month-hero {
+        margin-bottom: var(--space-2);
       }
     }
     @media (min-width: 1024px) {
@@ -778,10 +777,27 @@
       </button>
     </header>
 
-    <!-- 스트릭 히어로 카드 — 성장 일러스트 + 응원 메시지 + 지표 -->
-    <section class="streak-hero glass-card">
-      <div class="streak-hero__illust" id="streakIllust" aria-hidden="true"></div>
-      <div class="streak-hero__message" id="streakMessage">오늘도 잘 하고 있어요</div>
+    <!-- 상단 헤더 — 월 이동 + 성장 꽃 (카드 없이 떠 있는 영역) -->
+    <header class="month-hero">
+      <nav class="month-nav">
+        <button class="month-nav__btn" id="prevMonthBtn" aria-label="이전 달">
+          <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="15 18 9 12 15 6"/>
+          </svg>
+        </button>
+        <div class="month-nav__label" id="monthLabel">—</div>
+        <button class="month-nav__btn" id="nextMonthBtn" aria-label="다음 달">
+          <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="9 18 15 12 9 6"/>
+          </svg>
+        </button>
+      </nav>
+      <!-- 성장 꽃 — 추후 자라나는 애니메이션 자리 -->
+      <div class="month-hero__illust" id="streakIllust" aria-hidden="true"></div>
+    </header>
+
+    <!-- 지표 섹션 -->
+    <section class="streak-metrics glass-card">
       <div class="streak-hero__metrics">
         <div class="streak-metric">
           <span class="streak-metric__value" id="streakTotal">0</span>
@@ -794,21 +810,6 @@
         </div>
       </div>
     </section>
-
-    <!-- 월 이동 -->
-    <nav class="month-nav">
-      <button class="month-nav__btn" id="prevMonthBtn" aria-label="이전 달">
-        <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="15 18 9 12 15 6"/>
-        </svg>
-      </button>
-      <div class="month-nav__label" id="monthLabel">—</div>
-      <button class="month-nav__btn" id="nextMonthBtn" aria-label="다음 달">
-        <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="9 18 15 12 9 6"/>
-        </svg>
-      </button>
-    </nav>
 
     <!-- 달력 -->
     <section class="calendar glass-card">
@@ -1172,16 +1173,6 @@
       document.getElementById('streakTotal').textContent = total;
       document.getElementById('streakCurrent').textContent = current;
       document.getElementById('streakIllust').innerHTML = getGrowthSVG(getGrowthStage(total));
-      document.getElementById('streakMessage').textContent = getStreakMessage(total, current);
-    }
-
-    function getStreakMessage(total, current) {
-      if (current === 0 && total === 0) return '첫 묵상을 시작해 볼까요';
-      if (current === 0 && total > 0)   return '다시 시작해 볼까요';
-      if (current >= 1 && current < 3)  return '오늘도 잘 하고 있어요';
-      if (current >= 3 && current < 7)  return `${current}일째 이어가는 중이에요`;
-      if (current >= 7 && current < 30) return `${current}일째 — 정말 멋져요`;
-      return `${current}일 — 묵상이 일상이 되었어요`;
     }
 
     function collectCompletedDates() {
