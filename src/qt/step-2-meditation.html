@@ -437,6 +437,17 @@
         inset 0 1px 0 rgba(255, 255, 255, 0.06),
         0 8px 24px rgba(0, 0, 0, 0.5);
     }
+    /* PC·아이패드(481px+): 그림을 프레임 좌우 끝까지 꽉 채워 크게 (full-bleed) */
+    @media (min-width: 481px) {
+      .scene-card {
+        margin-left: calc(-1 * var(--page-padding-x));
+        margin-right: calc(-1 * var(--page-padding-x));
+        border-radius: 0;
+        border-left: none;
+        border-right: none;
+      }
+      .scene-card__bar { padding-left: var(--page-padding-x); padding-right: var(--page-padding-x); }
+    }
 
     /* 말씀 탭 (오늘 범위 / 전체 장) */
     .scripture-tabs {
@@ -676,7 +687,7 @@
     <!-- ②.5 장면 일러스트 — 히어로 카드 + 우측 펼침/닫기 셰브론 (기본 펼침) -->
     <section class="scene-card" id="sceneCard" hidden>
       <button class="scene-card__bar" id="sceneCardToggle" type="button" aria-expanded="true" aria-controls="sceneCardBody">
-        <span class="scene-card__title">🎬 오늘의 장면</span>
+        <span class="scene-card__title">오늘의 장면</span>
         <svg class="scene-card__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="6 9 12 15 18 9"/>
         </svg>
