@@ -476,19 +476,24 @@
     html[data-font-size="sm"] .book-overview-list { grid-template-columns: 92px 1fr; }
     html[data-font-size="lg"] .book-overview-list { grid-template-columns: 116px 1fr; }
     /* 다크/밤 모드에서 라벨 대비 보강 */
-    /* 밤: 살펴보기 라벨을 또렷하게 — 밝은 페리윙클 글씨(전 기기) + PC/태블릿은 칩 처리(인물 이름표와 통일) */
-    html[data-time-slot="night"] .book-overview-list > dt { color: #C2CEE6; }
+    /* 밤: 살펴보기 라벨을 또렷하게 — 밝은 페리윙클 칩(전 기기, 인물 이름표와 통일) */
+    html[data-time-slot="night"] .book-overview-list > dt {
+      justify-self: start;
+      align-self: start;
+      width: -moz-fit-content;
+      width: fit-content;
+      padding: 2px 10px;
+      border-radius: 999px;
+      background: rgba(120, 144, 184, 0.26);
+      color: #DCE3F0;
+      box-shadow: inset 0 0 0 1px rgba(168, 181, 208, 0.22);
+    }
     html[data-time-slot="night"] .date-sub-key { color: #BFC9E2; }
-    @media (min-width: 744px) {
-      html[data-time-slot="night"] .book-overview-list > dt {
-        justify-self: start;
-        width: -moz-fit-content;
-        width: fit-content;
-        padding: 2px 10px;
-        border-radius: 999px;
-        background: rgba(120, 144, 184, 0.26);
-        color: #DCE3F0;
-        box-shadow: inset 0 0 0 1px rgba(168, 181, 208, 0.22);
+    /* 모바일(≤743px) 밤: 긴 라벨 칩이 안 넘치도록 라벨 칼럼을 콘텐츠 폭으로(기본 88px 고정 해제) */
+    @media (max-width: 743px) {
+      html[data-time-slot="night"] .book-overview-list {
+        grid-template-columns: auto 1fr;
+        column-gap: 14px;
       }
     }
 
