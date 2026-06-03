@@ -19,8 +19,8 @@
   <title>묵상 · 주만나</title>
 
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.css">
-  <link rel="stylesheet" href="../styles/design-tokens.css">
-  <link rel="stylesheet" href="../styles/common.css">
+  <link rel="stylesheet" href="../styles/design-tokens.css?v=20260603-66fea44">
+  <link rel="stylesheet" href="../styles/common.css?v=20260603-66fea44">
 
   <!-- ★ 첫 페인트 전: 시간대 결정 → html[data-time-slot] 주입 -->
   <script>
@@ -369,6 +369,76 @@
       white-space: pre-wrap;
     }
 
+    /* ------------------------------------------------------------------
+       장면 일러스트 — 본문 따라가기 하단 펼침/닫기 (기본 닫힘)
+       ------------------------------------------------------------------ */
+    .scene-illust {
+      margin-top: var(--space-5);
+      padding-top: var(--space-5);
+      border-top: 1px solid var(--border-subtle);
+    }
+    .scene-illust__toggle {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      gap: var(--space-3);
+      padding: 12px 14px;
+      background: var(--bg-soft);
+      border: none;
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      transition: transform var(--duration-fast), background var(--duration-base);
+    }
+    .scene-illust__toggle:active { transform: scale(0.985); }
+    .scene-illust__label {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: var(--text-body);
+      font-weight: 600;
+      color: var(--text-primary);
+      letter-spacing: -0.01em;
+    }
+    .scene-illust__chevron {
+      width: 18px;
+      height: 18px;
+      color: var(--text-secondary);
+      transition: transform var(--duration-base) var(--ease-out);
+      flex-shrink: 0;
+    }
+    .scene-illust.is-open .scene-illust__chevron { transform: rotate(180deg); }
+    /* absolute 아님 — 카드 흐름 안에서 부드럽게 펼침 */
+    .scene-illust__body {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height var(--duration-slow) var(--ease-out);
+    }
+    .scene-illust.is-open .scene-illust__body { max-height: 1400px; }
+    .scene-illust__inner { padding-top: var(--space-4); }
+    .scene-illust__img {
+      display: block;
+      width: 100%;
+      height: auto;
+      border-radius: var(--radius-md);
+      box-shadow:
+        0 1px 2px rgba(45, 58, 50, 0.05),
+        0 6px 16px rgba(45, 58, 50, 0.10),
+        0 16px 40px rgba(45, 58, 50, 0.10);
+    }
+    .scene-illust__caption {
+      margin-top: var(--space-3);
+      font-size: var(--text-small);
+      color: var(--text-secondary);
+      line-height: 1.6;
+      text-align: center;
+    }
+    html[data-time-slot="night"] .scene-illust__toggle { background: rgba(255, 255, 255, 0.06); }
+    html[data-time-slot="night"] .scene-illust__img {
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    }
+
     /* 말씀 탭 (오늘 범위 / 전체 장) */
     .scripture-tabs {
       display: flex;
@@ -626,6 +696,21 @@
           <div class="deep-dive__body" id="deepDiveBridge"></div>
         </div>
       </div>
+
+      <!-- 장면 일러스트 (펼침/닫기 · 기본 닫힘) — 그림 파일이 있을 때만 JS가 노출 -->
+      <div class="scene-illust" id="sceneIllust" hidden>
+        <button class="scene-illust__toggle" id="sceneIllustToggle" type="button" aria-expanded="false" aria-controls="sceneIllustBody">
+          <span class="scene-illust__label">🎬 오늘의 장면 그림 보기</span>
+          <svg class="scene-illust__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
+        </button>
+        <div class="scene-illust__body" id="sceneIllustBody">
+          <div class="scene-illust__inner">
+            <img class="scene-illust__img" id="sceneIllustImg" alt="오늘 말씀 본문의 장면 일러스트" loading="lazy">
+          </div>
+        </div>
+      </div>
     </section>
 
     <!-- ④ 떠오르는 질문 카드 (follow-up Q&A) -->
@@ -670,8 +755,8 @@
   </div>
 
   <!-- Scripts -->
-  <script src="../scripts/storage.js"></script>
-  <script src="../scripts/common.js"></script>
+  <script src="../scripts/storage.js?v=20260603-66fea44"></script>
+  <script src="../scripts/common.js?v=20260603-66fea44"></script>
   <script>
     const URL_DATE = new URLSearchParams(location.search).get('date');
     const TODAY = URL_DATE || sessionStorage.getItem('qtDate') || Common.todayISO();
@@ -767,6 +852,33 @@
         }
       }
       if (any) document.getElementById('deepDiveCard').style.display = '';
+
+      // 장면 일러스트 자동 로드 (그림 파일이 있으면 펼침/닫기 영역 노출)
+      loadSceneImage(d.date || TODAY);
+    }
+
+    // ========== 장면 일러스트 로드 ==========
+    // src/images/scenes/{date}.{확장자}를 차례로 탐색 — 있으면 #sceneIllust 노출, 없으면 계속 숨김
+    function loadSceneImage(dateStr) {
+      if (!dateStr) return;
+      const wrap = document.getElementById('sceneIllust');
+      const img = document.getElementById('sceneIllustImg');
+      if (!wrap || !img) return;
+
+      const exts = ['png', 'jpg', 'jpeg', 'webp'];
+      let i = 0;
+      const tryNext = () => {
+        if (i >= exts.length) return;   // 모든 확장자 실패 → 영역은 숨긴 채로 둠
+        const url = `../images/scenes/${dateStr}.${exts[i]}`;
+        const probe = new Image();
+        probe.onload = () => {
+          img.src = url;
+          wrap.hidden = false;
+        };
+        probe.onerror = () => { i += 1; tryNext(); };
+        probe.src = url;
+      };
+      tryNext();
     }
 
     // ========== 떠오르는 질문 v3 — 메인 + 꼬리 (Gemini 패턴) ==========
@@ -1203,6 +1315,16 @@
           doToggle();
         }
       });
+
+      // 장면 일러스트 펼침/닫기 (기본 닫힘)
+      const sceneToggle = document.getElementById('sceneIllustToggle');
+      if (sceneToggle) {
+        sceneToggle.addEventListener('click', () => {
+          const wrap = document.getElementById('sceneIllust');
+          const open = wrap.classList.toggle('is-open');
+          sceneToggle.setAttribute('aria-expanded', String(open));
+        });
+      }
     }
 
     // ========== 폰트 크기 ==========
