@@ -1382,5 +1382,123 @@
     })();
   </script>
   <!-- ▲▲▲ [임시] 비교 토글 끝 ▲▲▲ -->
+
+  <!-- ▼▼▼ [임시] PWA 디버그 칩 — iOS PWA 캐시/SW/is-pwa 상태 실시간 표시. 해결 후 삭제. ▼▼▼ -->
+  <style>
+    #__pwaDebug {
+      position: fixed;
+      top: calc(env(safe-area-inset-top, 0) + 8px);
+      right: 8px;
+      z-index: 99999;
+      background: rgba(0, 0, 0, 0.85);
+      color: #fff;
+      font-family: ui-monospace, Menlo, monospace;
+      font-size: 10px;
+      line-height: 1.35;
+      padding: 6px 8px;
+      border-radius: 6px;
+      max-width: 60vw;
+      pointer-events: auto;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+      transition: opacity 200ms;
+    }
+    #__pwaDebug.collapsed {
+      opacity: 0.4;
+      max-width: 60px;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+    #__pwaDebug b { color: #4FC3F7; font-weight: 700; }
+    #__pwaDebug .ok { color: #69F0AE; }
+    #__pwaDebug .bad { color: #FF8A80; }
+  </style>
+  <div id="__pwaDebug" title="탭해서 축소/확장">초기화 중…</div>
+  <script>
+    (function() {
+      var chip = document.getElementById('__pwaDebug');
+      chip.addEventListener('click', function() { chip.classList.toggle('collapsed'); });
+
+      var swVersion = null, swCacheName = null;
+
+      function askSWVersion() {
+        if (!navigator.serviceWorker || !navigator.serviceWorker.controller) return;
+        try {
+          var mc = new MessageChannel();
+          mc.port1.onmessage = function(e) {
+            if (e.data) {
+              swVersion = e.data.version || null;
+              swCacheName = e.data.cacheName || null;
+            }
+          };
+          navigator.serviceWorker.controller.postMessage({ type: 'GET_VERSION' }, [mc.port2]);
+        } catch (e) {}
+      }
+
+      function tag(label, value, ok) {
+        var cls = ok === true ? 'ok' : (ok === false ? 'bad' : '');
+        return '<b>' + label + '</b> <span class="' + cls + '">' + value + '</span>';
+      }
+
+      function update() {
+        var lines = [];
+
+        // PWA 감지
+        var navStandalone = navigator.standalone === true;
+        var mqStandalone = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || false;
+        var isPwaClass = document.documentElement.classList.contains('is-pwa');
+        var isPwa = navStandalone || mqStandalone;
+        lines.push(tag('PWA', (isPwa ? 'Y' : 'N') + ' (nav=' + (navStandalone ? 'Y' : 'N') + ' mq=' + (mqStandalone ? 'Y' : 'N') + ')', isPwa));
+        lines.push(tag('.is-pwa class', isPwaClass ? 'Y' : 'N', isPwaClass));
+
+        // Service Worker 상태
+        var swStatus, swOk;
+        if (!('serviceWorker' in navigator)) {
+          swStatus = '미지원'; swOk = false;
+        } else if (navigator.serviceWorker.controller) {
+          swStatus = 'controlled ✓'; swOk = true;
+        } else {
+          swStatus = '미등록/미제어'; swOk = false;
+        }
+        lines.push(tag('SW', swStatus, swOk));
+        if (swVersion) lines.push(tag('SW ver', swVersion, true));
+
+        // bottom-nav 실측
+        var nav = document.querySelector('.bottom-nav');
+        if (nav) {
+          var cs = getComputedStyle(nav);
+          var pb = cs.paddingBottom;
+          var pbNum = parseFloat(pb);
+          // 기대치: PWA에서 12px (override), base는 14+34=48px
+          var padOk = pbNum < 20;
+          lines.push(tag('pad-bot', pb, padOk));
+        }
+
+        // .app-container height
+        var c = document.querySelector('.app-container');
+        if (c) {
+          var ch = c.getBoundingClientRect().height.toFixed(0);
+          var ih = window.innerHeight;
+          var heightOk = Math.abs(ch - ih) < 20;
+          lines.push(tag('container h', ch + ' (inner=' + ih + ')', heightOk));
+        }
+
+        chip.innerHTML = lines.join('<br>');
+      }
+
+      // 처음/주기 + SW controller 변경 시 즉시
+      askSWVersion();
+      update();
+      setInterval(function() { askSWVersion(); update(); }, 1500);
+
+      if (navigator.serviceWorker) {
+        navigator.serviceWorker.addEventListener('controllerchange', function() {
+          setTimeout(function() { askSWVersion(); update(); }, 50);
+        });
+      }
+    })();
+  </script>
+  <!-- ▲▲▲ [임시] PWA 디버그 칩 끝 ▲▲▲ -->
 </body>
 </html>

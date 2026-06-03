@@ -95,7 +95,13 @@ self.addEventListener('fetch', (event) => {
 // ───────────────────────────────────────────────────────────────────────────
 
 self.addEventListener('message', (event) => {
-  if (event.data && event.data.type === 'SKIP_WAITING') {
+  if (!event.data) return;
+  if (event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
+  } else if (event.data.type === 'GET_VERSION') {
+    // 디버그 칩에서 SW 버전 조회 — MessageChannel port로 응답
+    if (event.ports && event.ports[0]) {
+      event.ports[0].postMessage({ version: SW_VERSION, cacheName: CACHE_NAME });
+    }
   }
 });
