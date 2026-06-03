@@ -415,6 +415,28 @@ input, textarea {
   }
 }
 
+/* ------------------------------------------------------------------
+   📱 터치 태블릿(아이패드 등): 프레임 없이 화면 꽉 채움 — 모바일처럼.
+   - PC(마우스/트랙패드 = hover 가능)는 위 481/744/1024px 가운데 카드 프레임 유지.
+   - 판별: hover:none + pointer:coarse = 주 입력이 터치인 진짜 태블릿/폰만.
+     (터치스크린 노트북은 트랙패드가 주 입력이라 hover 가능 → PC로 처리되어 제외)
+   - 481/744/1024px 블록 뒤에 와서 .app-container 크기를 덮어씀.
+   ------------------------------------------------------------------ */
+@media (min-width: 744px) and (hover: none) and (pointer: coarse) {
+  body {
+    padding: 0;
+  }
+  .app-container {
+    width: 100%;
+    max-width: 100%;
+    height: 100vh;
+    height: 100dvh;
+    max-height: none;
+    border-radius: 0;
+    box-shadow: none;
+  }
+}
+
 /* 모바일 환경 (480px 이하) - 프레임 없이 풀스크린.
    배경은 base body와 동일한 차분한 시간대 그라데이션 유지 (단색 리셋 X). */
 @media (max-width: 480px) {
