@@ -310,17 +310,17 @@ html.is-pwa .app-container {
        순서 그대로(살펴보기→인물→깊은 묵상), 태블릿+에서만 인물이 위로 올라감
      - align-items: start로 각 카드는 row 위쪽 정렬 + 자기 height만 차지
      ---------------------------------------------------------- */
-  /* 모든 카드가 grid-column: 1/-1(풀폭)이므로 단일 칼럼 스택으로 운용한다.
-     예전 2칼럼 + `row dense` 조합은 dense 알고리즘이 order로 재정렬된 풀폭 카드를
-     이미 배치된 칸에 끼워넣어 sceneCard ↔ deepDiveCard가 같은 칸에 겹쳐 그려지던 버그가 있었음.
-     단일 칼럼 + `row`(dense 없음)로 각 섹션이 자기 높이만큼 독립된 행을 차지하게 함. */
+  /* flexbox 세로 스택으로 운용한다.
+     [히스토리] 예전 2칼럼 grid + `row dense`는 dense가 카드를 같은 칸에 끼워넣어 겹쳤고,
+     단일칼럼 grid로 바꿔도 sceneCard가 `hidden`→JS로 뒤늦게 삽입 + 이미지 lazy 로드되며
+     grid가 그 행 높이를 헤더(~26px)로 고정한 뒤 재계산하지 않아, 이미지 로드 후 카드가
+     자기 행을 넘어 다음 카드(본문 따라가기)를 덮는 버그가 남았다.
+     flex column은 자식 높이를 항상 콘텐츠 기준으로 계산하고 늦은 이미지 로드에도 재배치하므로
+     각 섹션이 확실히 자기 높이만큼 독립된 자리를 차지한다. */
   [data-qt-step="meditation"] .app-scroll {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    grid-auto-flow: row;
-    row-gap: var(--card-gap);
-    align-content: start;
-    align-items: start;
+    display: flex;
+    flex-direction: column;
+    gap: var(--card-gap);
   }
   /* grid 안에선 카드/토글의 margin-bottom 무력화 (row-gap이 처리) */
   [data-qt-step="meditation"] .meditation-card,
@@ -357,11 +357,14 @@ html.is-pwa .app-container {
     grid-column: 1 / -1;
   }
   /* 장면 일러스트 카드: '살펴보기 → 오늘의 장면 → 본문 따라가기' 순서가 되도록 order:1.
-     단일 칼럼 스택이라 각 카드가 독립된 행을 차지 → 겹침 없음.
+     ★ flex-shrink: 0 필수 — scene-card는 overflow:hidden이라 flexbox min-size 규칙상
+       최소 높이가 0으로 처리됨. 이게 없으면 flex가 카드를 2px까지 찌그러뜨려
+       이미지가 사라지고 다음 카드(본문 따라가기)와 겹쳐 보임.
      full-bleed 음수마진 해제해 일반 카드처럼 보이게. */
   [data-qt-step="meditation"] #sceneCard {
     grid-column: 1 / -1;
     order: 1;
+    flex-shrink: 0;
     margin: 0;
     border-radius: var(--radius-lg);
     border: 0.5px solid rgba(45, 58, 50, 0.08);
