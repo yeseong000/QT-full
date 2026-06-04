@@ -80,22 +80,38 @@ function applyTheme(theme) {
   window.addEventListener('orientationchange', setAppHeight);
 })();
 
-// 시간대 기반 자동 배경
-//   22:00–07:00 → dark, 그 외 → default(light)
-function pickAutoTheme(date = new Date()) {
-  const h = date.getHours();
-  return (h >= 22 || h < 7) ? 'dark' : 'default';
+// ── 시간대 수동 오버라이드 ──────────────────────────────────────────────
+// 사용자가 홈의 5개 아이콘으로 고른 시간대를 localStorage('settings.timeSlot')에 저장.
+// 값이 있으면 "현재 시각" 대신 그 시간대를 앱 전체가 따른다(모든 페이지 공통 단일 출처).
+// 값이 없으면 null → 실제 시각으로 자동 계산.
+const TIME_SLOTS = ['dawn', 'morning', 'afternoon', 'evening', 'night'];
+function getSlotOverride() {
+  try {
+    const v = localStorage.getItem('settings.timeSlot');
+    return (v && TIME_SLOTS.indexOf(v) >= 0) ? v : null;
+  } catch (e) {
+    return null;
+  }
 }
 
-// 시간대(5단계) — 홈 화면(index.html)과 동일한 경계.
-// 주위 배경(ambient) 그라데이션을 고르는 데 쓴다.
+// 시간대(5단계) — 오버라이드가 있으면 그걸, 없으면 현재 시각 기준.
+//   홈 화면(index.html)과 동일한 경계. 주위 배경(ambient) 그라데이션을 고르는 데 쓴다.
 function pickTimeSlot(date = new Date()) {
+  const ov = getSlotOverride();
+  if (ov) return ov;
   const h = date.getHours();
   if (h >= 4  && h < 7)  return 'dawn';
   if (h >= 7  && h < 12) return 'morning';
   if (h >= 12 && h < 17) return 'afternoon';
   if (h >= 17 && h < 22) return 'evening';
   return 'night';
+}
+
+// 시간대 기반 자동 배경(다크/라이트) — 어두운 시간대(새벽·밤)는 dark.
+// pickTimeSlot이 오버라이드를 반영하므로 수동 선택 시에도 다크/라이트가 함께 따라간다.
+function pickAutoTheme(date = new Date()) {
+  const slot = pickTimeSlot(date);
+  return (slot === 'dawn' || slot === 'night') ? 'dark' : 'default';
 }
 
 // 시간대별 "주위 배경(ambient)" — 홈 화면 5색 팔레트(SKY/GROUND)를 연하게 풀어낸
@@ -168,6 +184,7 @@ const Common = {
   applyAutoTheme,
   pickAutoTheme,
   pickTimeSlot,
+  getSlotOverride,
   applyAmbient,
   applyFontStyle,
 

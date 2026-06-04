@@ -19,18 +19,26 @@
   <title>적용과 기도 · 주만나</title>
 
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.css">
-  <link rel="stylesheet" href="../styles/design-tokens.css?v=20260603-66fea44">
-  <link rel="stylesheet" href="../styles/common.css?v=20260603-66fea44">
+  <link rel="stylesheet" href="../styles/design-tokens.css?v=20260604-slotsync">
+  <link rel="stylesheet" href="../styles/common.css?v=20260604-slotsync">
 
   <!-- ★ 첫 페인트 전: 시간대 결정 → html[data-time-slot] 주입 -->
   <script>
     (function () {
-      var hour = new Date().getHours();
-      var slot = (hour >= 4  && hour < 7)  ? 'dawn'
-               : (hour >= 7  && hour < 12) ? 'morning'
-               : (hour >= 12 && hour < 17) ? 'afternoon'
-               : (hour >= 17 && hour < 22) ? 'evening'
-               : 'night';
+      // 사용자가 홈에서 고른 시간대(settings.timeSlot)가 있으면 우선, 없으면 실제 현재 시각.
+      var slot = null;
+      try {
+        var _ov = localStorage.getItem('settings.timeSlot');
+        if (_ov && ['dawn','morning','afternoon','evening','night'].indexOf(_ov) >= 0) slot = _ov;
+      } catch (e) {}
+      if (!slot) {
+        var hour = new Date().getHours();
+        slot = (hour >= 4  && hour < 7)  ? 'dawn'
+             : (hour >= 7  && hour < 12) ? 'morning'
+             : (hour >= 12 && hour < 17) ? 'afternoon'
+             : (hour >= 17 && hour < 22) ? 'evening'
+             : 'night';
+      }
       document.documentElement.setAttribute('data-time-slot', slot);
       // 시스템 주소창/상태바 색을 본문 시간대 색과 일치시킴 (PWA에서 상단 색 어긋남 제거).
       // data-uses-time-slot 신호 → common.js의 applyTheme이 meta theme-color를 덮어쓰지 않음.
@@ -281,8 +289,8 @@
   </div>
 
   <!-- Scripts -->
-  <script src="../scripts/storage.js?v=20260603-66fea44"></script>
-  <script src="../scripts/common.js?v=20260603-66fea44"></script>
+  <script src="../scripts/storage.js?v=20260604-slotsync"></script>
+  <script src="../scripts/common.js?v=20260604-slotsync"></script>
   <script>
     const TODAY = sessionStorage.getItem('qtDate') || Common.todayISO();
     const HAS_EXPLICIT_DATE = !!sessionStorage.getItem('qtDate');

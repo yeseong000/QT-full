@@ -19,8 +19,8 @@
   <title>묵상 달력 · 주만나</title>
 
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.css">
-  <link rel="stylesheet" href="../styles/design-tokens.css?v=20260603-66fea44">
-  <link rel="stylesheet" href="../styles/common.css?v=20260603-66fea44">
+  <link rel="stylesheet" href="../styles/design-tokens.css?v=20260604-slotsync">
+  <link rel="stylesheet" href="../styles/common.css?v=20260604-slotsync">
 
   <style>
     /* ========== 달력 전용 ========== */
@@ -926,8 +926,8 @@
   </div>
 
   <!-- Scripts -->
-  <script src="../scripts/storage.js?v=20260603-66fea44"></script>
-  <script src="../scripts/common.js?v=20260603-66fea44"></script>
+  <script src="../scripts/storage.js?v=20260604-slotsync"></script>
+  <script src="../scripts/common.js?v=20260604-slotsync"></script>
   <script>
     const EMOTION_MAP = {
       gratitude: { emoji: '🙏', label: '감사' },
@@ -1040,8 +1040,11 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
-      // 시간대 슬롯 적용 (블러 배경 + 톤 분기)
-      const slot = getTimeSlot(new Date().getHours());
+      // 시간대 슬롯 적용 (블러 배경 + 톤 분기) — 홈에서 고른 시간대가 있으면 우선,
+      // 없으면 현재 시각. (common.js의 pickTimeSlot이 override를 반영)
+      const slot = (window.Common && Common.pickTimeSlot)
+        ? Common.pickTimeSlot()
+        : getTimeSlot(new Date().getHours());
       document.getElementById('appContainer').setAttribute('data-time-slot', slot);
 
       document.getElementById('backBtn').addEventListener('click', () => {
