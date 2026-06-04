@@ -353,9 +353,14 @@ html.is-pwa .app-container {
   [data-qt-step="meditation"] #charactersCard {
     grid-column: 1 / -1;
   }
-  /* 장면 일러스트 카드: 풀폭 + grid 안에서 full-bleed 음수마진 해제 → 일반 카드처럼 */
+  /* 장면 일러스트 카드: '본문 따라가기' 바로 위에 오도록 order:1 (살펴보기·본문과 같은 그룹).
+     order를 안 주면 기본 0이라 살펴보기(order:1)와 그룹이 어긋나 → 배치/그리기 순서 역전 →
+     살펴보기 카드 뒤에 깔려 안 보이던 버그. + full-bleed 음수마진 해제해 일반 카드처럼. */
   [data-qt-step="meditation"] #sceneCard {
     grid-column: 1 / -1;
+    order: 1;
+    position: relative;   /* paint order 안정화 (다른 카드 뒤로 깔리지 않게) */
+    z-index: 1;
     margin: 0;
     border-radius: var(--radius-lg);
     border: 0.5px solid rgba(45, 58, 50, 0.08);
