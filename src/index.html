@@ -32,8 +32,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;500;700&display=swap">
-  <link rel="stylesheet" href="styles/design-tokens.css?v=20260604-slotsync">
-  <link rel="stylesheet" href="styles/common.css?v=20260604-slotsync">
+  <link rel="stylesheet" href="styles/design-tokens.css?v=20260604-morningfix">
+  <link rel="stylesheet" href="styles/common.css?v=20260604-morningfix">
 
   <!-- 레이아웃 모드 토글 (CSSOM 적용 전 실행되어야 첫 페인트부터 정확) -->
   <script>
@@ -70,7 +70,7 @@
              : (hour >= 17 && hour < 22) ? 'evening'
              : 'night';
       }
-      var SKY    = { dawn:'#7C74A2', morning:'#F1D8CB', afternoon:'#E6E9ED', evening:'#DEAD98', night:'#082252' };
+      var SKY    = { dawn:'#7C74A2', morning:'#F7E6B8', afternoon:'#E6E9ED', evening:'#DEAD98', night:'#082252' };
       var GROUND = { dawn:'#E5D0C0', morning:'#EFE6CD', afternoon:'#ECE3D2', evening:'#F5C672', night:'#2A3A5C' };
       // 분기 신호: applyTheme(common.js)이 meta theme-color를 덮어쓰지 못하게
       document.documentElement.setAttribute('data-uses-time-slot', 'true');
@@ -116,10 +116,10 @@
     .app-container[data-time-slot="morning"] {
       background-color: #EFE6CD;
       background-image:
-        linear-gradient(180deg, rgba(241, 216, 203, 0.85) 0%, rgba(241, 216, 203, 0) 100%),
+        linear-gradient(180deg, rgba(247, 230, 184, 0.85) 0%, rgba(247, 230, 184, 0) 100%),
         linear-gradient(to bottom, rgba(239, 230, 205, 0) 45%, rgba(239, 230, 205, 1) 100%),
         url('images/%EC%9D%80%ED%98%9C%EB%A1%9C%EC%9A%B4%20%EC%95%84%EC%B9%A8%20%EB%AA%A8%EB%B0%94%EC%9D%BC%20.png'),
-        linear-gradient(180deg, #F1D8CB 0%, #F5DECC 50%, #EFE6CD 100%);
+        linear-gradient(180deg, #F7E6B8 0%, #FAEFC6 50%, #EFE6CD 100%);
       background-size: 100% 100px, 100% 100%, cover, 100% 100%;
       background-position: top, center, center -200px, center;
       background-repeat: no-repeat;
@@ -1030,8 +1030,8 @@
   </div>
 
   <!-- ========== Scripts ========== -->
-  <script src="scripts/storage.js?v=20260604-slotsync"></script>
-  <script src="scripts/common.js?v=20260604-slotsync"></script>
+  <script src="scripts/storage.js?v=20260604-morningfix"></script>
+  <script src="scripts/common.js?v=20260604-morningfix"></script>
   <script src="scripts/supabase-sync.js"></script>
   <script src="scripts/qr.js"></script>
   <script>
@@ -1057,7 +1057,7 @@
     // sky : 화면 상단(다이내믹 아일랜드 주변 status bar) — 각 PNG 상단 실제 픽셀색
     // ground: 하단 홈바 / overscroll 영역
     const SKY_COLOR = {
-      dawn: '#7C74A2', morning: '#F1D8CB', afternoon: '#E6E9ED',
+      dawn: '#7C74A2', morning: '#F7E6B8', afternoon: '#E6E9ED',
       evening: '#DEAD98', night: '#082252',
     };
     const GROUND_COLOR = {
@@ -1079,13 +1079,14 @@
     // body 배경 그라디언트 (sky → ground)
     const TIME_BG_GRADIENT = {
       dawn:      'linear-gradient(180deg, #7C74A2 0%, #E5D0C0 100%)',
-      morning:   'linear-gradient(180deg, #F1D8CB 0%, #EFE6CD 100%)',
+      morning:   'linear-gradient(180deg, #F7E6B8 0%, #EFE6CD 100%)',
       afternoon: 'linear-gradient(180deg, #E6E9ED 0%, #ECE3D2 100%)',
       evening:   'linear-gradient(180deg, #DEAD98 0%, #F5C672 100%)',
       night:     'linear-gradient(180deg, #082252 0%, #2A3A5C 100%)',
     };
-    // 어두운 시간대 — 카드/토큰도 다크로 전환 (낮 슬롯은 라이트)
-    const DARK_SLOTS = { dawn: true, night: true };
+    // 어두운 시간대 — 카드/토큰도 다크로 전환. 밤만 다크.
+    // (새벽은 실제 일러스트가 밝은 파스텔이라 라이트로 둠 — 저녁과 동일 처리)
+    const DARK_SLOTS = { night: true };
 
     /**
      * 한 시간대(slot)의 모든 배경 상태를 한 번에 적용한다 (단일 출처).
@@ -1108,7 +1109,7 @@
       const themeColorMeta = document.querySelector('meta[name="theme-color"]');
       if (themeColorMeta) themeColorMeta.setAttribute('content', SKY_COLOR[slot] || '#F0F4F2');
 
-      // 어두운 시간대(새벽·밤)는 카드·토큰도 다크로
+      // 어두운 시간대(밤)는 카드·토큰도 다크로
       if (DARK_SLOTS[slot]) root.setAttribute('data-theme', 'dark');
       else root.removeAttribute('data-theme');
 

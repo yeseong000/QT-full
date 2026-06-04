@@ -163,10 +163,10 @@
     .scene[data-slot="morning"] {
       background-color: #EFE6CD;
       background-image:
-        linear-gradient(180deg, rgba(241,216,203,0.85) 0%, rgba(241,216,203,0) 100%),
+        linear-gradient(180deg, rgba(247,230,184,0.85) 0%, rgba(247,230,184,0) 100%),
         linear-gradient(to bottom, rgba(239,230,205,0) 45%, rgba(239,230,205,1) 100%),
         url('../images/%EC%9D%80%ED%98%9C%EB%A1%9C%EC%9A%B4%20%EC%95%84%EC%B9%A8%20%EB%AA%A8%EB%B0%94%EC%9D%BC%20.png'),
-        linear-gradient(180deg, #F1D8CB 0%, #F5DECC 50%, #EFE6CD 100%);
+        linear-gradient(180deg, #F7E6B8 0%, #FAEFC6 50%, #EFE6CD 100%);
       background-size: 100% 70px, 100% 100%, cover, 100% 100%;
       background-position: top, center, center top, center;
     }
@@ -220,7 +220,7 @@
       ※ 각 색 칩을 누르면 hex 코드가 복사돼요.
       <br>· <b>SKY</b> = 화면 맨 위(상태바 주변) · <b>GROUND</b> = 화면 맨 아래(홈바 영역) ·
       <b>AMBIENT</b> = <u>묵상 달력의 은은한 배경 번짐색</u> · <b>ACCENT</b> = 버튼·강조 톤
-      <br>· 달력에서 보이던 <b>살구색</b>은 바로 <b>아침(morning)</b> 시간대의 AMBIENT(<code>#F9E1CF</code>)예요.
+      <br>· <b>아침(morning)</b>의 배경 번짐색(AMBIENT)은 <code>#FCEFC4</code> 노란 크림이에요 (이전엔 살구빛이라 저녁과 비슷했음 → 노랑으로 보정).
       <br>· 색 데이터 원본: <code>src/scripts/common.js</code>, <code>src/index.html</code>
     </p>
   </div>
@@ -239,9 +239,9 @@
 
     const SLOTS = [
       { key:'dawn',      emoji:'🌌', name:'새벽', range:'04:00 – 07:00', greeting:'거룩한 새벽이네요',
-        sky:'#7C74A2', ground:'#E5D0C0', ambient:'#22223C', accent:'#5A7596', cta:'#6E84A8', dark:true },
+        sky:'#7C74A2', ground:'#E5D0C0', ambient:'#CBBAD7', accent:'#5A7596', cta:'#6E84A8', dark:false },
       { key:'morning',   emoji:'☀️', name:'아침', range:'07:00 – 12:00', greeting:'은혜로운 아침이에요',
-        sky:'#F1D8CB', ground:'#EFE6CD', ambient:'#F9E1CF', accent:'#A85A6E', cta:'#C77E8E', dark:false },
+        sky:'#F7E6B8', ground:'#EFE6CD', ambient:'#FCEFC4', accent:'#A85A6E', cta:'#C77E8E', dark:false },
       { key:'afternoon', emoji:'🌤️', name:'오후', range:'12:00 – 17:00', greeting:'평안한 오후예요',
         sky:'#E6E9ED', ground:'#ECE3D2', ambient:'#DEE9F3', accent:'#9C5A6C', cta:'#BC7383', dark:false },
       { key:'evening',   emoji:'🌙', name:'저녁', range:'17:00 – 22:00', greeting:'온유한 저녁이네요',
