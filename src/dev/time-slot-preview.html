@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>시간대별 배경 미리보기 · 주만나</title>
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.css">
+
+  <style>
+    /* ===================================================================
+       [임시/데모] 시간대 5종 배경 미리보기 — 실제 앱이 "현재 시각"에 따라
+       자동으로 고르는 배경을, 시간 기다리지 않고 한 화면에서 보여주는 참고용 페이지.
+       (index.html / calendar.html 의 색·이미지를 그대로 복제 — 단독 동작)
+       =================================================================== */
+    :root {
+      --ink: #1F2A24;
+      --ink-soft: #5B6B61;
+      --line: rgba(0,0,0,0.08);
+      --card: rgba(255,255,255,0.86);
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; }
+    body {
+      font-family: 'Pretendard Variable','Pretendard',-apple-system,BlinkMacSystemFont,
+                   'Apple SD Gothic Neo','Noto Sans KR',sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(120% 80% at 20% 0%, #F4ECE2 0%, transparent 60%),
+        radial-gradient(120% 80% at 90% 100%, #E7EEF0 0%, transparent 60%),
+        linear-gradient(180deg, #F6F2EC 0%, #EEF1F0 100%);
+      background-attachment: fixed;
+      min-height: 100vh;
+      padding: 28px 20px 64px;
+      -webkit-font-smoothing: antialiased;
+    }
+    .wrap { max-width: 1080px; margin: 0 auto; }
+
+    /* ---- 헤더 ---- */
+    .page-head { margin-bottom: 22px; }
+    .page-title {
+      font-size: 26px; font-weight: 800; letter-spacing: -0.03em; margin: 0 0 8px;
+    }
+    .page-sub {
+      font-size: 14.5px; line-height: 1.65; color: var(--ink-soft); margin: 0;
+      letter-spacing: -0.01em; max-width: 640px;
+    }
+    .now-banner {
+      display: inline-flex; align-items: center; gap: 10px;
+      margin-top: 16px; padding: 10px 16px;
+      background: var(--card); border: 1px solid var(--line); border-radius: 999px;
+      font-size: 14px; font-weight: 600; letter-spacing: -0.01em;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.05);
+      -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+    }
+    .now-banner b { color: #B5677A; }
+
+    /* ---- 그리드 ---- */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(186px, 1fr));
+      gap: 18px;
+      margin-top: 24px;
+    }
+    .tile {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.07);
+      transition: transform .25s cubic-bezier(.2,.8,.2,1), box-shadow .25s;
+    }
+    .tile.is-now { outline: 2px solid #B5677A; outline-offset: 2px; }
+    .tile:hover { transform: translateY(-4px); box-shadow: 0 18px 42px rgba(0,0,0,0.12); }
+
+    /* ---- 미리보기 화면(앱 홈 모양 복제) ---- */
+    .scene {
+      position: relative;
+      aspect-ratio: 9 / 15;
+      background-repeat: no-repeat;
+      background-color: #ECE3D2;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding: 14px;
+    }
+    .scene__label {
+      position: absolute; top: 12px; left: 12px;
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 6px 11px; border-radius: 999px;
+      background: rgba(255,255,255,0.82); color: #2D3A32;
+      font-size: 12.5px; font-weight: 700; letter-spacing: -0.01em;
+      -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+    }
+    .scene[data-dark="true"] .scene__label { background: rgba(0,0,0,0.34); color: #fff; }
+    .scene__greet {
+      font-size: 15px; font-weight: 800; letter-spacing: -0.02em;
+      color: #2D3A32; margin-bottom: 10px; text-shadow: 0 1px 6px rgba(255,255,255,0.4);
+    }
+    .scene[data-dark="true"] .scene__greet { color: #fff; text-shadow: 0 1px 8px rgba(0,0,0,0.25); }
+    .scene__card {
+      background: rgba(255,255,255,0.92);
+      border-radius: 14px; padding: 11px 12px;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+    }
+    .scene[data-dark="true"] .scene__card { background: rgba(28,33,46,0.92); }
+    .scene__card-ref { font-size: 11px; color: #5B6B61; margin: 0 0 8px; letter-spacing: -0.01em; }
+    .scene[data-dark="true"] .scene__card-ref { color: #AEB7C4; }
+    .scene__cta {
+      display: block; text-align: center; color: #fff;
+      font-size: 12.5px; font-weight: 700; letter-spacing: -0.01em;
+      padding: 9px; border-radius: 10px;
+    }
+
+    /* ---- 색 정보 ---- */
+    .meta { padding: 13px 14px 15px; }
+    .meta__time { font-size: 12px; color: var(--ink-soft); font-weight: 600; margin-bottom: 9px; letter-spacing: -0.01em; }
+    .chips { display: flex; flex-direction: column; gap: 6px; }
+    .chip {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 11.5px; color: var(--ink-soft); letter-spacing: -0.01em;
+      cursor: pointer; border: 0; background: transparent; padding: 1px 0; text-align: left;
+      font-family: inherit; width: 100%;
+    }
+    .chip:active { opacity: 0.55; }
+    .chip__sw { width: 16px; height: 16px; border-radius: 5px; border: 1px solid var(--line); flex-shrink: 0; }
+    .chip__role { width: 60px; flex-shrink: 0; }
+    .chip__hex { font-family: 'SF Mono',Menlo,monospace; color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+
+    .footnote {
+      margin-top: 30px; font-size: 12.5px; line-height: 1.7; color: var(--ink-soft);
+      letter-spacing: -0.01em; max-width: 680px;
+    }
+    .footnote code {
+      font-family: 'SF Mono',Menlo,monospace; font-size: 11.5px;
+      background: rgba(0,0,0,0.05); padding: 1px 6px; border-radius: 5px;
+    }
+
+    /* 복사 토스트 */
+    .toast {
+      position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%) translateY(20px);
+      background: rgba(31,42,36,0.94); color: #fff; padding: 10px 18px; border-radius: 999px;
+      font-size: 13px; font-weight: 600; letter-spacing: -0.01em;
+      opacity: 0; pointer-events: none; transition: opacity .25s, transform .25s;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* =========================================================
+       시간대별 배경 (index.html .app-container[data-time-slot] 복제,
+       경로만 ../images/ 로 변경. PNG 위쪽 fade + 하단 ground fade + 일러스트 + fallback) */
+    .scene[data-slot="dawn"] {
+      background-color: #E5D0C0;
+      background-image:
+        linear-gradient(180deg, rgba(124,116,162,0.85) 0%, rgba(124,116,162,0) 100%),
+        linear-gradient(to bottom, rgba(229,208,192,0) 45%, rgba(229,208,192,1) 100%),
+        url('../images/%EA%B1%B0%EB%A3%A9%ED%95%9C%20%EC%83%88%EB%B2%BD%20%EB%AA%A8%EB%B0%94%EC%9D%BC%20.png'),
+        linear-gradient(180deg, #7C74A2 0%, #B8A0BC 50%, #E5D0C0 100%);
+      background-size: 100% 70px, 100% 100%, cover, 100% 100%;
+      background-position: top, center, center top, center;
+    }
+    .scene[data-slot="morning"] {
+      background-color: #EFE6CD;
+      background-image:
+        linear-gradient(180deg, rgba(241,216,203,0.85) 0%, rgba(241,216,203,0) 100%),
+        linear-gradient(to bottom, rgba(239,230,205,0) 45%, rgba(239,230,205,1) 100%),
+        url('../images/%EC%9D%80%ED%98%9C%EB%A1%9C%EC%9A%B4%20%EC%95%84%EC%B9%A8%20%EB%AA%A8%EB%B0%94%EC%9D%BC%20.png'),
+        linear-gradient(180deg, #F1D8CB 0%, #F5DECC 50%, #EFE6CD 100%);
+      background-size: 100% 70px, 100% 100%, cover, 100% 100%;
+      background-position: top, center, center top, center;
+    }
+    .scene[data-slot="afternoon"] {
+      background-color: #ECE3D2;
+      background-image:
+        linear-gradient(180deg, rgba(230,233,237,0.85) 0%, rgba(230,233,237,0) 100%),
+        linear-gradient(to bottom, rgba(236,227,210,0) 45%, rgba(236,227,210,1) 100%),
+        url('../images/%ED%8F%89%EC%95%88%ED%95%9C%20%EC%98%A4%ED%9B%84%20%EB%AA%A8%EB%B0%94%EC%9D%BC.png'),
+        linear-gradient(180deg, #E6E9ED 0%, #E0E2D8 50%, #ECE3D2 100%);
+      background-size: 100% 70px, 100% 100%, cover, 100% 100%;
+      background-position: top, center, center top, center;
+    }
+    .scene[data-slot="evening"] {
+      background-color: #F5C672;
+      background-image:
+        linear-gradient(180deg, rgba(222,173,152,0.85) 0%, rgba(222,173,152,0) 100%),
+        linear-gradient(to bottom, rgba(245,198,114,0) 45%, rgba(245,198,114,1) 100%),
+        url('../images/%EC%98%A8%EC%9C%A0%ED%95%9C%20%EC%A0%80%EB%85%81%20%EB%AA%A8%EB%B0%94%EC%9D%BC.png'),
+        linear-gradient(180deg, #DEAD98 0%, #DFA982 60%, #F5C672 100%);
+      background-size: 100% 70px, 100% 100%, cover, 100% 100%;
+      background-position: top, center, center top, center;
+    }
+    .scene[data-slot="night"] {
+      background-color: #2A3A5C;
+      background-image:
+        linear-gradient(180deg, rgba(8,34,82,0.85) 0%, rgba(8,34,82,0) 100%),
+        linear-gradient(to bottom, rgba(42,58,92,0) 45%, rgba(42,58,92,1) 100%),
+        url('../images/%EA%B3%A0%EC%9A%94%ED%95%9C%20%EB%B0%A4%20%EB%AA%A8%EB%B0%94%EC%9D%BC%20.png'),
+        linear-gradient(180deg, #082252 0%, #1B2A4A 50%, #2A3A5C 100%);
+      background-size: 100% 70px, 100% 100%, cover, 100% 100%;
+      background-position: top, center, center top, center;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="page-head">
+      <h1 class="page-title">시간대별 배경 미리보기 🎨</h1>
+      <p class="page-sub">
+        주만나 앱은 <b>지금이 몇 시인지</b>에 따라 배경을 하루 5단계로 자동으로 골라요.
+        실제 화면에서는 시간을 기다려야 보이는 색들을, 여기서는 한눈에 비교할 수 있어요.
+        (다른 분들께 보여드릴 때 써도 좋아요.)
+      </p>
+      <div class="now-banner" id="nowBanner">현재 시각을 확인하는 중…</div>
+    </header>
+
+    <div class="grid" id="grid"></div>
+
+    <p class="footnote">
+      ※ 각 색 칩을 누르면 hex 코드가 복사돼요.
+      <br>· <b>SKY</b> = 화면 맨 위(상태바 주변) · <b>GROUND</b> = 화면 맨 아래(홈바 영역) ·
+      <b>AMBIENT</b> = <u>묵상 달력의 은은한 배경 번짐색</u> · <b>ACCENT</b> = 버튼·강조 톤
+      <br>· 달력에서 보이던 <b>살구색</b>은 바로 <b>아침(morning)</b> 시간대의 AMBIENT(<code>#F9E1CF</code>)예요.
+      <br>· 색 데이터 원본: <code>src/scripts/common.js</code>, <code>src/index.html</code>
+    </p>
+  </div>
+
+  <div class="toast" id="toast">복사됐어요</div>
+
+  <script>
+    // index.html / common.js 와 동일한 시간대 경계
+    function getTimeSlot(hour) {
+      if (hour >= 4  && hour < 7)  return 'dawn';
+      if (hour >= 7  && hour < 12) return 'morning';
+      if (hour >= 12 && hour < 17) return 'afternoon';
+      if (hour >= 17 && hour < 22) return 'evening';
+      return 'night';
+    }
+
+    const SLOTS = [
+      { key:'dawn',      emoji:'🌌', name:'새벽', range:'04:00 – 07:00', greeting:'거룩한 새벽이네요',
+        sky:'#7C74A2', ground:'#E5D0C0', ambient:'#22223C', accent:'#5A7596', cta:'#6E84A8', dark:true },
+      { key:'morning',   emoji:'☀️', name:'아침', range:'07:00 – 12:00', greeting:'은혜로운 아침이에요',
+        sky:'#F1D8CB', ground:'#EFE6CD', ambient:'#F9E1CF', accent:'#A85A6E', cta:'#C77E8E', dark:false },
+      { key:'afternoon', emoji:'🌤️', name:'오후', range:'12:00 – 17:00', greeting:'평안한 오후예요',
+        sky:'#E6E9ED', ground:'#ECE3D2', ambient:'#DEE9F3', accent:'#9C5A6C', cta:'#BC7383', dark:false },
+      { key:'evening',   emoji:'🌙', name:'저녁', range:'17:00 – 22:00', greeting:'온유한 저녁이네요',
+        sky:'#DEAD98', ground:'#F5C672', ambient:'#F5D7BD', accent:'#9A4F62', cta:'#B5677A', dark:false },
+      { key:'night',     emoji:'🌃', name:'밤',   range:'22:00 – 04:00', greeting:'고요한 밤입니다',
+        sky:'#082252', ground:'#2A3A5C', ambient:'#0C1428', accent:'#5A7596', cta:'#6E84A8', dark:true },
+    ];
+
+    const now = new Date();
+    const curSlot = getTimeSlot(now.getHours());
+    const curName = (SLOTS.find(s => s.key === curSlot) || {}).name || '';
+    const hh = String(now.getHours()).padStart(2,'0');
+    const mm = String(now.getMinutes()).padStart(2,'0');
+    document.getElementById('nowBanner').innerHTML =
+      `지금은 <b>${hh}:${mm}</b> · 현재 시간대는 <b>${(SLOTS.find(s=>s.key===curSlot)||{}).emoji||''} ${curName}</b> 이에요`;
+
+    function chip(role, hex) {
+      return `<button class="chip" data-hex="${hex}">
+        <span class="chip__sw" style="background:${hex}"></span>
+        <span class="chip__role">${role}</span>
+        <span class="chip__hex">${hex}</span>
+      </button>`;
+    }
+
+    const grid = document.getElementById('grid');
+    grid.innerHTML = SLOTS.map(s => `
+      <article class="tile ${s.key === curSlot ? 'is-now' : ''}">
+        <div class="scene" data-slot="${s.key}" data-dark="${s.dark}">
+          <span class="scene__label">${s.emoji} ${s.name}${s.key === curSlot ? ' · 지금' : ''}</span>
+          <div class="scene__greet">${s.greeting}</div>
+          <div class="scene__card">
+            <p class="scene__card-ref">오늘의 말씀 · 시편 23:1</p>
+            <span class="scene__cta" style="background:${s.cta}">묵상 시작하기</span>
+          </div>
+        </div>
+        <div class="meta">
+          <div class="meta__time">${s.range}</div>
+          <div class="chips">
+            ${chip('SKY', s.sky)}
+            ${chip('GROUND', s.ground)}
+            ${chip('AMBIENT', s.ambient)}
+            ${chip('ACCENT', s.accent)}
+          </div>
+        </div>
+      </article>
+    `).join('');
+
+    // 색 칩 클릭 → 복사 + 토스트
+    const toast = document.getElementById('toast');
+    let toastTimer = null;
+    grid.addEventListener('click', (e) => {
+      const btn = e.target.closest('.chip');
+      if (!btn) return;
+      const hex = btn.dataset.hex;
+      const done = () => {
+        toast.textContent = `${hex} 복사됐어요`;
+        toast.classList.add('show');
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => toast.classList.remove('show'), 1400);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(hex).then(done).catch(done);
+      } else { done(); }
+    });
+  </script>
+</body>
+</html>

@@ -425,6 +425,47 @@
     .app-container[data-time-slot="evening"]   .today-cta:hover { background: #9A4F62; }
     .app-container[data-time-slot="night"]     .today-cta:hover { background: #5A7596; }
 
+    /* ---------- 배경 시간대 미리보기 스위처 (today-card 우측 상단 5종) ----------
+       탭하면 applySlot()으로 그 시간대 배경을 즉시 미리봄. 현재 시간대는 is-active로 강조. */
+    .slot-switch {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      z-index: 3;
+      display: flex;
+      gap: 1px;
+    }
+    .slot-switch__btn {
+      appearance: none;
+      -webkit-appearance: none;
+      border: 0;
+      background: transparent;
+      width: 28px;
+      height: 28px;
+      padding: 0;
+      font-size: 15px;
+      line-height: 28px;
+      text-align: center;
+      border-radius: 999px;
+      cursor: pointer;
+      opacity: 0.38;
+      filter: grayscale(0.55);
+      transition: opacity var(--duration-base), filter var(--duration-base),
+                  background var(--duration-base), transform var(--duration-fast);
+      -webkit-tap-highlight-color: transparent;
+    }
+    .slot-switch__btn:hover { opacity: 0.7; }
+    .slot-switch__btn:active { transform: scale(0.85); }
+    .slot-switch__btn.is-active {
+      opacity: 1;
+      filter: none;
+      background: rgba(0, 0, 0, 0.06);
+    }
+    /* 어두운 시간대(카드 다크) — 활성 배경을 흰 톤으로 */
+    html[data-theme="dark"] .slot-switch__btn.is-active {
+      background: rgba(255, 255, 255, 0.16);
+    }
+
     /* ---------- 로딩/에러 ---------- */
     .loading, .error {
       text-align: center;
@@ -808,6 +849,14 @@
 
       <!-- 오늘의 말씀 -->
       <section class="today-card" id="todayCard">
+        <!-- 배경 시간대 미리보기 스위처 (5종) — 탭하면 그 시간대 배경으로 즉시 전환 -->
+        <div class="slot-switch" id="slotSwitch" role="group" aria-label="배경 시간대 미리보기">
+          <button class="slot-switch__btn" type="button" data-slot="dawn"      aria-label="새벽 배경 미리보기">🌌</button>
+          <button class="slot-switch__btn" type="button" data-slot="morning"   aria-label="아침 배경 미리보기">☀️</button>
+          <button class="slot-switch__btn" type="button" data-slot="afternoon" aria-label="오후 배경 미리보기">🌤️</button>
+          <button class="slot-switch__btn" type="button" data-slot="evening"   aria-label="저녁 배경 미리보기">🌙</button>
+          <button class="slot-switch__btn" type="button" data-slot="night"     aria-label="밤 배경 미리보기">🌃</button>
+        </div>
         <div class="loading" id="todayLoading">
           <p>오늘의 말씀을 준비하고 있어요...</p>
         </div>
@@ -982,6 +1031,87 @@
       night:     '고요한 밤입니다',
     };
 
+    // ========== 시간대별 색 팔레트 (첫 로드 + 미리보기 스위처 공용) ==========
+    // sky : 화면 상단(다이내믹 아일랜드 주변 status bar) — 각 PNG 상단 실제 픽셀색
+    // ground: 하단 홈바 / overscroll 영역
+    const SKY_COLOR = {
+      dawn: '#7C74A2', morning: '#F1D8CB', afternoon: '#E6E9ED',
+      evening: '#DEAD98', night: '#082252',
+    };
+    const GROUND_COLOR = {
+      dawn: '#E5D0C0', morning: '#EFE6CD', afternoon: '#ECE3D2',
+      evening: '#F5C672', night: '#2A3A5C',
+    };
+    // 액센트(텍스트 버튼·강조 톤) — today-cta hover 톤 재사용
+    const TIME_ACCENT = {
+      dawn: '#5A7596', morning: '#A85A6E', afternoon: '#9C5A6C',
+      evening: '#9A4F62', night: '#5A7596',
+    };
+    const TIME_ACCENT_TINT = {
+      dawn:      'rgba(110, 132, 168, 0.08)',
+      morning:   'rgba(199, 126, 142, 0.08)',
+      afternoon: 'rgba(188, 115, 131, 0.08)',
+      evening:   'rgba(181, 103, 122, 0.09)',
+      night:     'rgba(110, 132, 168, 0.10)',
+    };
+    // body 배경 그라디언트 (sky → ground)
+    const TIME_BG_GRADIENT = {
+      dawn:      'linear-gradient(180deg, #7C74A2 0%, #E5D0C0 100%)',
+      morning:   'linear-gradient(180deg, #F1D8CB 0%, #EFE6CD 100%)',
+      afternoon: 'linear-gradient(180deg, #E6E9ED 0%, #ECE3D2 100%)',
+      evening:   'linear-gradient(180deg, #DEAD98 0%, #F5C672 100%)',
+      night:     'linear-gradient(180deg, #082252 0%, #2A3A5C 100%)',
+    };
+    // 어두운 시간대 — 카드/토큰도 다크로 전환 (낮 슬롯은 라이트)
+    const DARK_SLOTS = { dawn: true, night: true };
+
+    /**
+     * 한 시간대(slot)의 모든 배경 상태를 한 번에 적용한다 (단일 출처).
+     *   - 첫 로드: 현재 시각의 slot으로 호출
+     *   - 카드 우측 상단 5개 아이콘: 사용자가 누른 slot으로 호출(미리보기)
+     * data-time-slot(PNG·CTA·텍스트 톤) + sky/ground/accent 변수 + theme-color + 인사말 + 다크 전환까지.
+     */
+    function applySlot(slot) {
+      const root = document.documentElement;
+      document.getElementById('appContainer').setAttribute('data-time-slot', slot);
+
+      root.style.setProperty('--sky-color',        SKY_COLOR[slot] || '');
+      root.style.setProperty('--ground-color',     GROUND_COLOR[slot] || '');
+      root.style.setProperty('--letterbox-bg',     SKY_COLOR[slot] || '');
+      root.style.setProperty('--time-accent',      TIME_ACCENT[slot] || '#9A4F60');
+      root.style.setProperty('--time-accent-tint', TIME_ACCENT_TINT[slot] || 'rgba(0,0,0,0.04)');
+      root.style.setProperty('--time-bg',          TIME_BG_GRADIENT[slot] || '');
+
+      // PWA standalone에서 OS가 그리는 status bar 영역은 theme-color meta로만 색이 결정됨
+      const themeColorMeta = document.querySelector('meta[name="theme-color"]');
+      if (themeColorMeta) themeColorMeta.setAttribute('content', SKY_COLOR[slot] || '#F0F4F2');
+
+      // 어두운 시간대(새벽·밤)는 카드·토큰도 다크로
+      if (DARK_SLOTS[slot]) root.setAttribute('data-theme', 'dark');
+      else root.removeAttribute('data-theme');
+
+      renderGreeting(slot);
+      updateSlotSwitchActive(slot);
+    }
+
+    // 5개 아이콘 중 현재 slot을 강조
+    function updateSlotSwitchActive(slot) {
+      document.querySelectorAll('#slotSwitch .slot-switch__btn').forEach((b) => {
+        const on = b.dataset.slot === slot;
+        b.classList.toggle('is-active', on);
+        b.setAttribute('aria-pressed', on ? 'true' : 'false');
+      });
+    }
+
+    // 5개 아이콘 클릭 → applySlot으로 그 시간대 배경 미리보기
+    function setupSlotSwitch() {
+      const sw = document.getElementById('slotSwitch');
+      if (!sw) return;
+      sw.querySelectorAll('.slot-switch__btn').forEach((b) => {
+        b.addEventListener('click', () => applySlot(b.dataset.slot));
+      });
+    }
+
     /**
      * verse 텍스트를 항상 2줄로 보이도록 처리
      * - 짧은 텍스트(≤12자): 둘째 줄에 빈 칸을 추가해 2줄 영역 확보
@@ -1008,61 +1138,12 @@
       const appScroll = document.querySelector('.app-scroll');
       if (appScroll) appScroll.scrollTop = 0;
 
-      // 시간대를 .app-container의 data-time-slot에 적용
-      // (그라디언트 + 일러스트 + CTA 색상 + 텍스트 톤이 자동 분기됨)
+      // 현재 시각의 시간대를 적용 (PNG·CTA 색·텍스트 톤·sky/ground·인사말을 한 번에).
+      // 사용자는 카드 우측 상단 5개 아이콘으로 다른 시간대 배경을 미리볼 수 있음 (applySlot 재사용).
       const slot = getTimeSlot(new Date().getHours());
-      document.getElementById('appContainer').setAttribute('data-time-slot', slot);
+      applySlot(slot);
+      setupSlotSwitch();
 
-      // 시간대별 sky(위)·ground(아래) 색 — PWA standalone 시스템 영역 흰 띠 제거의 단일 출처
-      // sky : Dynamic Island 주변 status bar (theme-color로 OS 그림) + letterbox 띠
-      // ground: 홈바 아래 / 하단 overscroll bounce (html background-color로 노출)
-      // ※ SKY는 각 PNG가 화면 상단에 표시될 때의 실제 픽셀색(샘플링)으로 맞춰
-      //    Dynamic Island/Status bar와 PNG 사이의 시각적 잘림(띠 경계)을 제거.
-      const SKY_COLOR = {
-        dawn: '#7C74A2', morning: '#F1D8CB', afternoon: '#E6E9ED',
-        evening: '#DEAD98', night: '#082252',
-      };
-      const GROUND_COLOR = {
-        dawn: '#E5D0C0', morning: '#EFE6CD', afternoon: '#ECE3D2',
-        evening: '#F5C672', night: '#2A3A5C',
-      };
-      document.documentElement.style.setProperty('--sky-color', SKY_COLOR[slot] || '');
-      document.documentElement.style.setProperty('--ground-color', GROUND_COLOR[slot] || '');
-      document.documentElement.style.setProperty('--letterbox-bg', SKY_COLOR[slot] || '');
-
-      // 시간대별 액센트 (텍스트 버튼·강조 톤) — today-cta hover 톤 재사용
-      // QR 시트 복사 버튼·URL 박스 같은 모달 요소들이 시간대 분위기에 맞춰지도록
-      // documentElement에 변수로 주입 (modal-backdrop이 .app-container 외부라 클래스 셀렉터 미적용)
-      const TIME_ACCENT = {
-        dawn: '#5A7596', morning: '#A85A6E', afternoon: '#9C5A6C',
-        evening: '#9A4F62', night: '#5A7596',
-      };
-      const TIME_ACCENT_TINT = {
-        dawn:      'rgba(110, 132, 168, 0.08)',
-        morning:   'rgba(199, 126, 142, 0.08)',
-        afternoon: 'rgba(188, 115, 131, 0.08)',
-        evening:   'rgba(181, 103, 122, 0.09)',
-        night:     'rgba(110, 132, 168, 0.10)',
-      };
-      document.documentElement.style.setProperty('--time-accent', TIME_ACCENT[slot] || '#9A4F60');
-      document.documentElement.style.setProperty('--time-accent-tint', TIME_ACCENT_TINT[slot] || 'rgba(0,0,0,0.04)');
-
-      // PWA standalone에서 OS가 그리는 status bar 위쪽 영역은 theme-color meta로만 색이 결정됨
-      const themeColorMeta = document.querySelector('meta[name="theme-color"]');
-      if (themeColorMeta) themeColorMeta.setAttribute('content', SKY_COLOR[slot] || '#F0F4F2');
-
-      // body 배경 그라디언트 (sky → ground) — 시작색은 SKY_COLOR와 동일하게 유지해
-      // 시스템 영역(다이내믹 아일랜드)과 PNG 사이의 색 끊김을 제거
-      const TIME_BG_GRADIENT = {
-        dawn:      'linear-gradient(180deg, #7C74A2 0%, #E5D0C0 100%)',
-        morning:   'linear-gradient(180deg, #F1D8CB 0%, #EFE6CD 100%)',
-        afternoon: 'linear-gradient(180deg, #E6E9ED 0%, #ECE3D2 100%)',
-        evening:   'linear-gradient(180deg, #DEAD98 0%, #F5C672 100%)',
-        night:     'linear-gradient(180deg, #082252 0%, #2A3A5C 100%)',
-      };
-      document.documentElement.style.setProperty('--time-bg', TIME_BG_GRADIENT[slot] || '');
-
-      renderGreeting(slot);
       renderDatePill();
       loadTodayQT();
       setupFontSizeSelector();
