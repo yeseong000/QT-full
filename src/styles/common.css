@@ -310,12 +310,15 @@ html.is-pwa .app-container {
        순서 그대로(살펴보기→인물→깊은 묵상), 태블릿+에서만 인물이 위로 올라감
      - align-items: start로 각 카드는 row 위쪽 정렬 + 자기 height만 차지
      ---------------------------------------------------------- */
+  /* 모든 카드가 grid-column: 1/-1(풀폭)이므로 단일 칼럼 스택으로 운용한다.
+     예전 2칼럼 + `row dense` 조합은 dense 알고리즘이 order로 재정렬된 풀폭 카드를
+     이미 배치된 칸에 끼워넣어 sceneCard ↔ deepDiveCard가 같은 칸에 겹쳐 그려지던 버그가 있었음.
+     단일 칼럼 + `row`(dense 없음)로 각 섹션이 자기 높이만큼 독립된 행을 차지하게 함. */
   [data-qt-step="meditation"] .app-scroll {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    grid-auto-flow: row dense;
-    column-gap: var(--card-gap);
-    row-gap: var(--card-gap);   /* 가로 24px와 동일하게 — 시각 정렬 통일 */
+    grid-template-columns: minmax(0, 1fr);
+    grid-auto-flow: row;
+    row-gap: var(--card-gap);
     align-content: start;
     align-items: start;
   }
@@ -353,14 +356,12 @@ html.is-pwa .app-container {
   [data-qt-step="meditation"] #charactersCard {
     grid-column: 1 / -1;
   }
-  /* 장면 일러스트 카드: '본문 따라가기' 바로 위에 오도록 order:1 (살펴보기·본문과 같은 그룹).
-     order를 안 주면 기본 0이라 살펴보기(order:1)와 그룹이 어긋나 → 배치/그리기 순서 역전 →
-     살펴보기 카드 뒤에 깔려 안 보이던 버그. + full-bleed 음수마진 해제해 일반 카드처럼. */
+  /* 장면 일러스트 카드: '살펴보기 → 오늘의 장면 → 본문 따라가기' 순서가 되도록 order:1.
+     단일 칼럼 스택이라 각 카드가 독립된 행을 차지 → 겹침 없음.
+     full-bleed 음수마진 해제해 일반 카드처럼 보이게. */
   [data-qt-step="meditation"] #sceneCard {
     grid-column: 1 / -1;
     order: 1;
-    position: relative;   /* paint order 안정화 (다른 카드 뒤로 깔리지 않게) */
-    z-index: 1;
     margin: 0;
     border-radius: var(--radius-lg);
     border: 0.5px solid rgba(45, 58, 50, 0.08);
