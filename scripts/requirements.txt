@@ -1,5 +1,5 @@
 requests==2.32.3
 beautifulsoup4==4.12.3
 lxml==5.3.0
-openai==1.54.0
+openai>=1.66.0          # gpt-image-1 (images.edit · quality 파라미터) 지원 버전
 python-dotenv==1.0.1
