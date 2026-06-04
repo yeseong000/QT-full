@@ -353,10 +353,13 @@ html.is-pwa .app-container {
   [data-qt-step="meditation"] #charactersCard {
     grid-column: 1 / -1;
   }
-  /* 장면 일러스트 카드: 풀폭 + grid margin-bottom 무력화 */
+  /* 장면 일러스트 카드: 풀폭 + grid 안에서 full-bleed 음수마진 해제 → 일반 카드처럼 */
   [data-qt-step="meditation"] #sceneCard {
     grid-column: 1 / -1;
-    margin-bottom: 0;
+    margin: 0;
+    border-radius: var(--radius-lg);
+    border: 0.5px solid rgba(45, 58, 50, 0.08);
+    overflow: hidden;
   }
   [data-qt-step="meditation"] #charactersList {
     display: grid;
