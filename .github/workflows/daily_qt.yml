@@ -13,7 +13,7 @@ concurrency:
 jobs:
   fetch:
     runs-on: ubuntu-latest
-    timeout-minutes: 15    # 이미지 생성(~2분) 추가로 여유 확보
+    timeout-minutes: 20    # 크롤링+묵상+이미지 합산 여유
     permissions:
       contents: write    # 커밋/푸시 권한
     env:
@@ -33,7 +33,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install --upgrade pip
-          pip install requests beautifulsoup4 lxml openai python-dotenv
+          pip install requests beautifulsoup4 lxml "openai>=1.66.0" python-dotenv
 
       - name: Fetch QT (오륜교회 주만나 크롤링)
         run: python scripts/fetch_qt.py
