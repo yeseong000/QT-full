@@ -21,6 +21,7 @@
 
 import argparse
 import json
+import random
 import re
 import sys
 import time
@@ -57,6 +58,28 @@ HEADERS = {
 KST = timezone(timedelta(hours=9))
 DEFAULT_OUTPUT_DIR = Path(__file__).parent.parent / "data" / "qt"
 
+# ===== HTTP 재시도 설정 =====
+_CONNECT_TIMEOUT = 20    # TCP 핸드셰이크 제한 (초) — 연결 자체가 안 되면 빠르게 포기
+_READ_TIMEOUT    = 90    # 응답 본문 수신 제한 (초) — 연결 후 서버가 느릴 수 있음
+_MAX_RETRIES     = 6     # 최대 시도 횟수
+_BACKOFF_BASE    = 10    # 지수 백오프 초기값 (초): 10→20→40→80→120(상한)→120
+_BACKOFF_MAX     = 120   # 대기 상한 (초)
+_JITTER_RATIO    = 0.25  # ±25% 랜덤 변동 — Main/Backup 동시 실행 시 thundering herd 방지
+_BUDGET_SECS     = 420   # fetch 전체 허용 시간 (7분) — 워크플로 20분 예산 내 여유 확보
+
+# ConnectTimeout 발생 시 UA를 교체해 세션 재생성 (같은 UA로 재시도하면 서버가 블록할 수 있음)
+_UA_POOL = [
+    ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+     "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"),
+    ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+     "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"),
+    ("Mozilla/5.0 (X11; Linux x86_64) "
+     "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"),
+]
+
+# 재시도해도 의미 없는 HTTP 상태 코드 (서버가 명시적으로 거부한 것)
+_NO_RETRY_STATUSES = {400, 401, 403, 404, 405, 410}
+
 
 # ===== 로깅 =====
 def log(msg: str, level: str = "INFO") -> None:
@@ -70,37 +93,93 @@ def today_str() -> str:
 
 
 # ===== HTTP =====
-def fetch_page(retries: int = 5) -> str:
-    """페이지 HTML을 가져온다. 실패 시 재시도."""
-    session = requests.Session()
-    session.headers.update(HEADERS)
+def _make_session(ua_index: int = 0) -> requests.Session:
+    """새 HTTP 세션 생성 — 커넥션 풀 초기화 + User-Agent 로테이션."""
+    s = requests.Session()
+    headers = dict(HEADERS)
+    headers["User-Agent"] = _UA_POOL[ua_index % len(_UA_POOL)]
+    s.headers.update(headers)
+    return s
 
-    # 메인 페이지 선방문 (쿠키/세션 획득)
+
+def fetch_page() -> str:
+    """oryun.org에서 오늘의 QT 페이지 HTML을 가져온다.
+
+    에러 유형별 처리:
+    - ConnectTimeout : TCP 핸드셰이크 실패 → 세션·커넥션풀 재생성 후 재시도
+    - ReadTimeout    : 연결은 됐으나 응답 지연 → 세션 유지, 재시도
+    - ConnectionError: DNS 실패 / 연결 거부 → 세션 재생성 후 재시도
+    - HTTPError 4xx  : _NO_RETRY_STATUSES이면 즉시 포기 (재시도 무의미)
+    - 전체 _BUDGET_SECS 초과 시 남은 시도 없이 중단
+    """
+    deadline = time.monotonic() + _BUDGET_SECS
+    session = _make_session(0)
+
+    # 메인 페이지 선방문 (쿠키·세션 획득)
     log("메인 페이지 방문 중...")
     try:
-        session.get(MAIN_URL, timeout=60)
+        session.get(MAIN_URL, timeout=(_CONNECT_TIMEOUT, _READ_TIMEOUT))
     except requests.RequestException as e:
-        log(f"메인 페이지 접근 실패 (무시하고 계속): {e}", "WARN")
+        log(f"메인 페이지 접근 실패 (무시하고 계속): {type(e).__name__}", "WARN")
 
-    # QT 페이지 요청 (재시도 포함, 지수 백오프)
-    last_err = None
-    for attempt in range(1, retries + 1):
+    last_err: Exception = RuntimeError("알 수 없는 오류")
+    for attempt in range(1, _MAX_RETRIES + 1):
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            log(f"전체 허용 시간 {_BUDGET_SECS}s 초과 — fetch 중단", "ERR")
+            break
+
         try:
-            log(f"QT 페이지 요청 중 (시도 {attempt}/{retries})...")
-            res = session.get(URL, timeout=60)
+            log(f"QT 페이지 요청 중 (시도 {attempt}/{_MAX_RETRIES}, 잔여 {remaining:.0f}s)...")
+            res = session.get(URL, timeout=(_CONNECT_TIMEOUT, _READ_TIMEOUT))
             res.raise_for_status()
             res.encoding = "utf-8"
             log(f"응답 수신 완료 ({len(res.text):,} bytes)", "OK")
             return res.text
+
+        except requests.exceptions.ConnectTimeout as e:
+            # TCP 핸드셰이크 실패 — 기존 커넥션풀은 죽었으므로 세션 재생성
+            last_err = e
+            log(f"시도 {attempt} — TCP 연결 타임아웃 ({_CONNECT_TIMEOUT}s)", "WARN")
+            session = _make_session(attempt)  # UA도 교체
+
+        except requests.exceptions.ReadTimeout as e:
+            # 연결은 성공했으나 응답이 느림 — 세션 재사용 가능
+            last_err = e
+            log(f"시도 {attempt} — 읽기 타임아웃 ({_READ_TIMEOUT}s, 연결은 성공)", "WARN")
+
+        except requests.exceptions.ConnectionError as e:
+            # DNS 실패, 연결 거부 등 네트워크 수준 오류
+            last_err = e
+            log(f"시도 {attempt} — 네트워크 연결 오류 ({type(e).__name__})", "WARN")
+            session = _make_session(attempt)
+
+        except requests.exceptions.HTTPError as e:
+            status = e.response.status_code if e.response is not None else 0
+            last_err = e
+            if status in _NO_RETRY_STATUSES:
+                raise RuntimeError(
+                    f"HTTP {status} — 재시도 불가. 페이지 구조 또는 접근 권한 확인 필요."
+                ) from e
+            log(f"시도 {attempt} — HTTP {status} 오류", "WARN")
+
         except requests.RequestException as e:
             last_err = e
-            log(f"시도 {attempt} 실패: {e}", "WARN")
-            if attempt < retries:
-                wait = 5 * (2 ** (attempt - 1))  # 5 → 10 → 20 → 40초
-                log(f"{wait}초 후 재시도...")
-                time.sleep(wait)
+            log(f"시도 {attempt} — 요청 오류 ({type(e).__name__})", "WARN")
 
-    raise RuntimeError(f"페이지 요청이 {retries}회 모두 실패했습니다: {last_err}")
+        if attempt < _MAX_RETRIES:
+            base = min(_BACKOFF_MAX, _BACKOFF_BASE * (2 ** (attempt - 1)))
+            jitter = base * random.uniform(-_JITTER_RATIO, _JITTER_RATIO)
+            wait = min(base + jitter, remaining - 5)  # 예산 5s 여유 확보
+            if wait <= 0:
+                break
+            log(f"{wait:.0f}s 대기 후 재시도 (기준 {base:.0f}s, jitter {jitter:+.0f}s)...")
+            time.sleep(wait)
+
+    raise RuntimeError(
+        f"QT 페이지 요청 {_MAX_RETRIES}회 모두 실패. "
+        f"마지막 오류: {type(last_err).__name__}: {last_err}"
+    )
 
 
 # ===== 파싱 =====
