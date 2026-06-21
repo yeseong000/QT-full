@@ -439,6 +439,45 @@
       width: 100%;
       height: auto;
     }
+    /* 장면 캐러셀 — 가로 스냅 슬라이드 + 도트 인디케이터 */
+    .scene-carousel { position: relative; }
+    .scene-carousel__track {
+      display: flex;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      scroll-behavior: smooth;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;            /* Firefox */
+    }
+    .scene-carousel__track::-webkit-scrollbar { display: none; }  /* Safari/Chrome */
+    .scene-carousel__img {
+      flex: 0 0 100%;
+      width: 100%;
+      scroll-snap-align: center;
+    }
+    .scene-dots {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 0 6px;
+    }
+    .scene-dot {
+      width: 8px;
+      height: 8px;
+      padding: 0;
+      border-radius: 50%;
+      border: 1.5px solid var(--accent-sage);
+      background: transparent;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      transition: transform var(--duration-base) var(--ease-out),
+                  background var(--duration-base) var(--ease-out);
+    }
+    .scene-dot.is-active {
+      background: var(--accent-sage);
+      transform: scale(1.15);
+    }
     html[data-time-slot="night"] .scene-card {
       border: 0.5px solid rgba(110, 132, 168, 0.20);
       box-shadow:
@@ -701,7 +740,13 @@
         </svg>
       </button>
       <div class="scene-card__body" id="sceneCardBody">
-        <img class="scene-card__img" id="sceneCardImg" alt="오늘 말씀 본문의 장면 일러스트" loading="lazy">
+        <div class="scene-carousel">
+          <div class="scene-carousel__track" id="sceneTrack">
+            <!-- 단일(variants 없는) 날짜용 기본 이미지 — 변형 모드에선 숨기고 동적으로 교체 -->
+            <img class="scene-card__img scene-carousel__img" id="sceneCardImg" alt="오늘 말씀 본문의 장면 일러스트" loading="lazy">
+          </div>
+          <div class="scene-dots" id="sceneDots" hidden></div>
+        </div>
       </div>
     </section>
 
@@ -845,7 +890,8 @@
       }
     }
 
-    function renderDeepDive(d) {
+    // 5단 호흡(장면·질문·맥락·통찰·연결) 5키를 DOM에 채움. 단일/변형 공용.
+    function renderDeepDiveStep(src) {
       const map = {
         deepDiveScene: '장면',
         deepDiveQuestion: '질문',
@@ -855,7 +901,7 @@
       };
       let any = false;
       for (const [id, key] of Object.entries(map)) {
-        const text = d[key];
+        const text = src[key];
         const el = document.getElementById(id);
         if (!el) continue;
         if (text && String(text).trim()) {
@@ -868,9 +914,85 @@
         }
       }
       if (any) document.getElementById('deepDiveCard').style.display = '';
+    }
 
-      // 장면 일러스트 자동 로드 (그림 파일이 있으면 펼침/닫기 영역 노출)
-      loadSceneImage(d.date || TODAY);
+    // ===== 장면 캐러셀 (질문별 2세트 연동) =====
+    let deepDiveVariants = null;   // variants 배열 (없으면 null = 단일 모드)
+    let activeVariant = 0;
+
+    function renderDeepDive(d) {
+      if (Array.isArray(d.variants) && d.variants.length > 1) {
+        // 변형 모드: 첫 변형으로 5단 호흡 렌더 + 장면 캐러셀 구성
+        deepDiveVariants = d.variants;
+        activeVariant = 0;
+        renderDeepDiveStep(deepDiveVariants[0]);
+        setupSceneCarousel(deepDiveVariants);
+      } else {
+        // 단일 모드(타 날짜 하위 호환): 최상위 5키 + 이미지 1장
+        deepDiveVariants = null;
+        renderDeepDiveStep(d);
+        loadSceneImage(d.date || TODAY);
+      }
+    }
+
+    // 변형 이미지 N장 + 도트 구성, 스와이프/도트 ↔ 5단 호흡 연동
+    function setupSceneCarousel(variants) {
+      const wrap = document.getElementById('sceneCard');
+      const track = document.getElementById('sceneTrack');
+      const dots = document.getElementById('sceneDots');
+      const defaultImg = document.getElementById('sceneCardImg');
+      if (!wrap || !track || !dots) return;
+
+      // 단일 모드 기본 이미지 숨김 — .scene-card__img의 display:block이 [hidden]을 이기므로 inline display로 확실히 제거
+      if (defaultImg) defaultImg.style.display = 'none';
+      track.querySelectorAll('.scene-carousel__img--variant').forEach((n) => n.remove());
+      dots.innerHTML = '';
+
+      let shown = false;
+      variants.forEach((v, i) => {
+        const img = document.createElement('img');
+        img.className = 'scene-card__img scene-carousel__img scene-carousel__img--variant';
+        img.alt = `오늘 말씀 장면 ${i + 1}`;
+        // loading="lazy"를 쓰지 않음: 카드가 처음 hidden(display:none)이라 lazy면 영원히 로드되지 않음
+        img.onload = () => { if (!shown) { wrap.hidden = false; shown = true; } };
+        img.src = `../images/scenes/${v.scene_image}`;
+        track.appendChild(img);
+
+        const dot = document.createElement('button');
+        dot.type = 'button';
+        dot.className = 'scene-dot' + (i === 0 ? ' is-active' : '');
+        dot.setAttribute('aria-label', `${i + 1}번째 장면 보기`);
+        dot.addEventListener('click', () => goToVariant(i));
+        dots.appendChild(dot);
+      });
+      dots.hidden = variants.length <= 1;
+
+      // 스크롤(스와이프)로 현재 위치 감지 → 활성 변형 동기화
+      let scrollTimer = null;
+      track.addEventListener('scroll', () => {
+        if (scrollTimer) clearTimeout(scrollTimer);
+        scrollTimer = setTimeout(() => {
+          const w = track.clientWidth || 1;
+          const idx = Math.round(track.scrollLeft / w);
+          if (idx !== activeVariant) setActiveVariant(idx);
+        }, 90);
+      });
+    }
+
+    function goToVariant(i) {
+      const track = document.getElementById('sceneTrack');
+      if (track) track.scrollTo({ left: i * track.clientWidth, behavior: 'smooth' });
+      setActiveVariant(i);
+    }
+
+    // 활성 변형 변경: 도트 갱신 + "본문 따라가기" 5단 호흡 텍스트 재렌더 (연동의 핵심)
+    function setActiveVariant(i) {
+      if (!deepDiveVariants || i < 0 || i >= deepDiveVariants.length) return;
+      activeVariant = i;
+      document.querySelectorAll('#sceneDots .scene-dot').forEach((dot, di) => {
+        dot.classList.toggle('is-active', di === i);
+      });
+      renderDeepDiveStep(deepDiveVariants[i]);
     }
 
     // ========== 장면 일러스트 로드 ==========
