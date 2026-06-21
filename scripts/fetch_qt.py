@@ -70,7 +70,7 @@ def today_str() -> str:
 
 
 # ===== HTTP =====
-def fetch_page(retries: int = 3) -> str:
+def fetch_page(retries: int = 5) -> str:
     """페이지 HTML을 가져온다. 실패 시 재시도."""
     session = requests.Session()
     session.headers.update(HEADERS)
@@ -78,16 +78,16 @@ def fetch_page(retries: int = 3) -> str:
     # 메인 페이지 선방문 (쿠키/세션 획득)
     log("메인 페이지 방문 중...")
     try:
-        session.get(MAIN_URL, timeout=30)
+        session.get(MAIN_URL, timeout=60)
     except requests.RequestException as e:
         log(f"메인 페이지 접근 실패 (무시하고 계속): {e}", "WARN")
 
-    # QT 페이지 요청 (재시도 포함)
+    # QT 페이지 요청 (재시도 포함, 지수 백오프)
     last_err = None
     for attempt in range(1, retries + 1):
         try:
             log(f"QT 페이지 요청 중 (시도 {attempt}/{retries})...")
-            res = session.get(URL, timeout=30)
+            res = session.get(URL, timeout=60)
             res.raise_for_status()
             res.encoding = "utf-8"
             log(f"응답 수신 완료 ({len(res.text):,} bytes)", "OK")
@@ -96,7 +96,7 @@ def fetch_page(retries: int = 3) -> str:
             last_err = e
             log(f"시도 {attempt} 실패: {e}", "WARN")
             if attempt < retries:
-                wait = 2 ** attempt
+                wait = 5 * (2 ** (attempt - 1))  # 5 → 10 → 20 → 40초
                 log(f"{wait}초 후 재시도...")
                 time.sleep(wait)
 

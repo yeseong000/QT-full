@@ -36,7 +36,13 @@ jobs:
           pip install requests beautifulsoup4 lxml "openai>=1.66.0" python-dotenv
 
       - name: Fetch QT (오륜교회 주만나 크롤링)
-        run: python scripts/fetch_qt.py
+        run: |
+          DATE=$(TZ=Asia/Seoul date '+%Y-%m-%d')
+          if [ -f "data/qt/${DATE}.json" ]; then
+            echo "✅ ${DATE} QT 데이터 이미 존재 (Worker/Backup이 먼저 실행됨) — 크롤링 건너뜀"
+          else
+            python scripts/fetch_qt.py
+          fi
 
       - name: Generate AI meditation
         env:
