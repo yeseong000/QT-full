@@ -80,14 +80,14 @@ function applyTheme(theme) {
   window.addEventListener('orientationchange', setAppHeight);
 })();
 
-// ── 시간대 수동 오버라이드 ──────────────────────────────────────────────
-// 사용자가 홈의 5개 아이콘으로 고른 시간대를 localStorage('settings.timeSlot')에 저장.
-// 값이 있으면 "현재 시각" 대신 그 시간대를 앱 전체가 따른다(모든 페이지 공통 단일 출처).
-// 값이 없으면 null → 실제 시각으로 자동 계산.
+// ── 시간대 임시 전환 (sessionStorage, 영구 저장 X) ──────────────────────
+// 홈의 버튼을 탭하면 "다음 시간대"를 sessionStorage('settings.timeSlot')에 저장.
+// 값이 있으면 "현재 시각" 대신 그 시간대를 앱 전체(STEP·달력 등)가 따른다(세션 공통 단일 출처).
+// sessionStorage라 탭을 닫고 새로 접속하면 사라지고 → 다시 현재 시각 기준으로 계산된다.
 const TIME_SLOTS = ['dawn', 'morning', 'afternoon', 'evening', 'night'];
 function getSlotOverride() {
   try {
-    const v = localStorage.getItem('settings.timeSlot');
+    const v = sessionStorage.getItem('settings.timeSlot');
     return (v && TIME_SLOTS.indexOf(v) >= 0) ? v : null;
   } catch (e) {
     return null;
@@ -168,8 +168,10 @@ if (typeof window !== 'undefined') {
   });
 }
 
-// 과거 사용자가 수동으로 저장해둔 background 값 정리(있으면 제거)
+// 과거 사용자가 수동으로 저장해둔 값 정리(있으면 제거)
+// settings.timeSlot은 이제 sessionStorage만 사용 → 예전 영구 저장본(localStorage)은 제거
 try { localStorage.removeItem('settings.background'); } catch (e) {}
+try { localStorage.removeItem('settings.timeSlot'); } catch (e) {}
 
 function applyFontStyle(style) {
   const s = style || Storage.get('settings.fontStyle', 'pretendard') || 'pretendard';

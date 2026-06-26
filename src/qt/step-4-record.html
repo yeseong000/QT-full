@@ -19,8 +19,8 @@
   <title>기록 · 주만나</title>
 
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.css">
-  <link rel="stylesheet" href="../styles/design-tokens.css?v=20260604-morningfix">
-  <link rel="stylesheet" href="../styles/common.css?v=20260604-morningfix">
+  <link rel="stylesheet" href="../styles/design-tokens.css?v=20260604-cyclebtn">
+  <link rel="stylesheet" href="../styles/common.css?v=20260604-cyclebtn">
 
   <!-- ★ 첫 페인트 전: 시간대 결정 → html[data-time-slot] 주입 -->
   <script>
@@ -28,7 +28,7 @@
       // 사용자가 홈에서 고른 시간대(settings.timeSlot)가 있으면 우선, 없으면 실제 현재 시각.
       var slot = null;
       try {
-        var _ov = localStorage.getItem('settings.timeSlot');
+        var _ov = sessionStorage.getItem('settings.timeSlot');
         if (_ov && ['dawn','morning','afternoon','evening','night'].indexOf(_ov) >= 0) slot = _ov;
       } catch (e) {}
       if (!slot) {
@@ -346,8 +346,8 @@
   </div>
 
   <!-- Scripts -->
-  <script src="../scripts/storage.js?v=20260604-morningfix"></script>
-  <script src="../scripts/common.js?v=20260604-morningfix"></script>
+  <script src="../scripts/storage.js?v=20260604-cyclebtn"></script>
+  <script src="../scripts/common.js?v=20260604-cyclebtn"></script>
   <script src="../scripts/supabase-sync.js"></script>
   <script>
     const TODAY = sessionStorage.getItem('qtDate') || Common.todayISO();

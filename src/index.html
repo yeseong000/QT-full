@@ -32,8 +32,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;500;700&display=swap">
-  <link rel="stylesheet" href="styles/design-tokens.css?v=20260604-morningfix">
-  <link rel="stylesheet" href="styles/common.css?v=20260604-morningfix">
+  <link rel="stylesheet" href="styles/design-tokens.css?v=20260604-cyclebtn">
+  <link rel="stylesheet" href="styles/common.css?v=20260604-cyclebtn">
 
   <!-- 레이아웃 모드 토글 (CSSOM 적용 전 실행되어야 첫 페인트부터 정확) -->
   <script>
@@ -59,7 +59,7 @@
       // 사용자가 고른 시간대(settings.timeSlot)가 있으면 우선, 없으면 실제 현재 시각으로.
       var slot = null;
       try {
-        var _ov = localStorage.getItem('settings.timeSlot');
+        var _ov = sessionStorage.getItem('settings.timeSlot');
         if (_ov && ['dawn','morning','afternoon','evening','night'].indexOf(_ov) >= 0) slot = _ov;
       } catch (e) {}
       if (!slot) {
@@ -70,7 +70,7 @@
              : (hour >= 17 && hour < 22) ? 'evening'
              : 'night';
       }
-      var SKY    = { dawn:'#7C74A2', morning:'#F7E6B8', afternoon:'#E6E9ED', evening:'#DEAD98', night:'#082252' };
+      var SKY    = { dawn:'#7C74A2', morning:'#F7E6B8', afternoon:'#CFE3EF', evening:'#DEAD98', night:'#082252' };
       var GROUND = { dawn:'#E5D0C0', morning:'#EFE6CD', afternoon:'#ECE3D2', evening:'#F5C672', night:'#2A3A5C' };
       // 분기 신호: applyTheme(common.js)이 meta theme-color를 덮어쓰지 못하게
       document.documentElement.setAttribute('data-uses-time-slot', 'true');
@@ -127,10 +127,10 @@
     .app-container[data-time-slot="afternoon"] {
       background-color: #ECE3D2;
       background-image:
-        linear-gradient(180deg, rgba(230, 233, 237, 0.85) 0%, rgba(230, 233, 237, 0) 100%),
+        linear-gradient(180deg, rgba(207, 227, 239, 0.85) 0%, rgba(207, 227, 239, 0) 100%),
         linear-gradient(to bottom, rgba(236, 227, 210, 0) 45%, rgba(236, 227, 210, 1) 100%),
-        url('images/%ED%8F%89%EC%95%88%ED%95%9C%20%EC%98%A4%ED%9B%84%20%EB%AA%A8%EB%B0%94%EC%9D%BC.png'),
-        linear-gradient(180deg, #E6E9ED 0%, #E0E2D8 50%, #ECE3D2 100%);
+        url('images/%EC%98%A4%ED%9B%84.png'),
+        linear-gradient(180deg, #CFE3EF 0%, #E0E2D8 50%, #ECE3D2 100%);
       background-size: 100% 100px, 100% 100%, cover, 100% 100%;
       background-position: top, center, center -200px, center;
       background-repeat: no-repeat;
@@ -170,7 +170,7 @@
       --slot-png-tablet: url('images/%EC%95%84%EC%B9%A8_%ED%83%9C%EB%B8%94%EB%A6%BF.png');
     }
     .app-container[data-time-slot="afternoon"] {
-      --slot-png: url('images/%ED%8F%89%EC%95%88%ED%95%9C%20%EC%98%A4%ED%9B%84%20%EB%AA%A8%EB%B0%94%EC%9D%BC.png');
+      --slot-png: url('images/%EC%98%A4%ED%9B%84.png');
       --slot-png-tablet: url('images/%EC%98%A4%ED%9B%84_%ED%83%9C%EB%B8%94%EB%A6%BF.png');
     }
     .app-container[data-time-slot="evening"] {
@@ -433,60 +433,37 @@
     .app-container[data-time-slot="evening"]   .today-cta:hover { background: #9A4F62; }
     .app-container[data-time-slot="night"]     .today-cta:hover { background: #5A7596; }
 
-    /* ---------- 배경 시간대 미리보기 스위처 (today-card 우측 상단 5종) ----------
-       탭하면 applySlot()으로 그 시간대 배경을 즉시 미리봄. 현재 시간대는 is-active로 강조. */
+    /* ---------- 배경 시간대 버튼 (today-card 우측 상단, 단일) ----------
+       현재 시각대 아이콘 1개만 표시. 탭하면 다음 시간대로 순환(임시·세션 한정, applySlot+cycleSlot). */
     .slot-switch {
       position: absolute;
       top: 14px;
       right: 14px;
       z-index: 3;
       display: flex;
-      gap: 1px;
     }
     .slot-switch__btn {
-      position: relative;
       appearance: none;
       -webkit-appearance: none;
       border: 0;
       background: transparent;
-      width: 28px;
-      height: 28px;
+      width: 30px;
+      height: 30px;
       padding: 0;
-      font-size: 15px;
-      line-height: 28px;
+      font-size: 17px;
+      line-height: 30px;
       text-align: center;
       border-radius: 999px;
       cursor: pointer;
-      opacity: 0.38;
-      filter: grayscale(0.55);
-      transition: opacity var(--duration-base), filter var(--duration-base),
-                  background var(--duration-base), transform var(--duration-fast);
+      opacity: 0.9;
+      transition: opacity var(--duration-base), background var(--duration-base),
+                  transform var(--duration-fast);
       -webkit-tap-highlight-color: transparent;
     }
-    .slot-switch__btn:hover { opacity: 0.7; }
+    .slot-switch__btn:hover { opacity: 1; background: rgba(0, 0, 0, 0.05); }
     .slot-switch__btn:active { transform: scale(0.85); }
-    .slot-switch__btn.is-active {
-      opacity: 1;
-      filter: none;
-      background: rgba(0, 0, 0, 0.06);
-    }
-    /* 어두운 시간대(카드 다크) — 활성 배경을 흰 톤으로 */
-    html[data-theme="dark"] .slot-switch__btn.is-active {
-      background: rgba(255, 255, 255, 0.16);
-    }
-    /* 수동으로 시간대를 "고정"한 상태(override)면 활성 아이콘 아래에 작은 점 표시
-       → 지금이 자동(현재 시각)인지, 내가 직접 고른 건지 구분 */
-    .slot-switch.is-overridden .slot-switch__btn.is-active::after {
-      content: "";
-      position: absolute;
-      left: 50%;
-      bottom: -1px;
-      width: 4px;
-      height: 4px;
-      border-radius: 50%;
-      transform: translateX(-50%);
-      background: var(--time-accent, #B5677A);
-    }
+    /* 어두운 시간대(카드 다크)일 때 hover 배경 톤 */
+    html[data-theme="dark"] .slot-switch__btn:hover { background: rgba(255, 255, 255, 0.14); }
 
     /* ---------- 로딩/에러 ---------- */
     .loading, .error {
@@ -871,13 +848,10 @@
 
       <!-- 오늘의 말씀 -->
       <section class="today-card" id="todayCard">
-        <!-- 배경 시간대 미리보기 스위처 (5종) — 탭하면 그 시간대 배경으로 즉시 전환 -->
-        <div class="slot-switch" id="slotSwitch" role="group" aria-label="배경 시간대 미리보기">
-          <button class="slot-switch__btn" type="button" data-slot="dawn"      aria-label="새벽 배경 미리보기">🌌</button>
-          <button class="slot-switch__btn" type="button" data-slot="morning"   aria-label="아침 배경 미리보기">☀️</button>
-          <button class="slot-switch__btn" type="button" data-slot="afternoon" aria-label="오후 배경 미리보기">🌤️</button>
-          <button class="slot-switch__btn" type="button" data-slot="evening"   aria-label="저녁 배경 미리보기">🌙</button>
-          <button class="slot-switch__btn" type="button" data-slot="night"     aria-label="밤 배경 미리보기">🌃</button>
+        <!-- 배경 시간대 버튼 (단일) — 현재 시각대 아이콘을 표시. 탭하면 다음 시간대로 순환(임시·세션 한정).
+             아이콘은 JS(updateSlotButton)가 현재 slot으로 채운다. -->
+        <div class="slot-switch" id="slotSwitch">
+          <button class="slot-switch__btn" type="button" aria-label="배경 시간대 바꾸기">🌤️</button>
         </div>
         <div class="loading" id="todayLoading">
           <p>오늘의 말씀을 준비하고 있어요...</p>
@@ -1030,8 +1004,8 @@
   </div>
 
   <!-- ========== Scripts ========== -->
-  <script src="scripts/storage.js?v=20260604-morningfix"></script>
-  <script src="scripts/common.js?v=20260604-morningfix"></script>
+  <script src="scripts/storage.js?v=20260604-cyclebtn"></script>
+  <script src="scripts/common.js?v=20260604-cyclebtn"></script>
   <script src="scripts/supabase-sync.js"></script>
   <script src="scripts/qr.js"></script>
   <script>
@@ -1057,7 +1031,7 @@
     // sky : 화면 상단(다이내믹 아일랜드 주변 status bar) — 각 PNG 상단 실제 픽셀색
     // ground: 하단 홈바 / overscroll 영역
     const SKY_COLOR = {
-      dawn: '#7C74A2', morning: '#F7E6B8', afternoon: '#E6E9ED',
+      dawn: '#7C74A2', morning: '#F7E6B8', afternoon: '#CFE3EF',
       evening: '#DEAD98', night: '#082252',
     };
     const GROUND_COLOR = {
@@ -1080,13 +1054,17 @@
     const TIME_BG_GRADIENT = {
       dawn:      'linear-gradient(180deg, #7C74A2 0%, #E5D0C0 100%)',
       morning:   'linear-gradient(180deg, #F7E6B8 0%, #EFE6CD 100%)',
-      afternoon: 'linear-gradient(180deg, #E6E9ED 0%, #ECE3D2 100%)',
+      afternoon: 'linear-gradient(180deg, #CFE3EF 0%, #ECE3D2 100%)',
       evening:   'linear-gradient(180deg, #DEAD98 0%, #F5C672 100%)',
       night:     'linear-gradient(180deg, #082252 0%, #2A3A5C 100%)',
     };
     // 어두운 시간대 — 카드/토큰도 다크로 전환. 밤만 다크.
     // (새벽은 실제 일러스트가 밝은 파스텔이라 라이트로 둠 — 저녁과 동일 처리)
     const DARK_SLOTS = { night: true };
+
+    // 시간대 순환 순서 + 버튼 아이콘 (단일 버튼이 현재 slot을 표시, 탭하면 다음으로 순환)
+    const SLOT_ORDER = ['dawn', 'morning', 'afternoon', 'evening', 'night'];
+    const SLOT_EMOJI = { dawn: '🌌', morning: '☀️', afternoon: '🌤️', evening: '🌙', night: '🌃' };
 
     /**
      * 한 시간대(slot)의 모든 배경 상태를 한 번에 적용한다 (단일 출처).
@@ -1114,48 +1092,37 @@
       else root.removeAttribute('data-theme');
 
       renderGreeting(slot);
-      updateSlotSwitchActive(slot);
+      updateSlotButton(slot);
     }
 
-    // 5개 아이콘 중 현재 slot을 강조 + 수동 선택(override) 여부 표시
-    function updateSlotSwitchActive(slot) {
-      const sw = document.getElementById('slotSwitch');
-      if (sw) sw.classList.toggle('is-overridden', getSlotOverride() != null);
-      document.querySelectorAll('#slotSwitch .slot-switch__btn').forEach((b) => {
-        const on = b.dataset.slot === slot;
-        b.classList.toggle('is-active', on);
-        b.setAttribute('aria-pressed', on ? 'true' : 'false');
-      });
+    // 단일 버튼 아이콘을 현재 slot으로 갱신
+    function updateSlotButton(slot) {
+      const btn = document.querySelector('#slotSwitch .slot-switch__btn');
+      if (btn) btn.textContent = SLOT_EMOJI[slot] || '🌤️';
     }
 
-    // ── 시간대 수동 선택(override) — 앱 전체가 기억하는 공통 localStorage 키 ──
-    // common.js의 pickTimeSlot/applyAmbient/applyAutoTheme와 동일한 키('settings.timeSlot')를 사용해
-    // STEP 1~5·묵상 캘린더 등 모든 페이지가 같은 시간대를 따른다.
+    // ── 시간대 임시 전환 — sessionStorage(이번 세션만, 영구 저장 X) ──
+    // 같은 키('settings.timeSlot')를 common.js·STEP·달력이 함께 읽어 세션 내 모든 페이지가 따라온다.
+    // 단, sessionStorage라 탭을 닫고 새로 접속하면 사라지고 → 현재 시각 기준으로 리셋된다.
     function getSlotOverride() {
       try {
-        const v = localStorage.getItem('settings.timeSlot');
-        return (v && ['dawn','morning','afternoon','evening','night'].includes(v)) ? v : null;
+        const v = sessionStorage.getItem('settings.timeSlot');
+        return (v && SLOT_ORDER.includes(v)) ? v : null;
       } catch (e) { return null; }
     }
-    function setSlotOverride(slot) {
-      if (getSlotOverride() === slot) {
-        // 이미 고른 시간대를 다시 누르면 → 저장 해제, 자동(현재 시각)으로 복귀
-        try { localStorage.removeItem('settings.timeSlot'); } catch (e) {}
-        applySlot(getTimeSlot(new Date().getHours()));
-      } else {
-        // 선택을 저장 → 다음에 여는 모든 페이지가 이 시간대로 보임
-        try { localStorage.setItem('settings.timeSlot', slot); } catch (e) {}
-        applySlot(slot);
-      }
+
+    // 버튼 탭 → 다음 시간대로 순환(임시). sessionStorage에만 저장(영구 X).
+    function cycleSlot() {
+      const cur = getSlotOverride() || getTimeSlot(new Date().getHours());
+      const next = SLOT_ORDER[(SLOT_ORDER.indexOf(cur) + 1) % SLOT_ORDER.length];
+      try { sessionStorage.setItem('settings.timeSlot', next); } catch (e) {}
+      applySlot(next);
     }
 
-    // 5개 아이콘 클릭 → 선택을 저장하고 그 시간대 배경으로 전환(앱 전체 적용)
+    // 단일 버튼 클릭 → cycleSlot
     function setupSlotSwitch() {
-      const sw = document.getElementById('slotSwitch');
-      if (!sw) return;
-      sw.querySelectorAll('.slot-switch__btn').forEach((b) => {
-        b.addEventListener('click', () => setSlotOverride(b.dataset.slot));
-      });
+      const btn = document.querySelector('#slotSwitch .slot-switch__btn');
+      if (btn) btn.addEventListener('click', cycleSlot);
     }
 
     /**
