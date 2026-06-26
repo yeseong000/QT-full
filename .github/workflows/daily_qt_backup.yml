@@ -16,7 +16,7 @@ concurrency:
 jobs:
   fetch:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 25
     permissions:
       contents: write
     env:
@@ -79,8 +79,8 @@ jobs:
           if [ -z "${OPENAI_API_KEY}" ]; then
             echo "::warning::OPENAI_API_KEY 미설정 → 5단 호흡 묵상 건너뜀"
           else
-            echo "5단 호흡 묵상 생성 (data/deep_dive/{date}.json)"
-            python scripts/generate_meditation.py
+            echo "5단 호흡 묵상 생성 — 본문 앞/뒤 2구간 (data/deep_dive/{date}.json, variants)"
+            python scripts/generate_meditation.py --passage
           fi
 
       - name: Generate 장면 일러스트 (scene image)
@@ -92,8 +92,8 @@ jobs:
           if [ -z "${OPENAI_API_KEY}" ]; then
             echo "::warning::OPENAI_API_KEY 미설정 → 장면 일러스트 건너뜀"
           else
-            echo "장면 일러스트 생성 (src/images/scenes/{date}.png)"
-            python scripts/generate_scene_image.py
+            echo "장면 일러스트 생성 — 변형별 2장 (src/images/scenes/{date}.png, {date}-2.png)"
+            python scripts/generate_scene_image.py --all-variants
           fi
 
       - name: Commit and push changes
