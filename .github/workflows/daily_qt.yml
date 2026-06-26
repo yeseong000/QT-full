@@ -2,8 +2,8 @@ name: Daily QT (주만나 자동 크롤링 + AI 묵상 생성)
 
 on:
   schedule:
-    # 매일 새벽 5시 KST = UTC 20:00 (전날)
-    - cron: '0 20 * * *'
+    # 매일 새벽 4시 KST = UTC 19:00 (전날)
+    - cron: '0 19 * * *'
   workflow_dispatch:   # GitHub Actions 탭에서 수동 실행 버튼
 
 concurrency:

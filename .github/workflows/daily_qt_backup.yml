@@ -5,8 +5,8 @@ name: Daily QT Backup (Worker 실패 대비)
 
 on:
   schedule:
-    # KST 07:00 = UTC 22:00 (전날) — Main(KST 05:00) 실패 시 서버 회복 후 재시도
-    - cron: '0 22 * * *'
+    # KST 06:00 = UTC 21:00 (전날) — Main(KST 04:00) 실패 시 서버 회복 후 재시도
+    - cron: '0 21 * * *'
   workflow_dispatch:   # 수동 실행 버튼
 
 concurrency:
