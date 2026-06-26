@@ -113,8 +113,8 @@
     .app-container[data-time-slot="night"] .calendar-cell--completed,
     .app-container[data-time-slot="night"] .calendar-cell--completed.calendar-cell--sun { color: #FFFFFF; }
     .app-container[data-time-slot="night"] .streak-metric__value { color: #FFFFFF; }
-    .app-container[data-time-slot="night"] .streak-metric__unit { color: rgba(255, 255, 255, 0.65); }
-    .app-container[data-time-slot="night"] .streak-metric__divider { background: rgba(255, 255, 255, 0.18); }
+    .app-container[data-time-slot="night"] .streak-metric__label { color: rgba(255, 255, 255, 0.65); }
+    .app-container[data-time-slot="night"] .streak-metric__suffix { color: rgba(255, 255, 255, 0.6); }
     .app-container[data-time-slot="night"] .preview-card__date { color: rgba(255, 255, 255, 0.65); }
     .app-container[data-time-slot="night"] .preview-card__title { color: #FFFFFF; }
     .app-container[data-time-slot="night"] .preview-card__ref { color: rgba(255, 255, 255, 0.65); }
@@ -217,7 +217,7 @@
 
     /* 지표 섹션 카드 (회 묵상 · 일 연속) — 비중을 줄여 달력에 시선이 가도록 */
     .streak-metrics {
-      padding: 11px 18px;
+      padding: 12px 18px;
       margin-bottom: var(--space-4);
     }
     .streak-hero__metrics {
@@ -230,28 +230,31 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 3px;
+      gap: 5px;
       max-width: 50%;
     }
-    .streak-metric__value {
-      font-size: 21px;
-      font-weight: 700;
-      color: var(--text-primary);
-      letter-spacing: -0.025em;
-      line-height: 1;
-    }
-    .streak-metric__unit {
-      font-size: 11.5px;
+    /* 라벨 — 숫자 위로 위치, 폰트 살짝 키움 */
+    .streak-metric__label {
+      font-size: 12.5px;
       color: var(--text-secondary);
       font-weight: 500;
       letter-spacing: -0.005em;
     }
-    .streak-metric__divider {
-      width: 0.5px;
-      align-self: center;
-      height: 24px;
-      background: rgba(0, 0, 0, 0.10);
-      flex-shrink: 0;
+    .streak-metric__value {
+      font-size: 23px;
+      font-weight: 700;
+      color: var(--text-primary);
+      letter-spacing: -0.025em;
+      line-height: 1;
+      display: inline-flex;
+      align-items: baseline;
+    }
+    .streak-metric__suffix {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-left: 1.5px;
+      letter-spacing: -0.01em;
     }
 
     /* 월 이동 (상단 헤더 내부) — 화살표를 라벨 양옆으로 모은 중앙 컴팩트 스테퍼.
@@ -821,17 +824,16 @@
       <div class="month-hero__illust" id="streakIllust" aria-hidden="true"></div>
     </header>
 
-    <!-- 지표 섹션 -->
+    <!-- 지표 섹션 (이달 묵상수 · 연속 묵상일 — 라벨을 숫자 위로, 구분선 제거) -->
     <section class="streak-metrics glass-card">
       <div class="streak-hero__metrics">
         <div class="streak-metric">
-          <span class="streak-metric__value" id="streakTotal">0</span>
-          <span class="streak-metric__unit">회 묵상</span>
+          <span class="streak-metric__label">이달 묵상수</span>
+          <span class="streak-metric__value"><span id="streakTotal">0</span><span class="streak-metric__suffix">회</span></span>
         </div>
-        <div class="streak-metric__divider" aria-hidden="true"></div>
         <div class="streak-metric">
-          <span class="streak-metric__value" id="streakCurrent">0</span>
-          <span class="streak-metric__unit">일 연속</span>
+          <span class="streak-metric__label">연속 묵상일</span>
+          <span class="streak-metric__value"><span id="streakCurrent">0</span><span class="streak-metric__suffix">일</span></span>
         </div>
       </div>
     </section>
@@ -1187,19 +1189,17 @@
       }
     }
 
+    // 꽃 일러스트만 담당 (지표 숫자는 renderMonth에서 보고 있는 달 기준으로 설정).
+    // 꽃 성장 기준은 추후 '월 단위'로 교체 예정 — 현재는 누적 total 유지.
     function renderStreak() {
-      let total = 0, current = 0;
+      let total = 0;
       try {
         if (typeof Storage !== 'undefined' && typeof Storage.getStreak === 'function') {
-          const s = Storage.getStreak();
-          total = s.totalCompleted ?? 0;
-          current = s.current ?? 0;
+          total = Storage.getStreak().totalCompleted ?? 0;
         }
       } catch (e) {
         console.warn('renderStreak: Storage 접근 실패', e);
       }
-      document.getElementById('streakTotal').textContent = total;
-      document.getElementById('streakCurrent').textContent = current;
       document.getElementById('streakIllust').innerHTML = getGrowthSVG(getGrowthStage(total));
     }
 
@@ -1240,6 +1240,9 @@
       }
 
       let monthHasCompleted = false;
+      let monthCount = 0;      // 이달 묵상수 (그 달 완료일 수)
+      let streakRun = 0;       // 현재 이어지는 연속 런
+      let monthStreak = 0;     // 이달 안에서 가장 긴 연속일수
       for (let d = 1; d <= daysInMonth; d++) {
         const dateISO = `${viewYear}-${pad2(viewMonth + 1)}-${pad2(d)}`;
         const dayOfWeek = (firstDay + d - 1) % 7;
@@ -1256,6 +1259,9 @@
 
         if (isCompleted) {
           monthHasCompleted = true;
+          monthCount++;
+          streakRun++;                                  // 연속 런 누적
+          if (streakRun > monthStreak) monthStreak = streakRun;
           classes.push('calendar-cell--completed');
           // 같은 주 내 인접일이 완료면 streak 연결 (일요일=주 시작/토요일=주 끝에서 끊김)
           if (!isSunday   && completedSet.has(shiftISO(dateISO, -1))) {
@@ -1264,6 +1270,8 @@
           if (!isSaturday && completedSet.has(shiftISO(dateISO, +1))) {
             classes.push('calendar-cell--streak-right');
           }
+        } else {
+          streakRun = 0;                                // 빠진 날 → 연속 끊김
         }
 
         if (!isFuture) {
@@ -1278,6 +1286,10 @@
       document.getElementById('calendarGrid').innerHTML = cells.join('');
       document.getElementById('calendarEmpty').style.display =
         monthHasCompleted ? 'none' : 'block';
+
+      // 지표 — 보고 있는 달 기준 (월 이동 시 자동 갱신)
+      document.getElementById('streakTotal').textContent = monthCount;
+      document.getElementById('streakCurrent').textContent = monthStreak;
     }
 
     async function selectDate(date, cellEl) {
