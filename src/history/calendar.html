@@ -241,20 +241,25 @@
       letter-spacing: -0.005em;
     }
     .streak-metric__value {
+      position: relative;
+      display: inline-block;     /* 폭 = 숫자 폭 → 라벨 중앙에 숫자가 정렬됨(기준) */
       font-size: 23px;
       font-weight: 700;
       color: var(--text-primary);
       letter-spacing: -0.025em;
       line-height: 1;
-      display: inline-flex;
-      align-items: baseline;
     }
+    /* 단위(회/일) — 숫자는 가운데 고정하고, 단위만 흐름에서 빼 숫자 오른쪽으로 살짝 띄움 */
     .streak-metric__suffix {
+      position: absolute;
+      left: 100%;
+      bottom: 1px;
+      margin-left: 3px;
       font-size: 13px;
       font-weight: 600;
       color: var(--text-secondary);
-      margin-left: 1.5px;
       letter-spacing: -0.01em;
+      white-space: nowrap;
     }
 
     /* 월 이동 (상단 헤더 내부) — 화살표를 라벨 양옆으로 모은 중앙 컴팩트 스테퍼.
