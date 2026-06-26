@@ -455,12 +455,12 @@
       text-align: center;
       border-radius: 999px;
       cursor: pointer;
-      opacity: 0.9;
+      opacity: 0.5;  /* 임시 테스트용 버튼이라 연하게 */
       transition: opacity var(--duration-base), background var(--duration-base),
                   transform var(--duration-fast);
       -webkit-tap-highlight-color: transparent;
     }
-    .slot-switch__btn:hover { opacity: 1; background: rgba(0, 0, 0, 0.05); }
+    .slot-switch__btn:hover { opacity: 0.8; background: rgba(0, 0, 0, 0.05); }
     .slot-switch__btn:active { transform: scale(0.85); }
     /* 어두운 시간대(카드 다크)일 때 hover 배경 톤 */
     html[data-theme="dark"] .slot-switch__btn:hover { background: rgba(255, 255, 255, 0.14); }
