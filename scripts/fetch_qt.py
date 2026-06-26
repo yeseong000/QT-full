@@ -302,6 +302,11 @@ def extract_verses(soup: BeautifulSoup, ref: dict) -> list:
         verse_num = int(m.group(1))
         verse_text = m.group(2).strip()
 
+        # 성경 최대 절 수(시편 119편 = 176절) 초과 시 내비게이션 항목으로 간주하고 스킵
+        # (오륜교회 페이지에 "2024 미션트립" 같은 연도형 li 항목이 섞여 있음)
+        if verse_num > 176:
+            continue
+
         # 한글 없으면 스킵 (영문 배제)
         if not re.search(r"[가-힣]", verse_text):
             continue
