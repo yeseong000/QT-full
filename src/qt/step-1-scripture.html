@@ -66,6 +66,14 @@
     /* step 페이지: common.css의 ambient mesh 그라데이션 끔 — 시간대 단색으로 깔끔하게 */
     html[data-time-slot] body { background-image: none; }
 
+    /* 저녁: 외부 바탕(body)을 단색 #F5C672 대신, 안쪽 카드·묵상달력과 같은
+       흐릿한 주황 그라데이션(--ambient-mesh)으로. (PC·태블릿·모바일 공통) */
+    html[data-time-slot="evening"] body {
+      background-color: var(--bg-paper);
+      background-image: var(--ambient-mesh);
+      background-attachment: fixed;
+    }
+
     /* 야간 시간대 텍스트 흰색 처리 */
     html[data-time-slot="night"] { color: #FFFFFF; }
     html[data-time-slot="night"] .page-title { color: #FFFFFF; }
