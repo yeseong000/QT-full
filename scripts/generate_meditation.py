@@ -462,19 +462,41 @@ def plan_passage_split(qt_data: dict) -> tuple[list, dict] | tuple[None, None]:
     return segments, cost_info
 
 
-def build_segment_payload(qt_data: dict, kb: dict | None, segment: dict, avoid_lesson: str | None = None) -> dict:
+def build_segment_payload(
+    qt_data: dict,
+    kb: dict | None,
+    segment: dict,
+    avoid_lesson: str | None = None,
+    prev_scene: str | None = None,
+    prev_range: str | None = None,
+) -> dict:
     """특정 구간(앞/뒤)만 다루는 5단 호흡 user payload 구성. 본문 순서 분할 모드 전용.
 
     오륜 질문은 묵상에 끌어오지 않음(연동 제거). step 4 질문 데이터는 qt에 그대로 남아 있음.
     avoid_lesson이 있으면 앞 구간 교훈을 반복하지 않도록 지시.
+    prev_scene이 있으면(=뒤 구간) 앞 구간을 이미 읽은 독자에게 '이어서' 들려주는 2막으로 생성한다.
+    배경·도입을 재서술하지 않고, 앞 구간이 끝난 지점을 받아 한 걸음 나아가는 '이음 장면'으로 연다.
     """
     vs, ve = int(segment["verse_start"]), int(segment["verse_end"])
     seg_verses = [v for v in qt_data.get("verses", []) if vs <= v.get("number", -1) <= ve]
     seg_body = "\n".join(f"{v['number']} {v['text']}" for v in seg_verses)
-    instruction = (
-        "이 묵상은 위 '본문_내용'(이 구간)만 다루세요. 다른 구간의 사건·교훈을 절대 끌어오지 마세요. "
-        "'구간_교훈축'을 중심으로 5단 호흡을 전개하고, 큰 주제는 유지하되 이 구간만의 면을 비추세요."
-    )
+    if prev_scene:
+        # === 뒤 구간: 1막을 이어받는 2막 ===
+        instruction = (
+            "이 묵상은 '앞_구간_장면'을 방금 읽은 독자에게 이어서 들려주는 2막이에요. "
+            "그 배경·도입(이미 벌어진 사건)을 절대 다시 설명하지 마세요. "
+            "'장면'은 앞 구간이 끝난 지점을 자연스럽게 이어받는 '이음 장면'으로 시작하세요 — "
+            "한두 문장의 짧은 다리로 1막의 흐름을 받은 뒤(이미 일어난 일은 재서술 금지), "
+            "그 다음에 벌어지는 이 구간의 새 사건으로 한 걸음 나아갑니다. "
+            "'구간_교훈축'을 중심으로 5단 호흡을 풀되, 큰 주제는 유지하고 이 구간만의 면을 비추세요."
+        )
+    else:
+        # === 앞 구간(1막): 무대를 세우고, 뒤 구간이 이어받을 여지를 남긴다 ===
+        instruction = (
+            "이 묵상은 위 '본문_내용'(이 구간)을 중심으로 전개하세요. 뒤 구간의 사건을 미리 끌어오지 마세요. "
+            "'구간_교훈축'을 중심으로 5단 호흡을 전개하고, 큰 주제는 유지하되 이 구간만의 면을 비추세요. "
+            "이 구간의 끝에서는 결말을 억지로 닫지 말고, 뒤 구간이 자연스럽게 이어받을 여지를 남기며 멈추세요."
+        )
     payload = {
         "본문_참조": qt_data.get("scripture_ref", ""),
         "본문_제목": qt_data.get("title", ""),
@@ -485,6 +507,10 @@ def build_segment_payload(qt_data: dict, kb: dict | None, segment: dict, avoid_l
         "집중_지시": instruction,
         "지식": kb,
     }
+    if prev_scene:
+        payload["앞_구간_장면"] = prev_scene
+        if prev_range:
+            payload["앞_구간_범위"] = prev_range
     if avoid_lesson:
         payload["이미_다룬_교훈"] = avoid_lesson
         payload["겹침_금지"] = (
@@ -628,10 +654,19 @@ def main() -> int:
             log(f"  · {s['verse_start']}-{s['verse_end']}절 / 교훈축: {s.get('교훈축', '')[:40]}", "OK")
 
         prev_lesson = None
+        prev_scene = None
+        prev_range = None
         for idx, seg in enumerate(segments):
             label = f"{'앞' if idx == 0 else '뒤'}부분({seg['verse_start']}-{seg['verse_end']})"
             log(f"[{label}] 5단 호흡 생성 중...", "INFO")
-            payload = build_segment_payload(qt_data, kb, seg, avoid_lesson=prev_lesson)
+            payload = build_segment_payload(
+                qt_data,
+                kb,
+                seg,
+                avoid_lesson=prev_lesson,
+                prev_scene=prev_scene,
+                prev_range=prev_range,
+            )
             deep_dive, cost_info = generate_meditation_once(system_prompt, fewshot, qt_data, kb, payload=payload)
             if deep_dive is None:
                 log(f"[{label}] 생성 실패 — 중단합니다.", "ERR")
@@ -646,6 +681,9 @@ def main() -> int:
             variants.append(variant)
             # 다음 구간이 같은 교훈을 반복하지 않도록 이번 통찰+연결을 넘김
             prev_lesson = f"통찰: {deep_dive['통찰']}\n연결: {deep_dive['연결']}"
+            # 다음 구간이 '이음 장면'으로 자연스럽게 이어받도록 이번 장면·범위를 넘김
+            prev_scene = deep_dive.get("장면", "")
+            prev_range = f"{seg['verse_start']}-{seg['verse_end']}"
     else:
         # === 질문별 / 단일 모드 (기존) ===
         if args.variants:

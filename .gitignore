@@ -49,3 +49,6 @@ src/seed-test.html
 
 # 프롬프트 반복 테스트 출력 (로컬 전용)
 data/application_test_*.json
+
+# 2막 전환 전 백업 (로컬 비교용, 배포 X)
+data/deep_dive/_before_2act/
