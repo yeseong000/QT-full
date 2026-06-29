@@ -52,3 +52,10 @@ data/application_test_*.json
 
 # 2막 전환 전 백업 (로컬 비교용, 배포 X)
 data/deep_dive/_before_2act/
+
+# KB 작업 검토용·백업 (배포 X)
+/kb-compare*.html
+data/deep_dive/_noKB/
+data/deep_dive/_KBnoQ/
+data/deep_dive/_2to1/
+data/deep_dive/_1to2/

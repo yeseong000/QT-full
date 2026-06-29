@@ -138,6 +138,29 @@ def load_kb(book_name: str) -> dict | None:
         return None
 
 
+def slice_kb_to_passage(kb: dict | None, qt_data: dict) -> dict | None:
+    """KB가 장(숫자) 키 구조면, 그날 본문이 속한 장만 추려 전달한다.
+
+    책 전체를 통째로 넘기면 토큰 낭비 + 다른 장 디테일 혼입 위험이 있으므로,
+    그날 본문의 verses_start_chapter~verses_end_chapter에 해당하는 장만 남긴다.
+    (book/_note 등 숫자 아닌 메타 키는 유지. 장 구조가 아니면 원본 그대로 반환)
+    """
+    if not kb or not isinstance(kb, dict):
+        return kb
+    chap_keys = [k for k in kb if isinstance(k, str) and k.isdigit()]
+    if not chap_keys:
+        return kb  # 장 구조 아님 → 그대로
+    cstart = qt_data.get("verses_start_chapter") or qt_data.get("chapter")
+    cend = qt_data.get("verses_end_chapter") or qt_data.get("chapter") or cstart
+    if not cstart:
+        return kb
+    wanted = {str(c) for c in range(int(cstart), int(cend) + 1)}
+    if not any(k in wanted for k in chap_keys):
+        return None  # 장 구조 KB인데 해당 장이 없음 → 다른 장 혼입 막으려 지식 없이 진행
+    # '_단락구조'는 분할 판단용 메타라 생성 payload에서는 제외
+    return {k: v for k, v in kb.items() if k != "_단락구조" and ((not k.isdigit()) or (k in wanted))}
+
+
 # ===== 입력 변환 =====
 def build_user_payload(qt_data: dict, kb: dict | None, focus_question: str | None = None) -> dict:
     """QT 데이터를 시스템 프롬프트가 기대하는 한글 필드 형식으로 변환.
@@ -397,18 +420,56 @@ PASSAGE_SPLIT_SYSTEM = """당신은 성경 본문을 묵상 단위로 나누는 
 - 다만 두 구간의 분량이 지나치게 치우치지 않게 균형을 맞추세요(한쪽이 한두 절만 남지 않도록). 가장 자연스러운 전환점을 우선하되, 비슷한 분량으로 나눌 수 있는 전환점을 고르세요.
 - 각 구간의 '소주제'와 '교훈축'을 각각 한 줄로 쓰되, 두 구간의 교훈축은 서로 확실히 다른 측면이어야 합니다 (겹침 절대 금지).
 - 큰 주제는 유지하되, 앞 구간과 뒤 구간이 그 주제의 '서로 다른 면'을 비추게 하세요.
+- 조역(반면 교사)의 나쁜 행동만으로 두 구간의 교훈축을 모두 채우지 마세요. 가능하면 한 구간은 주인공의 선한 선택을, 다른 구간은 주인공의 실패·갈등·신앙적 긴장을 중심으로 하세요.
+- 본문에서 주인공이 예상 밖의 선택(분노·두려움·불신 등)을 하는 장면이 있다면, 그 구간의 교훈축은 반드시 그 내면의 갈등을 반영해야 합니다. 단순히 조역의 행동을 비판하는 교훈으로 대체하지 마세요.
 
 출력은 아래 JSON만 (설명·군더더기 금지):
 {"segments":[{"verse_start":정수,"verse_end":정수,"소주제":"한 줄","교훈축":"한 줄"},{"verse_start":정수,"verse_end":정수,"소주제":"한 줄","교훈축":"한 줄"}]}
 """
 
 
-def plan_passage_split(qt_data: dict) -> tuple[list, dict] | tuple[None, None]:
-    """본문을 앞/뒤 2구간으로 나누고 각 구간의 소주제·교훈축을 결정. (segments, cost) 반환."""
+_ZERO_COST = {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0, "cost_usd": 0.0, "cost_krw": 0.0}
+
+
+def plan_passage_split(qt_data: dict, kb_full: dict | None = None) -> tuple[list | str, dict] | tuple[None, None]:
+    """본문을 1개(단일) 또는 2구간으로 나눈다.
+
+    1순위: KB의 검증된 '_단락구조'(본문별 단락 수·범위). 1단락→'SINGLE', 2단락→그 범위 사용(주석 근거).
+    2순위(KB에 없을 때): AI 분할 플래너로 2구간 결정.
+    반환: ('SINGLE', cost) / (segments, cost) / (None, None=실패)
+    """
     verses = qt_data.get("verses", [])
     if len(verses) < 2:
-        log("본문 절 수가 너무 적어 앞/뒤 분할이 불가합니다.", "ERR")
-        return None, None
+        log("본문 절 수가 너무 적어 단일로 진행합니다.", "INFO")
+        return "SINGLE", dict(_ZERO_COST)
+    nums = [v["number"] for v in verses]
+    vmin, vmax = min(nums), max(nums)
+
+    # === 1순위: KB의 검증된 단락구조 (주석 근거) ===
+    ref = qt_data.get("scripture_ref", "")
+    ds_map = kb_full.get("_단락구조", {}) if isinstance(kb_full, dict) else {}
+    ds = ds_map.get(ref)
+    if ds:
+        if len(ds) == 1:
+            log(f"KB 단락구조: '{ref}' = 1단락 → 단일 묵상", "OK")
+            return "SINGLE", dict(_ZERO_COST)
+        if len(ds) == 2:
+            try:
+                segs = []
+                for d in ds:
+                    a, b = [int(x) for x in str(d["범위"]).split("-")]
+                    segs.append({"verse_start": a, "verse_end": b,
+                                 "소주제": d.get("소주제", ""), "교훈축": d.get("교훈", d.get("교훈축", ""))})
+                s0, e0 = segs[0]["verse_start"], segs[0]["verse_end"]
+                s1, e1 = segs[1]["verse_start"], segs[1]["verse_end"]
+                if s0 == vmin and e1 == vmax and s1 == e0 + 1 and s0 <= e0 < s1 <= e1:
+                    log(f"KB 단락구조: '{ref}' = 2단락 [{s0}-{e0}]/[{s1}-{e1}]", "OK")
+                    return segs, dict(_ZERO_COST)
+                log("KB 단락구조 범위가 본문과 불일치 → AI 플래너로 폴백", "WARN")
+            except (KeyError, ValueError, TypeError):
+                log("KB 단락구조 파싱 실패 → AI 플래너로 폴백", "WARN")
+
+    # === 2순위: AI 분할 플래너 ===
     body_text = "\n".join(f"{v['number']} {v['text']}" for v in verses)
     payload = {
         "본문_참조": qt_data.get("scripture_ref", ""),
@@ -469,6 +530,7 @@ def build_segment_payload(
     avoid_lesson: str | None = None,
     prev_scene: str | None = None,
     prev_range: str | None = None,
+    oryun_question: str | None = None,
 ) -> dict:
     """특정 구간(앞/뒤)만 다루는 5단 호흡 user payload 구성. 본문 순서 분할 모드 전용.
 
@@ -516,6 +578,13 @@ def build_segment_payload(
         payload["겹침_금지"] = (
             "위 '이미_다룬_교훈'은 앞 구간이 이미 다룬 내용이에요. "
             "절대 같은 교훈을 반복하지 말고, 이 구간만의 다른 교훈을 뽑으세요."
+        )
+    if oryun_question:
+        payload["오륜_질문"] = oryun_question
+        payload["연결_착지"] = (
+            "마지막 '연결' 단계는 위 '오륜_질문'을 독자가 스스로 떠올리도록 자연스럽게 매듭지으세요. "
+            "단, 질문을 그대로 인용하지 말고 이 구간 본문·교훈에서 우러나오게 풀어주세요. "
+            "이 구간 교훈축과 질문이 잘 안 맞으면 억지로 끼워넣지 말고, 본문 흐름을 우선하세요(밸런스)."
         )
     return payload
 
@@ -623,7 +692,8 @@ def main() -> int:
     try:
         system_prompt, fewshot = load_prompt_assets()
         qt_data = load_qt_data(date_str)
-        kb = load_kb(qt_data.get("book_name", ""))
+        kb_full = load_kb(qt_data.get("book_name", ""))  # 분할 판단(단락구조)용 전체 KB
+        kb = slice_kb_to_passage(kb_full, qt_data)        # 생성용 — 해당 장만, 단락구조 메타 제외
         log(
             f"QT 데이터: {qt_data.get('title')} ({qt_data.get('scripture_ref')})",
             "OK",
@@ -644,21 +714,40 @@ def main() -> int:
     if args.passage:
         # === 본문 순서(앞/뒤) 분할 모드 ===
         log("본문 앞/뒤 분할 플래너 실행 중...", "INFO")
-        segments, plan_cost = plan_passage_split(qt_data)
+        segments, plan_cost = plan_passage_split(qt_data, kb_full)
         if not segments:
             log("본문 분할 실패 — 중단합니다.", "ERR")
             return 2
         for k in total_cost:
             total_cost[k] = round(total_cost[k] + plan_cost[k], 6)
-        for s in segments:
-            log(f"  · {s['verse_start']}-{s['verse_end']}절 / 교훈축: {s.get('교훈축', '')[:40]}", "OK")
+
+        if segments == "SINGLE":
+            # 검증된 단락구조상 1단락 → 단일 묵상으로 생성
+            log("1단락 → 단일 묵상으로 생성합니다.", "INFO")
+            payload = build_user_payload(qt_data, kb)
+            deep_dive, cost_info = generate_meditation_once(system_prompt, fewshot, qt_data, kb, payload=payload)
+            if deep_dive is None:
+                log("단일 생성 실패 — 중단합니다.", "ERR")
+                return 2
+            log(f"[단일] 토큰 {cost_info['total_tokens']} / 비용 약 {cost_info['cost_krw']:.2f}원", "OK")
+            for k in total_cost:
+                total_cost[k] = round(total_cost[k] + cost_info[k], 6)
+            variants.append({key: deep_dive[key] for key in REQUIRED_KEYS})
+            segments = []  # 아래 2구간 루프 건너뜀
+        else:
+            for s in segments:
+                log(f"  · {s['verse_start']}-{s['verse_end']}절 / 교훈축: {s.get('교훈축', '')[:40]}", "OK")
 
         prev_lesson = None
         prev_scene = None
         prev_range = None
+        seg_questions = oryun_questions  # 구간0→Q1, 구간1→Q2 (질문 1개면 공유, 없으면 None)
         for idx, seg in enumerate(segments):
             label = f"{'앞' if idx == 0 else '뒤'}부분({seg['verse_start']}-{seg['verse_end']})"
             log(f"[{label}] 5단 호흡 생성 중...", "INFO")
+            seg_q = None
+            if seg_questions:
+                seg_q = seg_questions[idx] if idx < len(seg_questions) else seg_questions[-1]
             payload = build_segment_payload(
                 qt_data,
                 kb,
@@ -666,6 +755,7 @@ def main() -> int:
                 avoid_lesson=prev_lesson,
                 prev_scene=prev_scene,
                 prev_range=prev_range,
+                oryun_question=seg_q,
             )
             deep_dive, cost_info = generate_meditation_once(system_prompt, fewshot, qt_data, kb, payload=payload)
             if deep_dive is None:
@@ -677,6 +767,8 @@ def main() -> int:
             variant = {key: deep_dive[key] for key in REQUIRED_KEYS}
             variant["구간"] = f"{seg['verse_start']}-{seg['verse_end']}"
             variant["소주제"] = seg.get("소주제", "")
+            if seg_q:
+                variant["오륜질문"] = seg_q
             variant["scene_image"] = f"{date_str}.png" if idx == 0 else f"{date_str}-{idx + 1}.png"
             variants.append(variant)
             # 다음 구간이 같은 교훈을 반복하지 않도록 이번 통찰+연결을 넘김
