@@ -1125,6 +1125,28 @@
       if (btn) btn.addEventListener('click', cycleSlot);
     }
 
+    // ── 다른 시간대 배경 미리 받아두기(preload) ──────────────────────
+    // 시간대별 배경 PNG 경로 (모바일 원본 / 태블릿·PC 전용 2:3).
+    const SLOT_BG = {
+      dawn:      { mobile: 'images/새벽.png',  tablet: 'images/새벽_태블릿.png' },
+      morning:   { mobile: 'images/아침.png',  tablet: 'images/아침_태블릿.png' },
+      afternoon: { mobile: 'images/오후.png',  tablet: 'images/오후_태블릿.png' },
+      evening:   { mobile: 'images/저녁.png',  tablet: 'images/저녁_태블릿.png' },
+      night:     { mobile: 'images/밤.png',    tablet: 'images/밤_태블릿.png' },
+    };
+    // 현재 화면 크기에 맞는 배경(모바일/태블릿)만 골라 백그라운드로 미리 다운로드.
+    // → 시간대 전환 버튼을 눌렀을 때 이미 캐시에 있어 즉시 표시된다.
+    //   (첫 화면 로딩과 경쟁하지 않도록 'window.load + 한가한 순간'에만 호출 — 아래 init 참고)
+    function preloadSlotBackgrounds() {
+      const useTablet = window.matchMedia('(min-width: 744px)').matches;
+      SLOT_ORDER.forEach(slot => {
+        const url = useTablet ? SLOT_BG[slot].tablet : SLOT_BG[slot].mobile;
+        const img = new Image();
+        img.decoding = 'async';
+        img.src = url;
+      });
+    }
+
     /**
      * verse 텍스트를 항상 2줄로 보이도록 처리
      * - 짧은 텍스트(≤12자): 둘째 줄에 빈 칸을 추가해 2줄 영역 확보
@@ -1163,6 +1185,18 @@
       setupFontStyleSelector();
       setupEventListeners();
       ensureHashSilently();
+
+      // 나머지 시간대 배경은 앱이 완전히 뜬 뒤 '한가한 순간'에만 미리 받아둔다.
+      // → 첫 화면 로딩 속도엔 영향 없음, 이후 시간대 전환은 즉시 표시.
+      const startPreload = () => {
+        if ('requestIdleCallback' in window) {
+          requestIdleCallback(preloadSlotBackgrounds, { timeout: 3000 });
+        } else {
+          setTimeout(preloadSlotBackgrounds, 1500); // 구버전 iOS Safari 등 fallback
+        }
+      };
+      if (document.readyState === 'complete') startPreload();
+      else window.addEventListener('load', startPreload, { once: true });
     });
 
     // ========== 해시 자동 발급 ==========
