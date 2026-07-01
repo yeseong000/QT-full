@@ -690,6 +690,9 @@ def generate_meditation_once(
         if k in gate_cost:
             cost_info[k] = round(cost_info[k] + gate_cost[k], 6)
 
+    # === 질문 재서술 게이트 (도입이 장면과 15%+ 겹치면 잘라 질문만 남김) ===
+    deep_dive = gate_question_restatement(deep_dive)
+
     return deep_dive, cost_info
 
 
@@ -798,6 +801,41 @@ def enforce_modern_korean(deep_dive: dict) -> tuple[dict, dict]:
     else:
         log("옛문체 게이트 통과 ✓", "OK")
     return deep_dive, cost
+
+
+# ===== 질문 재서술 게이트 (결정론적) =====
+_Q_TOKEN = re.compile(r"[가-힣]{2,}")
+
+
+def _q_sents(text: str) -> list:
+    return [s.strip() for s in re.split(r"(?<=[.?!])\s*|\n", text or "") if s.strip()]
+
+
+def gate_question_restatement(deep_dive: dict, threshold: float = 0.15) -> dict:
+    """질문 도입 평서문이 장면과 threshold 이상 겹치면 잘라내고 의문문만 남긴다.
+
+    반전·새 각도 도입(겹침 낮음)은 유지. 저장 직전 결정론적으로 실행(옛문체 게이트와 동일 방식).
+    """
+    scene = deep_dive.get("장면", "")
+    question = deep_dive.get("질문", "")
+    parts = _q_sents(question)
+    leads = [s for s in parts if not s.endswith("?")]
+    ques = [s for s in parts if s.endswith("?")]
+    if not leads or not ques:
+        return deep_dive
+    scene_sets = [set(_Q_TOKEN.findall(s)) for s in _q_sents(scene)]
+    kept = []
+    for ls in leads:
+        lw = set(_Q_TOKEN.findall(ls))
+        best = max((len(lw & sw) / len(lw | sw) for sw in scene_sets if lw and sw), default=0.0)
+        if best < threshold:
+            kept.append(ls)
+        else:
+            log(f"질문 도입 재서술({best*100:.0f}%) 감지 — 잘라냄", "INFO")
+    new_q = "\n".join(kept + ques)
+    if new_q != question:
+        deep_dive = {**deep_dive, "질문": new_q}
+    return deep_dive
 
 
 # ===== 메인 =====
