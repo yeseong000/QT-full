@@ -1,10 +1,10 @@
 name: Daily QT (주만나 자동 크롤링 + AI 묵상 생성)
 
 on:
-  schedule:
-    # 매일 새벽 4시 KST = UTC 19:00 (전날)
-    - cron: '0 19 * * *'
-  workflow_dispatch:   # GitHub Actions 탭에서 수동 실행 버튼
+  # ⚠️ 자체 cron 제거됨 (2026-07): GitHub cron이 30~60분씩 늦게 켜져
+  #    KST 04:00 워커-트리거 백업과 이중 실행되던 문제를 없앴습니다.
+  #    이제 이 본진은 매일 KST 04:00 Cloudflare Worker가 정시에 깨웁니다(단일 트리거 창구).
+  workflow_dispatch:   # 워커 트리거 + GitHub Actions 탭 수동 실행 버튼
 
 concurrency:
   group: daily-qt

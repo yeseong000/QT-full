@@ -1,11 +1,13 @@
-// Cloudflare Worker — 타이머 역할만 담당합니다.
-// 매일 KST 04:00 에 GitHub Actions workflow_dispatch를 호출하여
+// Cloudflare Worker — 타이머(알람시계) 역할만 담당합니다.
+// 매일 KST 04:00 에 본진 워크플로우(daily_qt.yml)의 workflow_dispatch를 정확히 호출합니다.
+// (GitHub 자체 cron은 잘 늦으므로, 워커가 정시에 깨우는 유일한 트리거 창구입니다.)
 // 크롤링·AI 생성·커밋은 GitHub Actions(미국 서버)에 위임합니다.
+// daily_qt_backup.yml 은 워커가 실패했을 때만 KST 06:00 자체 cron으로 도는 안전망입니다.
 
 import { notifyFailure } from './notify.js';
 import { log, todayKst } from './util.js';
 
-const WORKFLOW_FILE = 'daily_qt_backup.yml';
+const WORKFLOW_FILE = 'daily_qt.yml';
 
 async function triggerGitHubActions(env) {
   const [owner, repo] = env.GITHUB_REPO.split('/');

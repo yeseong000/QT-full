@@ -638,9 +638,22 @@ def main() -> int:
         action="store_true",
         help="저장하지 않고 결과만 출력",
     )
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help="결과 파일이 이미 있어도 재생성 (기본은 건너뜀).",
+    )
     args = parser.parse_args()
 
     date = args.date or today_str()
+
+    # 재실행 방어: 이미 오늘 묵상이 있으면 건너뜁니다.
+    # (파이프라인이 어떤 이유로 두 번 돌아도 중복 API 비용·덮어쓰기를 막습니다.)
+    output_path = AI_DIR / f"{date}.json"
+    if output_path.exists() and not args.force and not args.dry_run:
+        log(f"묵상 파일이 이미 있습니다 → 건너뜁니다: {output_path.name}", "SKIP")
+        log("재생성하려면 --force 옵션을 사용해주세요.")
+        return 0
 
     log("=" * 50)
     log(f"AI 묵상 생성 시작 (날짜: {date}, 모드: {'Mock' if args.mock else 'Real'})")
@@ -690,7 +703,6 @@ def main() -> int:
         log("[DRY RUN] 저장하지 않고 종료합니다")
         print("\n" + json.dumps(result, ensure_ascii=False, indent=2))
     else:
-        output_path = AI_DIR / f"{date}.json"
         save_json(result, output_path)
         log(f"저장 완료: {output_path}", "OK")
 
