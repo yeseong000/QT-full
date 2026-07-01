@@ -45,10 +45,13 @@ GPT-4o-mini로 18~22줄 분량의 묵상 카드 콘텐츠를 생성합니다.
 import argparse
 import json
 import os
+import re
 import sys
 import time
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
+
+import followup_verify as fuv   # 떠오르는 질문 2차 검증·가드(v2)
 
 
 # ===== 설정 =====
@@ -61,21 +64,40 @@ PROMPT_DIR = PROJECT_ROOT / "prompts" / "breath_5step"
 SYSTEM_PROMPT_PATH = PROMPT_DIR / "_final_system.md"
 FEWSHOT_PATH = PROMPT_DIR / "breath_5step_examples.json"
 
-FOLLOW_UP_PROMPT_PATH = PROJECT_ROOT / "prompts" / "follow_up" / "system.md"
+FOLLOW_UP_PROMPT_PATH = PROJECT_ROOT / "prompts" / "follow_up" / "_final_system.md"   # 모듈 빌드본(v2)
 
-MODEL = "gpt-4o-mini"
+REVIEW_PROMPT_PATH = PROMPT_DIR / "review_system.md"   # 2차 교정(검수) 패스 프롬프트
+
+# 교정 패스 프롬프트 (main에서 --review일 때 로드). None이면 교정 패스 끔.
+_REVIEW_PROMPT: str | None = None
+REVIEW_TEMPERATURE = 0.3   # 교정은 생성보다 낮게 — 덜 흔들리게
+REVIEW_MODEL: str | None = None   # None이면 생성 모델(MODEL)과 동일. --review-model로 4o 등 지정 가능
+
+MODEL = "gpt-4o"   # 2026-06-30 mini→4o 전면 전환 (재서술·질문구조 등 지시 준수 향상). --model로 일시 변경 가능
 TEMPERATURE = 0.7
 MAX_TOKENS = 1500
 
 FOLLOW_UP_TEMPERATURE = 0.8
 FOLLOW_UP_MAX_TOKENS = 6000   # v3: 메인 3 + 꼬리 6 = 9 답변 × ~400자 ≈ 5400 토큰
 
-# 가격 (2026년 기준, 백만 토큰당 USD)
-PRICE_INPUT_PER_1M = 0.15
-PRICE_OUTPUT_PER_1M = 0.60
+# 가격 (2026년 기준, 백만 토큰당 USD) — gpt-4o 기준. (참고: mini는 0.15/0.60)
+PRICE_INPUT_PER_1M = 2.50
+PRICE_OUTPUT_PER_1M = 10.00
 USD_TO_KRW = 1500
 
 REQUIRED_KEYS = ["장면", "질문", "맥락", "통찰", "연결"]
+
+# 옛 성경 문체 검출기 (저장 직전 결정론적 게이트) — 4o도 가끔 개역개정 옛말을 슬립함
+ARCHAIC_RE = re.compile(r"엎드러|이르되|가로되|하니라|사로잡으매|벗기매")
+# LLM 재교정 후에도 남으면 적용하는 결정론적 치환 (마지막 안전장치)
+ARCHAIC_FALLBACK = [
+    (re.compile(r"자기의?\s*칼\s*(?:위에|에)\s*엎드러져\s*죽(?:음을 택했어요|음을 맞았어요|었어요|었죠)"), "자기 칼로 스스로 목숨을 끊었어요"),
+    (re.compile(r"엎드러져\s*죽으니라"), "쓰러져 죽었어요"),
+    (re.compile(r"엎드러져\s*죽었(어요|죠)"), r"쓰러져 죽었\1"),
+    (re.compile(r"엎드러졌(어요|죠)"), r"쓰러졌\1"),
+    (re.compile(r"엎드러져"), "쓰러져"),
+    (re.compile(r"이르되|가로되"), "말하기를"),
+]
 
 
 # ===== 로깅 =====
@@ -226,8 +248,8 @@ def calc_cost(usage) -> dict:
     }
 
 
-def call_openai(messages: list, max_retries: int = 1, *, temperature: float = TEMPERATURE, max_tokens: int = MAX_TOKENS, response_format: dict | None = None):
-    """OpenAI API 호출 — 실패 시 1회 재시도. response_format으로 스키마 강제 가능."""
+def call_openai(messages: list, max_retries: int = 1, *, temperature: float = TEMPERATURE, max_tokens: int = MAX_TOKENS, response_format: dict | None = None, model: str | None = None):
+    """OpenAI API 호출 — 실패 시 1회 재시도. response_format으로 스키마 강제 가능. model 미지정 시 MODEL 사용."""
     try:
         from openai import OpenAI
     except ImportError:
@@ -245,10 +267,14 @@ def call_openai(messages: list, max_retries: int = 1, *, temperature: float = TE
     rf = response_format if response_format is not None else {"type": "json_object"}
     client = OpenAI(api_key=api_key)
     last_err: Exception | None = None
-    for attempt in range(max_retries + 1):
+    attempt = 0
+    rate_attempts = 0
+    RATE_MAX = 6      # 429(분당 토큰 한도) 전용 재시도 횟수
+    RATE_WAIT = 25    # 초 — 롤링 1분 한도가 풀리도록 충분히 대기
+    while True:
         try:
             return client.chat.completions.create(
-                model=MODEL,
+                model=model or MODEL,
                 messages=messages,
                 temperature=temperature,
                 max_tokens=max_tokens,
@@ -256,13 +282,33 @@ def call_openai(messages: list, max_retries: int = 1, *, temperature: float = TE
             )
         except Exception as e:
             last_err = e
-            if attempt < max_retries:
-                log(f"API 호출 실패, 2초 후 재시도 ({attempt + 1}/{max_retries}): {e}", "WARN")
+            msg = str(e)
+            is_rate = "429" in msg or "rate_limit" in msg.lower()
+            if is_rate and rate_attempts < RATE_MAX:
+                rate_attempts += 1
+                log(f"분당 토큰 한도(429) — {RATE_WAIT}s 대기 후 재시도 ({rate_attempts}/{RATE_MAX})", "WARN")
+                time.sleep(RATE_WAIT)
+                continue
+            if not is_rate and attempt < max_retries:
+                attempt += 1
+                log(f"API 호출 실패, 2초 후 재시도 ({attempt}/{max_retries}): {e}", "WARN")
                 time.sleep(2)
+                continue
+            break
     raise RuntimeError(f"API 호출 최종 실패: {last_err}")
 
 
 # ===== 더 깊이 묻기 (Follow-up Q&A) =====
+def _fu_chat(model, system, payload, schema_name, schema, temperature, max_tokens):
+    """followup_verify 모듈용 chat 어댑터 — call_openai로 호출해 파싱된 dict 반환."""
+    rf = {"type": "json_schema", "json_schema": {"name": schema_name, "strict": True, "schema": schema}}
+    resp = call_openai(
+        [{"role": "system", "content": system}, {"role": "user", "content": json.dumps(payload, ensure_ascii=False)}],
+        max_retries=1, temperature=temperature, max_tokens=max_tokens, response_format=rf, model=model,
+    )
+    return json.loads(resp.choices[0].message.content)
+
+
 def generate_follow_up(qt_data: dict, kb: dict | None, deep_dive: dict) -> tuple[list, dict] | tuple[None, None]:
     """
     5단 호흡 묵상 직후 호출되는 2차 생성기.
@@ -284,7 +330,7 @@ def generate_follow_up(qt_data: dict, kb: dict | None, deep_dive: dict) -> tuple
             "본문_제목": qt_data.get("title", ""),
             "본문_내용": body_text,
             "오륜_질문": qt_data.get("oryun_questions", []),
-            "지식": kb,
+            "지식": fuv.usable_kb(kb),   # 해당 장 KB 없으면 None (어원 지어내기 차단)
             "이미_다룬_5단": {
                 "장면": deep_dive.get("장면", ""),
                 "질문": deep_dive.get("질문", ""),
@@ -546,10 +592,12 @@ def build_segment_payload(
         # === 뒤 구간: 1막을 이어받는 2막 ===
         instruction = (
             "이 묵상은 '앞_구간_장면'을 방금 읽은 독자에게 이어서 들려주는 2막이에요. "
-            "그 배경·도입(이미 벌어진 사건)을 절대 다시 설명하지 마세요. "
-            "'장면'은 앞 구간이 끝난 지점을 자연스럽게 이어받는 '이음 장면'으로 시작하세요 — "
-            "한두 문장의 짧은 다리로 1막의 흐름을 받은 뒤(이미 일어난 일은 재서술 금지), "
-            "그 다음에 벌어지는 이 구간의 새 사건으로 한 걸음 나아갑니다. "
+            "앞 구간에서 이미 벌어진 사건(배경·전투·죽음 등)을 다시 서술하면 같은 장면이 두 번 됩니다 — 절대 금지. "
+            "'장면'은 앞 구간이 끝난 지점을 '~한 뒤 / ~한 그 이튿날'처럼 **시점만 받는 한 호흡(한 문장 이내)**으로 열고, "
+            "곧바로 이 구간에서 새로 벌어지는 사건으로 나아가세요. "
+            "예: 앞 구간이 사울의 죽음으로 끝났다면 — "
+            "✗ '길보아에서 이스라엘이 패하고 사울이 칼에 엎드러져 죽었어요. 이튿날 블레셋이…' (죽음을 다시 서술 — 중복) "
+            "✓ '사울이 쓰러진 이튿날, 블레셋 사람들이 그의 시신을 벧산 성벽에 못 박았어요.' (시점만 받고 곧장 새 사건으로) "
             "'구간_교훈축'을 중심으로 5단 호흡을 풀되, 큰 주제는 유지하고 이 구간만의 면을 비추세요."
         )
     else:
@@ -628,7 +676,128 @@ def generate_meditation_once(
         return None, None
 
     cost_info = calc_cost(response.usage)
+
+    # === 2차 교정(검수) 패스 — 켜져 있으면 초안을 검수·수정 ===
+    if _REVIEW_PROMPT:
+        deep_dive, review_cost = review_and_fix(_REVIEW_PROMPT, deep_dive, payload)
+        for k in cost_info:
+            if k in review_cost:
+                cost_info[k] = round(cost_info[k] + review_cost[k], 6)
+
+    # === 옛문체 결정론적 게이트 (저장 직전, 항상 검사) ===
+    deep_dive, gate_cost = enforce_modern_korean(deep_dive)
+    for k in cost_info:
+        if k in gate_cost:
+            cost_info[k] = round(cost_info[k] + gate_cost[k], 6)
+
     return deep_dive, cost_info
+
+
+def review_and_fix(review_prompt: str, deep_dive: dict, payload: dict) -> tuple[dict, dict]:
+    """생성된 5단 호흡 초안을 교정 패스로 점검·수정한다.
+
+    질문↔답 정합·호흡1 중복·옛 문체·변형2 재서술·연결 2줄 등을 검수해 고친다.
+    어떤 단계에서든 실패하면 원본 초안을 그대로 돌려 본 생성은 살린다.
+    반환: (교정된 5키 dict, cost dict)
+    """
+    zero_cost = {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0, "cost_usd": 0.0, "cost_krw": 0.0}
+    review_input = {
+        "원본_입력": {
+            "본문_제목": payload.get("본문_제목", ""),
+            "본문_내용": payload.get("본문_내용", ""),
+            "구간_교훈축": payload.get("구간_교훈축", ""),
+            "구간_소주제": payload.get("구간_소주제", ""),
+            "앞_구간_장면": payload.get("앞_구간_장면", ""),
+            "오륜_질문": payload.get("오륜_질문", ""),
+            "지식": payload.get("지식"),
+        },
+        "생성된_묵상": {key: deep_dive[key] for key in REQUIRED_KEYS},
+    }
+    messages = [
+        {"role": "system", "content": review_prompt},
+        {"role": "user", "content": json.dumps(review_input, ensure_ascii=False)},
+    ]
+    try:
+        response = call_openai(messages, max_retries=1, temperature=REVIEW_TEMPERATURE, model=REVIEW_MODEL)
+    except RuntimeError as e:
+        log(f"교정 패스 호출 실패 — 초안 그대로 유지: {e}", "WARN")
+        return deep_dive, zero_cost
+
+    cost_info = calc_cost(response.usage)
+    try:
+        fixed = json.loads(response.choices[0].message.content)
+    except json.JSONDecodeError:
+        log("교정 응답 JSON 파싱 실패 — 초안 그대로 유지", "WARN")
+        return deep_dive, cost_info
+
+    if validate(fixed):
+        log("교정 결과 형식 검증 실패 — 초안 그대로 유지", "WARN")
+        return deep_dive, cost_info
+
+    changed = sum(1 for key in REQUIRED_KEYS if fixed[key].strip() != deep_dive[key].strip())
+    log(f"교정 패스 완료 · {changed}/5단 수정 / 비용 약 {cost_info['cost_krw']:.2f}원", "OK")
+    return {key: fixed[key] for key in REQUIRED_KEYS}, cost_info
+
+
+def find_archaic(deep_dive: dict) -> list:
+    """5개 키에서 옛 성경 문체 마커를 찾아 (키, 매칭문자열) 리스트로 반환."""
+    hits = []
+    for k in REQUIRED_KEYS:
+        for m in ARCHAIC_RE.finditer(str(deep_dive.get(k, ""))):
+            hits.append((k, m.group()))
+    return hits
+
+
+def enforce_modern_korean(deep_dive: dict) -> tuple[dict, dict]:
+    """저장 직전 옛문체 게이트: 검출 → (가능하면)타깃 LLM 재교정 → 결정론적 치환 → 통과/경고.
+
+    옛문체가 없으면 무비용으로 즉시 통과. 검출되면 현대어로 강제 교정한다.
+    반환: (정제된 deep_dive, cost dict)
+    """
+    zero = {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0, "cost_usd": 0.0, "cost_krw": 0.0}
+    hits = find_archaic(deep_dive)
+    if not hits:
+        return deep_dive, zero
+
+    phrases = ", ".join(sorted(set(h[1] for h in hits)))
+    log(f"옛문체 검출({phrases}) — 현대어로 강제 교정", "WARN")
+    cost = dict(zero)
+
+    # 1) 타깃 LLM 재교정 (교정 프롬프트가 로드돼 있을 때만)
+    if _REVIEW_PROMPT:
+        instr = (
+            "다음 '생성된_묵상'에서 옛 성경 문체만 현대어로 고치고, 나머지 표현·줄바꿈은 그대로 두세요. "
+            f"반드시 고칠 옛 표현: {phrases}. "
+            "예) (자기 칼에) 엎드러져 죽었어요 → 스스로 목숨을 끊었어요/쓰러져 죽었어요, 이르되·가로되 → 말했어요, ~하니라 → ~했어요. "
+            "순수 JSON(5키)만 반환."
+        )
+        payload = {"지시": instr, "생성된_묵상": {k: deep_dive[k] for k in REQUIRED_KEYS}}
+        messages = [
+            {"role": "system", "content": _REVIEW_PROMPT},
+            {"role": "user", "content": json.dumps(payload, ensure_ascii=False)},
+        ]
+        try:
+            resp = call_openai(messages, max_retries=1, temperature=0.2, model=REVIEW_MODEL)
+            cost = calc_cost(resp.usage)
+            fixed = json.loads(resp.choices[0].message.content)
+            if not validate(fixed):
+                deep_dive = {k: fixed[k] for k in REQUIRED_KEYS}
+        except Exception as e:
+            log(f"옛문체 재교정 호출 실패(결정론적 치환으로 진행): {e}", "WARN")
+
+    # 2) 그래도 남으면 결정론적 치환 (마지막 안전장치)
+    if find_archaic(deep_dive):
+        for k in REQUIRED_KEYS:
+            for rx, rep in ARCHAIC_FALLBACK:
+                deep_dive[k] = rx.sub(rep, deep_dive[k])
+
+    # 3) 최종 확인
+    left = find_archaic(deep_dive)
+    if left:
+        log(f"⚠ 옛문체 잔존(수동 확인 필요): {sorted(set(h[1] for h in left))}", "ERR")
+    else:
+        log("옛문체 게이트 통과 ✓", "OK")
+    return deep_dive, cost
 
 
 # ===== 메인 =====
@@ -666,7 +835,33 @@ def main() -> int:
         action="store_true",
         help="본문을 앞/뒤 2구간으로 나눠(AI가 장면 전환점 결정) 교훈이 겹치지 않는 5단 호흡 2세트를 생성.",
     )
+    parser.add_argument(
+        "--no-review",
+        dest="review",
+        action="store_false",
+        help="2차 교정(검수) 패스를 끄고 1회 생성만. 기본은 교정 패스 켜짐(권장).",
+    )
+    parser.set_defaults(review=True)
+    parser.add_argument(
+        "--model",
+        type=str,
+        default=None,
+        help="생성 모델 지정 (예: gpt-4o). 미지정 시 기본 gpt-4o-mini.",
+    )
+    parser.add_argument(
+        "--review-model",
+        type=str,
+        default=None,
+        help="교정 패스 모델 지정 (예: gpt-4o). 미지정 시 생성 모델과 동일.",
+    )
     args = parser.parse_args()
+
+    # 모델 오버라이드 (테스트/하이브리드용)
+    global MODEL, REVIEW_MODEL
+    if args.model:
+        MODEL = args.model
+    if args.review_model:
+        REVIEW_MODEL = args.review_model
 
     # .env 로드
     try:
@@ -698,6 +893,15 @@ def main() -> int:
             f"QT 데이터: {qt_data.get('title')} ({qt_data.get('scripture_ref')})",
             "OK",
         )
+        # 2차 교정 패스 프롬프트 로드 (--no-review면 끔)
+        global _REVIEW_PROMPT
+        if args.review and REVIEW_PROMPT_PATH.exists():
+            _REVIEW_PROMPT = REVIEW_PROMPT_PATH.read_text(encoding="utf-8")
+            log("교정 패스: 켜짐 (생성 → 검수·수정 2중)", "OK")
+        elif args.review:
+            log(f"교정 패스 프롬프트 없음 → 교정 생략: {REVIEW_PROMPT_PATH.name}", "WARN")
+        else:
+            log("교정 패스: 꺼짐 (--no-review)", "INFO")
         log(
             f"fewshot 예시: {len(fewshot)}개 / KB: {'있음' if kb else '없음'}",
             "OK",
@@ -819,6 +1023,14 @@ def main() -> int:
             f"더 깊이 묻기 OK · 토큰: {follow_up_cost['total_tokens']} / 비용: 약 {follow_up_cost['cost_krw']:.2f}원",
             "OK",
         )
+        # 2차 검증·가드 (gpt-4o) — 겹침/왜했나/중복 정리 + 메인 3개 강제. 실패해도 1차 생성본 유지.
+        log("떠오르는 질문 2차 검증·가드(gpt-4o) 중...", "INFO")
+        try:
+            follow_up_items = fuv.clean(_fu_chat, qt_data, kb, variants[0], follow_up_items, log=log)
+            n_tail = sum(len(m.get("follow_ups", [])) for m in follow_up_items)
+            log(f"검증·가드 완료 (메인 {len(follow_up_items)} · 꼬리 {n_tail})", "OK")
+        except Exception as e:
+            log(f"검증·가드 실패 → 1차 생성본 유지: {e}", "WARN")
     else:
         log("더 깊이 묻기 생성 건너뜀 (5단 호흡은 정상 저장됨)", "WARN")
 
