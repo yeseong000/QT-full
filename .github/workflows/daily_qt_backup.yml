@@ -57,6 +57,19 @@ jobs:
         if: steps.check.outputs.skip != 'true'
         run: python scripts/fetch_qt.py
 
+      - name: Build KB (② 자동 지식 조사 — 없는 장만)
+        if: steps.check.outputs.skip != 'true'
+        continue-on-error: true   # KB 실패해도 묵상은 진행
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          if [ -z "${OPENAI_API_KEY}" ]; then
+            echo "::warning::OPENAI_API_KEY 미설정 → KB 조사 건너뜀"
+          else
+            echo "자동 KB 조사 — 오늘 본문의 책·장 KB가 없으면 생성(있으면 재사용)"
+            python scripts/generate_kb.py
+          fi
+
       - name: Generate AI meditation
         if: steps.check.outputs.skip != 'true'
         env:
