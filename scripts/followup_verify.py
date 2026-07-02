@@ -211,18 +211,54 @@ def _run_guard(chat, qt, kb, deep5, items, log=None):
     return items
 
 
+def _dedup_net(chat, qt, kb, deep5, items, log=None):
+    """결정적 중복 안전망 — LLM 단계(검증·가드)가 실패·생략돼도 '항상' 마지막에 돈다.
+    메인끼리 거의 같은 질문(유사도 ≥ 0.75)이 남아 있으면 뒤엣것을 재작성한다.
+    재작성까지 실패하면(예: LLM 다운) 조용히 넘기지 않고 ERR로 크게 남긴다 — 7/2 같은 무성 사고 방지."""
+    try:
+        for i in range(len(items)):
+            for j in range(i):
+                qi, qj = items[i].get("question", ""), items[j].get("question", "")
+                if difflib.SequenceMatcher(None, qi, qj).ratio() >= 0.75:
+                    if log:
+                        log(f"⚠ 중복 메인 감지: '{qj[:20]}…' ≈ '{qi[:20]}…' → 재작성 시도", "ERR")
+                    others = [items[k].get("question", "") for k in range(len(items)) if k != i]
+                    note = f"'{qj[:24]}…'와 거의 같은 질문이에요. 완전히 다른 소재로 새로 쓰세요."
+                    try:
+                        fixed = _force_main(chat, qt, kb, deep5, items[i], others, note=note)
+                        items[i].update({"question": fixed["question"], "answer": fixed["answer"],
+                                         "follow_ups": fixed["follow_ups"]})
+                    except Exception as e:
+                        if log:
+                            log(f"  중복 메인 재작성 실패 — 수동 확인 필요(중복 그대로): {e}", "ERR")
+                    break
+    except Exception as e:
+        if log:
+            log(f"중복 안전망 오류: {e}", "WARN")
+    return items
+
+
 def clean(chat, qt, kb, deep5, items, log=None):
-    """검증 + 가드 + 개수 강제. 실패 시 원본 반환."""
+    """검증 + 가드 + 개수 강제 + 결정적 중복 안전망. 각 단계 격리(한 곳 실패해도 직전 결과 유지)."""
     kb = usable_kb(kb)
-    orig = _enforce_count([dict(m) for m in items])
+    result = _enforce_count([dict(m) for m in items])   # 기본값 = 1차 생성본
+    # 1) 검증
     try:
         verified, _ = _verify(chat, qt, kb, deep5, items)
         verified = _enforce_count(verified)
-        if not _valid(verified):
-            return orig
-        guarded = _enforce_count(_run_guard(chat, qt, kb, deep5, verified, log=log))
-        return guarded if _valid(guarded) else verified
+        if _valid(verified):
+            result = verified
     except Exception as e:
         if log:
-            log(f"검증·가드 전체 실패 → 1차 생성본 유지: {e}", "WARN")
-        return orig
+            log(f"검증 실패 → 직전 단계 유지: {e}", "WARN")
+    # 2) 가드 (실패해도 검증 결과는 살림)
+    try:
+        guarded = _enforce_count(_run_guard(chat, qt, kb, deep5, result, log=log))
+        if _valid(guarded):
+            result = guarded
+    except Exception as e:
+        if log:
+            log(f"가드 실패 → 직전 단계 유지: {e}", "WARN")
+    # 3) 결정적 중복 안전망 (항상 실행 — 검증·가드가 실패·생략돼도 중복은 여기서 잡음)
+    result = _dedup_net(chat, qt, kb, deep5, result, log=log)
+    return result if _valid(result) else _enforce_count([dict(m) for m in items])
