@@ -211,27 +211,71 @@ def _run_guard(chat, qt, kb, deep5, items, log=None):
     return items
 
 
-def _dedup_net(chat, qt, kb, deep5, items, log=None):
-    """결정적 중복 안전망 — LLM 단계(검증·가드)가 실패·생략돼도 '항상' 마지막에 돈다.
-    메인끼리 거의 같은 질문(유사도 ≥ 0.75)이 남아 있으면 뒤엣것을 재작성한다.
-    재작성까지 실패하면(예: LLM 다운) 조용히 넘기지 않고 ERR로 크게 남긴다 — 7/2 같은 무성 사고 방지."""
+TOPIC_MODEL = "gpt-4o-mini"
+TOPIC_PROMPT = """각 질문이 '진짜로 다루는 핵심 소재'를 한 단어(또는 짧은 명사구)로 뽑아요.
+- 주인공(다윗·사울·하나님 등)이 아니라, 그 질문의 실제 대상(지명·인물·사물·사건)을 고릅니다.
+  예) "헤브론은 어떤 도시인가요?" → 헤브론
+      "다윗은 요나단을 어떻게 불렀나요?" → 요나단
+      "활 노래라는 명칭은 어디서 유래했나요?" → 활 노래
+순수 JSON: {"topics": ["...", ...]}  (받은 질문 순서대로, 개수 동일하게)"""
+TOPIC_SCHEMA = {
+    "type": "object",
+    "properties": {"topics": {"type": "array", "items": {"type": "string"}}},
+    "required": ["topics"], "additionalProperties": False,
+}
+
+
+def _same_topic(a, b):
+    """소재 태그가 같은 소재인가 — 완전일치 또는 핵심 명사 포함관계('헤브론' ⊂ '헤브론 역사')."""
+    a, b = (a or "").strip(), (b or "").strip()
+    if not a or not b:
+        return False
+    return a == b or a in b or b in a
+
+
+def _main_topics(chat, questions, log=None):
+    """메인 질문들의 핵심 소재를 한 단어씩 태그. 실패하면 None(→ 글자비교로 대체)."""
     try:
-        for i in range(len(items)):
+        out = chat(TOPIC_MODEL, TOPIC_PROMPT, {"질문들": questions}, "topics", TOPIC_SCHEMA, 0.0, 300)
+        ts = out.get("topics", [])
+        return ts if len(ts) == len(questions) else None
+    except Exception as e:
+        if log:
+            log(f"소재 태그 추출 실패 → 글자비교로 대체: {e}", "WARN")
+        return None
+
+
+def _dedup_net(chat, qt, kb, deep5, items, log=None):
+    """결정적 중복 안전망 — 검증·가드가 실패·생략돼도 '항상' 마지막에 돈다.
+    메인 3개의 '소재 태그'가 겹치면(같은 지명·인물·사물) 뒤엣것을 재작성한다.
+    태그를 못 얻으면 글자 유사도(≥0.75)로 대체. 재작성까지 실패하면 조용히 넘기지 않고 ERR로 크게 남긴다."""
+    try:
+        n = min(3, len(items))
+        mains = [items[i].get("question", "") for i in range(n)]
+        topics = _main_topics(chat, mains, log=log)
+        for i in range(n):
             for j in range(i):
-                qi, qj = items[i].get("question", ""), items[j].get("question", "")
-                if difflib.SequenceMatcher(None, qi, qj).ratio() >= 0.75:
+                if topics:
+                    dup = _same_topic(topics[i], topics[j])
+                    why = f"같은 소재 '{topics[j]}'"
+                else:
+                    dup = difflib.SequenceMatcher(None, mains[i], mains[j]).ratio() >= 0.75
+                    why = "글자 유사"
+                if not dup:
+                    continue
+                if log:
+                    log(f"⚠ 중복 메인({why}): '{mains[j][:18]}…' ↔ '{mains[i][:18]}…' → 재작성", "ERR")
+                others = [items[k].get("question", "") for k in range(len(items)) if k != i]
+                note = f"'{mains[j][:24]}…'와 같은 소재예요. 그 소재 말고 그날 본문의 완전히 다른 것으로 새로 쓰세요."
+                try:
+                    fixed = _force_main(chat, qt, kb, deep5, items[i], others, note=note)
+                    items[i].update({"question": fixed["question"], "answer": fixed["answer"],
+                                     "follow_ups": fixed["follow_ups"]})
+                    mains[i] = items[i]["question"]
+                except Exception as e:
                     if log:
-                        log(f"⚠ 중복 메인 감지: '{qj[:20]}…' ≈ '{qi[:20]}…' → 재작성 시도", "ERR")
-                    others = [items[k].get("question", "") for k in range(len(items)) if k != i]
-                    note = f"'{qj[:24]}…'와 거의 같은 질문이에요. 완전히 다른 소재로 새로 쓰세요."
-                    try:
-                        fixed = _force_main(chat, qt, kb, deep5, items[i], others, note=note)
-                        items[i].update({"question": fixed["question"], "answer": fixed["answer"],
-                                         "follow_ups": fixed["follow_ups"]})
-                    except Exception as e:
-                        if log:
-                            log(f"  중복 메인 재작성 실패 — 수동 확인 필요(중복 그대로): {e}", "ERR")
-                    break
+                        log(f"  중복 메인 재작성 실패 — 수동 확인 필요(중복 그대로): {e}", "ERR")
+                break
     except Exception as e:
         if log:
             log(f"중복 안전망 오류: {e}", "WARN")
