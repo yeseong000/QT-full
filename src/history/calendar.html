@@ -480,6 +480,8 @@
       font-size: 13.5px;
       color: var(--text-primary);
       line-height: 1.7;
+      white-space: pre-wrap;   /* 사용자가 입력한 줄바꿈·빈 줄을 그대로 보존 */
+      word-break: break-word;
     }
     .preview-card__summary-list {
       margin: 0;
@@ -525,6 +527,8 @@
       margin-top: 4px;
       font-size: 12.5px;
       color: var(--text-secondary);
+      white-space: pre-wrap;   /* 밑줄 메모의 줄바꿈도 그대로 보존 */
+      word-break: break-word;
     }
     .preview-card__question {
       padding-bottom: 12px;

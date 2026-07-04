@@ -59,6 +59,14 @@ const SupabaseSync = {
     });
   },
 
+  // 특정 날짜 기록 삭제 (콘텐츠-날짜 정렬 마이그레이션에서 옛 날짜 행 제거용)
+  async deleteRecord(userHash, date) {
+    await _req('DELETE', 'qt_records', {
+      qs:     `user_hash=eq.${encodeURIComponent(userHash)}&date=eq.${encodeURIComponent(date)}`,
+      prefer: 'return=minimal',
+    });
+  },
+
   // 다른 기기에서 복원 — 해시로 전체 기록 가져오기
   async fetchAllRecords(userHash) {
     return await _req('GET', 'qt_records', {
