@@ -470,23 +470,23 @@
     }
     .preview-card__section:last-child { margin-bottom: 0; }
     .preview-card__section-label {
-      font-size: 11px;
+      font-size: 12px;
       font-weight: 600;
       color: #BC7383;
       letter-spacing: 0.05em;
       margin-bottom: 8px;
     }
     .preview-card__section-body {
-      font-size: 13.5px;
+      font-size: 15px;
       color: var(--text-primary);
-      line-height: 1.7;
+      line-height: 1.75;
       white-space: pre-wrap;   /* 사용자가 입력한 줄바꿈·빈 줄을 그대로 보존 */
       word-break: break-word;
     }
     .preview-card__summary-list {
       margin: 0;
       padding-left: 18px;
-      font-size: 13.5px;
+      font-size: 14.5px;
       color: var(--text-primary);
       line-height: 1.7;
     }
@@ -503,7 +503,7 @@
       padding: 5px 10px;
       background: rgba(0, 0, 0, 0.05);
       border-radius: var(--radius-pill);
-      font-size: 12.5px;
+      font-size: 13px;
       color: var(--text-primary);
       font-weight: 500;
     }
@@ -511,8 +511,8 @@
       background: rgba(245, 185, 66, 0.18);
       border-left: 3px solid #F5B942;
       padding: 8px 10px;
-      font-size: 13px;
-      line-height: 1.6;
+      font-size: 14px;
+      line-height: 1.65;
       color: var(--text-primary);
       border-radius: 0 8px 8px 0;
       margin-bottom: 8px;
@@ -525,7 +525,7 @@
     }
     .preview-card__underline-note {
       margin-top: 4px;
-      font-size: 12.5px;
+      font-size: 13.5px;
       color: var(--text-secondary);
       white-space: pre-wrap;   /* 밑줄 메모의 줄바꿈도 그대로 보존 */
       word-break: break-word;
@@ -541,7 +541,7 @@
       margin-bottom: 0;
     }
     .preview-card__section-q {
-      font-size: 12.5px;
+      font-size: 13.5px;
       color: var(--text-secondary);
       margin-bottom: 4px;
     }
@@ -937,8 +937,9 @@
   </div>
 
   <!-- Scripts -->
-  <script src="../scripts/storage.js?v=20260604-cyclebtn"></script>
+  <script src="../scripts/storage.js?v=20260705-datefix"></script>
   <script src="../scripts/common.js?v=20260604-cyclebtn"></script>
+  <script src="../scripts/supabase-sync.js"></script>
   <script>
     const EMOTION_MAP = {
       gratitude: { emoji: '🙏', label: '감사' },
@@ -1102,6 +1103,20 @@
       renderStreak();
       completedSet = collectCompletedDates();
       renderMonth();
+
+      // 새벽 묵상이 하루 밀려 저장된 기존 기록을 콘텐츠 날짜로 1회 정렬(백그라운드).
+      // 캘린더에서 바로 열어도 자동으로 제자리를 찾도록 여기서도 실행하고, 옮겨졌으면 다시 그린다.
+      if (Storage.migrateContentDates) {
+        Storage.migrateContentDates().then((moves) => {
+          if (moves && moves.length) {
+            clearSelection();
+            renderStreak();
+            completedSet = collectCompletedDates();
+            renderMonth();
+            archiveRendered = false;   // 모아보기 시트도 다음에 열 때 새로 그림
+          }
+        });
+      }
     });
 
     // ========== 묵상 모아보기 ==========

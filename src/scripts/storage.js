@@ -320,6 +320,110 @@ const Storage = {
   setSetting(key, value) {
     this.set(`settings.${key}`, value);
   },
+
+  // ========================================================================
+  // [1회성] 기록을 '콘텐츠 날짜'로 정렬하는 마이그레이션
+  //  과거엔 새벽(자정~업데이트 전)에 묵상하면, 화면엔 '전날 묵상'이 떠도 기록은 달력상
+  //  '오늘'(자정 넘어간 날짜)에 저장돼 하루 어긋났다. 이 마이그레이션이 그런 기록을
+  //  실제 묵상한 날짜로 옮긴다. 홈·캘린더 어느 쪽을 먼저 열어도 1회 실행된다.
+  //   · 판별: 기록 날짜 D에 QT 콘텐츠 파일이 없다 = 그날 화면엔 '이전 날' 콘텐츠가 떴다는 뜻
+  //           → D 직전에서 콘텐츠가 실제 있는 가장 가까운 날짜 X로 옮긴다.
+  //   · 안전장치: (1) 옮기기 전 전체 백업, (2) 대상에 이미 기록 있으면 손대지 않음(덮어쓰기 금지).
+  // ========================================================================
+  async _contentExists(date, cache) {
+    if (cache && date in cache) return cache[date];
+    let ok = false;
+    // 배포(Vercel)에선 데이터가 /data/qt/ 절대경로로 서빙됨 → 어느 페이지에서 호출해도 동일.
+    try { ok = (await fetch(`/data/qt/${date}.json`, { method: 'HEAD' })).ok; }
+    catch (e) { ok = false; }
+    if (cache) cache[date] = ok;
+    return ok;
+  },
+
+  _shiftISO(iso, days) {
+    const [y, m, d] = iso.split('-').map(Number);
+    const dt = new Date(Date.UTC(y, m - 1, d));
+    dt.setUTCDate(dt.getUTCDate() + days);
+    return dt.toISOString().slice(0, 10);
+  },
+
+  // 그 날짜에 '의미 있는 기록'이 하나라도 있는지 (덮어쓰기 방지용)
+  _hasMeaningfulRecord(date) {
+    const r = this.getDailyRecord(date);
+    return !!(r.completed || (r.progressStep && r.progressStep > 0)
+      || (r.reflection && r.reflection.trim()) || (r.memo && r.memo.trim())
+      || (Array.isArray(r.emotions) && r.emotions.length)
+      || (Array.isArray(r.questionAnswers) && r.questionAnswers.some(a => a && a.trim()))
+      || (Array.isArray(r.underlines) && r.underlines.length));
+  },
+
+  // 반환: 옮긴 목록 [{from, to}, ...] (없으면 [] 또는 undefined). 호출부가 이걸로 다시 그릴지 판단.
+  async migrateContentDates() {
+    const FLAG = 'migration.contentDate.v1';
+    try {
+      if (localStorage.getItem(FLAG)) return;
+
+      // 1) 기록 있는 날짜 수집 + 원본 전체 백업(되돌리기 가능하도록)
+      const cache = {};
+      const backup = {};
+      const dateSet = new Set();
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (!k || !k.startsWith('records.')) continue;
+        backup[k] = localStorage.getItem(k);
+        const m = k.match(/^records\.(\d{4}-\d{2}-\d{2})\./);
+        if (m) dateSet.add(m[1]);
+      }
+      if (dateSet.size === 0) { localStorage.setItem(FLAG, 'no-records'); return []; }
+      localStorage.setItem('records._backup_contentDate_v1', JSON.stringify(backup));
+
+      // 2) 옮길 대상 계산
+      const dates = [...dateSet].sort();
+      const moves = [];
+      const willOccupy = new Set();
+      for (const D of dates) {
+        if (await this._contentExists(D, cache)) continue;      // 정상 저장 — 그대로 둠
+        let X = null;
+        for (let i = 1; i <= 4; i++) {
+          const cand = this._shiftISO(D, -i);
+          if (await this._contentExists(cand, cache)) { X = cand; break; }
+        }
+        if (!X) continue;                                       // 근처에 콘텐츠 없음 — 손대지 않음
+        if (this._hasMeaningfulRecord(X) || willOccupy.has(X)) continue;  // 덮어쓰기 금지
+        moves.push({ from: D, to: X });
+        willOccupy.add(X);
+      }
+
+      // 3) 이동 실행 (localStorage 키 재배치)
+      for (const { from, to } of moves) {
+        const prefix = `records.${from}.`;
+        Object.keys(backup).forEach(k => {
+          if (!k.startsWith(prefix)) return;
+          localStorage.setItem(`records.${to}.${k.slice(prefix.length)}`, backup[k]);
+          localStorage.removeItem(k);
+        });
+      }
+      localStorage.setItem(FLAG, `done:${moves.length}`);
+      if (moves.length) console.log('[ContentDateMigration] 이동한 기록:', moves);
+
+      // 4) 서버(Supabase) 정리 — 로드돼 있고 해시 있으면 best-effort (새 날짜에 기록 후 옛 행 제거)
+      if (moves.length && typeof SupabaseSync !== 'undefined' && SupabaseSync.isConfigured()) {
+        const hash = this.getUserHash();
+        if (hash) {
+          for (const { from, to } of moves) {
+            try {
+              await SupabaseSync.syncRecord(hash, to, this.getDailyRecord(to));
+              await SupabaseSync.deleteRecord(hash, from);
+            } catch (e) { console.warn('[ContentDateMigration] 서버 정리 실패:', from, '→', to, e); }
+          }
+        }
+      }
+      return moves;
+    } catch (e) {
+      // 실패해도 원본은 records._backup_contentDate_v1 에 안전하게 남는다.
+      console.warn('[ContentDateMigration] 실패:', e);
+    }
+  },
 };
 
 // 모듈 export (ES6 환경)
