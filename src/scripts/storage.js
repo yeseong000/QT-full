@@ -361,7 +361,8 @@ const Storage = {
   // opts.force=true 면 1회 실행 잠금(FLAG)을 무시하고 다시 정렬한다 (?fixdates=1 링크용).
   async migrateContentDates(opts) {
     const force = !!(opts && opts.force);
-    const FLAG = 'migration.contentDate.v1';
+    // v2: 잠금 버전을 올려, v1이 (배포 타이밍 등으로) 0건으로 잠겼던 경우에도 모두 1회 재실행되게 함.
+    const FLAG = 'migration.contentDate.v2';
     try {
       if (force) localStorage.removeItem(FLAG);
       if (localStorage.getItem(FLAG)) return;
@@ -378,7 +379,10 @@ const Storage = {
         if (m) dateSet.add(m[1]);
       }
       if (dateSet.size === 0) { localStorage.setItem(FLAG, 'no-records'); return []; }
-      localStorage.setItem('records._backup_contentDate_v1', JSON.stringify(backup));
+      // 원본 백업은 '최초 1회'만 남긴다(재실행 시 이미 정리된 상태로 덮어써 원본을 잃지 않도록).
+      if (!localStorage.getItem('records._backup_contentDate_v1')) {
+        localStorage.setItem('records._backup_contentDate_v1', JSON.stringify(backup));
+      }
 
       // 2) 옮길 대상 계산
       const dates = [...dateSet].sort();
