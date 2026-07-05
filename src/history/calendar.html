@@ -937,7 +937,7 @@
   </div>
 
   <!-- Scripts -->
-  <script src="../scripts/storage.js?v=20260705-datefix"></script>
+  <script src="../scripts/storage.js?v=20260705-datefix2"></script>
   <script src="../scripts/common.js?v=20260604-cyclebtn"></script>
   <script src="../scripts/supabase-sync.js"></script>
   <script>
@@ -1106,8 +1106,10 @@
 
       // 새벽 묵상이 하루 밀려 저장된 기존 기록을 콘텐츠 날짜로 1회 정렬(백그라운드).
       // 캘린더에서 바로 열어도 자동으로 제자리를 찾도록 여기서도 실행하고, 옮겨졌으면 다시 그린다.
+      // ?fixdates=1 로 열면 1회 잠금을 무시하고 강제로 다시 정렬한다(수동 복구용).
       if (Storage.migrateContentDates) {
-        Storage.migrateContentDates().then((moves) => {
+        const forceMig = /[?&]fixdates=1/.test(location.search);
+        Storage.migrateContentDates({ force: forceMig }).then((moves) => {
           if (moves && moves.length) {
             clearSelection();
             renderStreak();

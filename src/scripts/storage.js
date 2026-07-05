@@ -358,9 +358,12 @@ const Storage = {
   },
 
   // 반환: 옮긴 목록 [{from, to}, ...] (없으면 [] 또는 undefined). 호출부가 이걸로 다시 그릴지 판단.
-  async migrateContentDates() {
+  // opts.force=true 면 1회 실행 잠금(FLAG)을 무시하고 다시 정렬한다 (?fixdates=1 링크용).
+  async migrateContentDates(opts) {
+    const force = !!(opts && opts.force);
     const FLAG = 'migration.contentDate.v1';
     try {
+      if (force) localStorage.removeItem(FLAG);
       if (localStorage.getItem(FLAG)) return;
 
       // 1) 기록 있는 날짜 수집 + 원본 전체 백업(되돌리기 가능하도록)

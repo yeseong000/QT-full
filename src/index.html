@@ -1004,7 +1004,7 @@
   </div>
 
   <!-- ========== Scripts ========== -->
-  <script src="scripts/storage.js?v=20260705-datefix"></script>
+  <script src="scripts/storage.js?v=20260705-datefix2"></script>
   <script src="scripts/common.js?v=20260604-cyclebtn"></script>
   <script src="scripts/supabase-sync.js"></script>
   <script src="scripts/qr.js"></script>
@@ -1186,8 +1186,10 @@
       setupEventListeners();
       // 해시 확보 후, 기존에 하루 어긋나게 저장된 기록을 콘텐츠 날짜로 1회 정렬(백그라운드).
       // 옮겨진 게 있으면 오늘의 QT 완료여부·버튼 상태가 바뀔 수 있어 다시 로드.
+      // ?fixdates=1 로 열면 1회 잠금을 무시하고 강제로 다시 정렬(수동 복구용).
+      const forceMig = /[?&]fixdates=1/.test(location.search);
       ensureHashSilently().finally(() =>
-        Storage.migrateContentDates().then((moves) => {
+        Storage.migrateContentDates({ force: forceMig }).then((moves) => {
           if (moves && moves.length) { renderDatePill(); loadTodayQT(); }
         })
       );
