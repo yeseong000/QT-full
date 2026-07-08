@@ -146,6 +146,64 @@ def load_qt_data(date_str: str) -> dict:
     return json.loads(qt_path.read_text(encoding="utf-8"))
 
 
+def _book_from_ref(ref: str) -> str:
+    m = re.match(r"^\s*([가-힣]+(?:상|하)?)\s+\d+:", ref or "")
+    return m.group(1) if m else ""
+
+
+def _flatten_follow_up_questions(items: list) -> list[str]:
+    questions: list[str] = []
+    for main in items or []:
+        q = (main.get("question") or "").strip() if isinstance(main, dict) else ""
+        if q:
+            questions.append(q)
+        if isinstance(main, dict):
+            for tail in main.get("follow_ups") or []:
+                tq = (tail.get("question") or "").strip() if isinstance(tail, dict) else ""
+                if tq:
+                    questions.append(tq)
+    return questions
+
+
+def load_same_book_followup_history(qt_data: dict, *, limit: int = 240) -> list[dict]:
+    """같은 성경책의 기존 STEP 2 질문을 최신순으로 모은다.
+
+    룻기에서 물었던 질문은 사무엘하에 영향을 주지 않고, 사무엘하 안에서는
+    이전 날짜의 메인/꼬리 9개 전체가 중복 방지 기준이 된다.
+    """
+    current_date = qt_data.get("date") or ""
+    current_book = qt_data.get("book_name") or _book_from_ref(qt_data.get("scripture_ref", ""))
+    if not current_book or not DEEP_DIVE_DIR.exists():
+        return []
+
+    history: list[dict] = []
+    for path in sorted(DEEP_DIVE_DIR.glob("*.json"), reverse=True):
+        date = path.stem
+        if "." in date or (current_date and date >= current_date):
+            continue
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except Exception:
+            continue
+
+        book = _book_from_ref(data.get("scripture_ref", ""))
+        if not book:
+            qt_path = QT_DIR / f"{date}.json"
+            if qt_path.exists():
+                try:
+                    book = json.loads(qt_path.read_text(encoding="utf-8")).get("book_name", "")
+                except Exception:
+                    book = ""
+        if book != current_book:
+            continue
+
+        for question in _flatten_follow_up_questions(data.get("follow_up_questions", [])):
+            history.append({"date": date, "question": question})
+            if len(history) >= limit:
+                return history
+    return history
+
+
 def load_kb(book_name: str) -> dict | None:
     """data/reference/{book}.json이 있을 때만 로드. 없으면 None."""
     if not book_name:
@@ -331,6 +389,7 @@ def generate_follow_up(qt_data: dict, kb: dict | None, deep_dive: dict) -> tuple
             "본문_내용": body_text,
             "오륜_질문": qt_data.get("oryun_questions", []),
             "지식": fuv.usable_kb(kb),   # 해당 장 KB 없으면 None (어원 지어내기 차단)
+            "같은_책_기존_STEP2_질문": load_same_book_followup_history(qt_data),
             "이미_다룬_5단": {
                 "장면": deep_dive.get("장면", ""),
                 "질문": deep_dive.get("질문", ""),
@@ -1064,7 +1123,11 @@ def main() -> int:
         # 2차 검증·가드 (gpt-4o) — 겹침/왜했나/중복 정리 + 메인 3개 강제. 실패해도 1차 생성본 유지.
         log("떠오르는 질문 2차 검증·가드(gpt-4o) 중...", "INFO")
         try:
-            follow_up_items = fuv.clean(_fu_chat, qt_data, kb, variants[0], follow_up_items, log=log)
+            follow_up_history = load_same_book_followup_history(qt_data)
+            follow_up_items = fuv.clean(
+                _fu_chat, qt_data, kb, variants[0], follow_up_items,
+                history=follow_up_history, log=log,
+            )
             n_tail = sum(len(m.get("follow_ups", [])) for m in follow_up_items)
             log(f"검증·가드 완료 (메인 {len(follow_up_items)} · 꼬리 {n_tail})", "OK")
         except Exception as e:

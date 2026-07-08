@@ -134,6 +134,20 @@ def _slot_q(items, slot):
     return items[mi]["question"] if kind == "main" else items[mi]["follow_ups"][ti]["question"]
 
 
+def _history_questions(history):
+    questions = []
+    for row in history or []:
+        if isinstance(row, str):
+            q = row.strip()
+        elif isinstance(row, dict):
+            q = (row.get("question") or "").strip()
+        else:
+            q = ""
+        if q:
+            questions.append(q)
+    return questions
+
+
 # ===== 검증 =====
 def _verify(chat, qt, kb, deep5, items):
     system = VERIFY_PROMPT_PATH.read_text(encoding="utf-8")
@@ -236,7 +250,8 @@ def _same_topic(a, b):
 def _main_topics(chat, questions, log=None):
     """메인 질문들의 핵심 소재를 한 단어씩 태그. 실패하면 None(→ 글자비교로 대체)."""
     try:
-        out = chat(TOPIC_MODEL, TOPIC_PROMPT, {"질문들": questions}, "topics", TOPIC_SCHEMA, 0.0, 300)
+        max_tokens = max(300, min(2500, len(questions) * 18))
+        out = chat(TOPIC_MODEL, TOPIC_PROMPT, {"질문들": questions}, "topics", TOPIC_SCHEMA, 0.0, max_tokens)
         ts = out.get("topics", [])
         return ts if len(ts) == len(questions) else None
     except Exception as e:
@@ -245,7 +260,7 @@ def _main_topics(chat, questions, log=None):
         return None
 
 
-def _dedup_net(chat, qt, kb, deep5, items, log=None):
+def _dedup_net(chat, qt, kb, deep5, items, log=None, history=None):
     """결정적 중복 안전망 — 검증·가드가 실패·생략돼도 '항상' 마지막에 돈다.
     메인 3개의 '소재 태그'가 겹치면(같은 지명·인물·사물) 뒤엣것을 재작성한다.
     태그를 못 얻으면 글자 유사도(≥0.75)로 대체. 재작성까지 실패하면 조용히 넘기지 않고 ERR로 크게 남긴다."""
@@ -276,13 +291,75 @@ def _dedup_net(chat, qt, kb, deep5, items, log=None):
                     if log:
                         log(f"  중복 메인 재작성 실패 — 수동 확인 필요(중복 그대로): {e}", "ERR")
                 break
+
+        history_qs = _history_questions(history)
+        if history_qs:
+            slots = _flatten(items)
+            current_qs = [_slot_q(items, slot) for slot in slots]
+            topics = _main_topics(chat, current_qs + history_qs, log=log)
+            current_topics = topics[:len(current_qs)] if topics else None
+            history_topics = topics[len(current_qs):] if topics else None
+
+            for idx, slot in enumerate(slots):
+                q = _slot_q(items, slot)
+                tries = 0
+                while tries < 2:
+                    dup_idx = None
+                    why = ""
+                    if current_topics and history_topics:
+                        for hidx, htopic in enumerate(history_topics):
+                            if _same_topic(current_topics[idx], htopic):
+                                dup_idx = hidx
+                                why = f"기존 소재 '{htopic}'"
+                                break
+                    else:
+                        for hidx, hq in enumerate(history_qs):
+                            if difflib.SequenceMatcher(None, q, hq).ratio() >= 0.72:
+                                dup_idx = hidx
+                                why = "기존 질문과 글자 유사"
+                                break
+                    if dup_idx is None:
+                        break
+
+                    tries += 1
+                    past_q = history_qs[dup_idx]
+                    if log:
+                        log(f"⚠ 기존 JSON 중복({why}): '{past_q[:18]}…' ↔ '{q[:18]}…' → 재작성", "ERR")
+                    others = [_slot_q(items, other) for other in slots if other != slot] + history_qs[:80]
+                    note = (
+                        f"같은 성경책의 기존 STEP 2 질문 '{past_q[:40]}…'와 소재/맥락이 겹쳐요. "
+                        "그 소재를 다시 묻지 말고 오늘 본문 안의 완전히 다른 신규 소재로 쓰세요."
+                    )
+                    try:
+                        if slot[0] == "main":
+                            fixed = _force_main(chat, qt, kb, deep5, items[slot[1]], others, note=note)
+                            items[slot[1]].update({
+                                "question": fixed["question"],
+                                "answer": fixed["answer"],
+                                "follow_ups": fixed["follow_ups"],
+                            })
+                        else:
+                            mi, ti = slot[1], slot[2]
+                            fixed = _force_tail(
+                                chat, qt, kb, deep5, items[mi]["question"],
+                                items[mi]["follow_ups"][ti], others, note=note,
+                            )
+                            items[mi]["follow_ups"][ti].update({
+                                "question": fixed["question"],
+                                "answer": fixed["answer"],
+                            })
+                        q = fixed["question"]
+                    except Exception as e:
+                        if log:
+                            log(f"  기존 JSON 중복 재작성 실패 — 수동 확인 필요(중복 그대로): {e}", "ERR")
+                        break
     except Exception as e:
         if log:
             log(f"중복 안전망 오류: {e}", "WARN")
     return items
 
 
-def clean(chat, qt, kb, deep5, items, log=None):
+def clean(chat, qt, kb, deep5, items, history=None, log=None):
     """검증 + 가드 + 개수 강제 + 결정적 중복 안전망. 각 단계 격리(한 곳 실패해도 직전 결과 유지)."""
     kb = usable_kb(kb)
     result = _enforce_count([dict(m) for m in items])   # 기본값 = 1차 생성본
@@ -304,5 +381,5 @@ def clean(chat, qt, kb, deep5, items, log=None):
         if log:
             log(f"가드 실패 → 직전 단계 유지: {e}", "WARN")
     # 3) 결정적 중복 안전망 (항상 실행 — 검증·가드가 실패·생략돼도 중복은 여기서 잡음)
-    result = _dedup_net(chat, qt, kb, deep5, result, log=log)
+    result = _dedup_net(chat, qt, kb, deep5, result, log=log, history=history)
     return result if _valid(result) else _enforce_count([dict(m) for m in items])
