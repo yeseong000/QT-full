@@ -1,4 +1,14 @@
-"""떠오르는 질문 — 2차 검증·가드 (라이브 재사용 모듈).
+"""떠오르는 질문 — 2차 검증·가드 (DEPRECATED, 2026-07-09부터 미사용).
+
+followup_pool.py(후보 풀 아키텍처 v3)로 대체됨 — generate_meditation.py는 더 이상
+이 모듈을 import하지 않는다. 참고용으로만 남겨둔다.
+대체 이유: 이 모듈은 "일단 다 쓰고, 문제 있으면 GPT에게 다시 써달라" 방식이라
+GPT 호출이 하루 최대 20~30회까지 늘 수 있고, KB에 없는 카테고리(어원 등)를
+강제로 채우다 근거 없는 단정이 나오는 문제를 구조적으로 막지 못했다
+(2026-07-09 사무엘하 4장 감사에서 확인). 자세한 경위는 project 메모리
+project_jumanna_step2_followup 참고.
+
+--- 이하 원래 문서 ---
 
 generate_meditation.py에서 generate_follow_up 직후 clean()을 호출한다.
 호출자는 chat 함수를 넘긴다:

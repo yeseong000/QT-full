@@ -51,7 +51,9 @@ import time
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
-import followup_verify as fuv   # 떠오르는 질문 2차 검증·가드(v2)
+import followup_pool as fup     # 떠오르는 질문 v3 — 후보 풀 아키텍처(KB 커버리지 기반 카테고리 + 결정적 선택 + 독립 그라운딩 검수)
+# followup_verify.py(2차 검증·가드, v2)는 이 v3로 대체되어 더 이상 여기서 import하지 않는다.
+# 파일은 참고용으로 남겨뒀다(모듈 docstring에 DEPRECATED 표기).
 
 
 # ===== 설정 =====
@@ -358,13 +360,45 @@ def call_openai(messages: list, max_retries: int = 1, *, temperature: float = TE
 
 # ===== 더 깊이 묻기 (Follow-up Q&A) =====
 def _fu_chat(model, system, payload, schema_name, schema, temperature, max_tokens):
-    """followup_verify 모듈용 chat 어댑터 — call_openai로 호출해 파싱된 dict 반환."""
+    """followup_verify 모듈용 chat 어댑터(구) — call_openai로 호출해 파싱된 dict만 반환.
+    followup_verify.py가 dormant된 뒤에도 참고용으로 남겨둔다."""
     rf = {"type": "json_schema", "json_schema": {"name": schema_name, "strict": True, "schema": schema}}
     resp = call_openai(
         [{"role": "system", "content": system}, {"role": "user", "content": json.dumps(payload, ensure_ascii=False)}],
         max_retries=1, temperature=temperature, max_tokens=max_tokens, response_format=rf, model=model,
     )
     return json.loads(resp.choices[0].message.content)
+
+
+# 모델별 단가(백만 토큰당 USD) — calc_cost()는 항상 gpt-4o 단가라서, followup_pool.py가
+# gpt-4o-mini를 섞어 쓰면 실제 비용과 계산값이 어긋난다. 여기서 모델별로 바로잡는다.
+_MODEL_PRICING = {
+    "gpt-4o": (PRICE_INPUT_PER_1M, PRICE_OUTPUT_PER_1M),
+    "gpt-4o-mini": (0.15, 0.60),
+}
+
+
+def _calc_cost_for_model(usage, model: str) -> dict:
+    price_in, price_out = _MODEL_PRICING.get(model, (PRICE_INPUT_PER_1M, PRICE_OUTPUT_PER_1M))
+    cost_usd = usage.prompt_tokens / 1_000_000 * price_in + usage.completion_tokens / 1_000_000 * price_out
+    return {
+        "input_tokens": usage.prompt_tokens,
+        "output_tokens": usage.completion_tokens,
+        "total_tokens": usage.total_tokens,
+        "cost_usd": round(cost_usd, 6),
+        "cost_krw": round(cost_usd * USD_TO_KRW, 2),
+    }
+
+
+def _fu_chat_v2(model, system, payload, schema_name, schema, temperature, max_tokens):
+    """followup_pool 모듈용 chat 어댑터 — call_openai로 호출해 (파싱된 dict, cost dict) 반환.
+    followup_pool.py의 모든 단계가 이 시그니처를 통해서만 OpenAI를 호출한다."""
+    rf = {"type": "json_schema", "json_schema": {"name": schema_name, "strict": True, "schema": schema}}
+    resp = call_openai(
+        [{"role": "system", "content": system}, {"role": "user", "content": json.dumps(payload, ensure_ascii=False)}],
+        max_retries=1, temperature=temperature, max_tokens=max_tokens, response_format=rf, model=model,
+    )
+    return json.loads(resp.choices[0].message.content), _calc_cost_for_model(resp.usage, model)
 
 
 def generate_follow_up(qt_data: dict, kb: dict | None, deep_dive: dict) -> tuple[list, dict] | tuple[None, None]:
@@ -1113,27 +1147,24 @@ def main() -> int:
             variants.append(variant)
 
     # 4. 더 깊이 묻기 (Follow-up Q&A) — variants[0] 기준 1회만 (실패해도 본 묵상은 살림)
-    log("더 깊이 묻기 생성 중...", "INFO")
-    follow_up_items, follow_up_cost = generate_follow_up(qt_data, kb, variants[0])
-    if follow_up_items:
+    #    v3 후보 풀 아키텍처: KB 커버리지에 따라 그날 카테고리를 정하고, 코드가 결정적으로
+    #    9개를 고른 뒤, 선택된 것만 답변을 쓰고, 독립 그라운딩 검수로 근거를 한 번 더 확인한다.
+    log("더 깊이 묻기 생성 중 (후보 풀)...", "INFO")
+    follow_up_items = follow_up_cost = followup_meta = None
+    try:
+        follow_up_history = load_same_book_followup_history(qt_data)
+        follow_up_items, follow_up_cost, followup_meta = fup.run_pipeline(
+            _fu_chat_v2, qt_data, kb, variants[0], history=follow_up_history, log=log,
+        )
         log(
-            f"더 깊이 묻기 OK · 토큰: {follow_up_cost['total_tokens']} / 비용: 약 {follow_up_cost['cost_krw']:.2f}원",
+            f"더 깊이 묻기 OK · 카테고리 제외 {followup_meta['dropped_categories']} · "
+            f"후보 시도 {followup_meta['candidate_attempts']}회 · 그라운딩 {followup_meta['grounding_rounds']}회 · "
+            f"토큰 {follow_up_cost['total_tokens']} / 비용 약 {follow_up_cost['cost_krw']:.2f}원",
             "OK",
         )
-        # 2차 검증·가드 (gpt-4o) — 겹침/왜했나/중복 정리 + 메인 3개 강제. 실패해도 1차 생성본 유지.
-        log("떠오르는 질문 2차 검증·가드(gpt-4o) 중...", "INFO")
-        try:
-            follow_up_history = load_same_book_followup_history(qt_data)
-            follow_up_items = fuv.clean(
-                _fu_chat, qt_data, kb, variants[0], follow_up_items,
-                history=follow_up_history, log=log,
-            )
-            n_tail = sum(len(m.get("follow_ups", [])) for m in follow_up_items)
-            log(f"검증·가드 완료 (메인 {len(follow_up_items)} · 꼬리 {n_tail})", "OK")
-        except Exception as e:
-            log(f"검증·가드 실패 → 1차 생성본 유지: {e}", "WARN")
-    else:
-        log("더 깊이 묻기 생성 건너뜀 (5단 호흡은 정상 저장됨)", "WARN")
+    except fup.FollowUpPoolError as e:
+        log(f"더 깊이 묻기 파이프라인 실패 — 건너뜀 (5단 호흡은 정상 저장됨): {e}", "WARN")
+        follow_up_items = follow_up_cost = followup_meta = None
 
     # 5. 메타데이터 조립 — 최상위 5키 = variants[0] (하위 호환)
     result = {
@@ -1151,6 +1182,7 @@ def main() -> int:
     if follow_up_items:
         result["follow_up_questions"] = follow_up_items
         result["_cost_followup"] = follow_up_cost
+        result["_followup_meta"] = followup_meta
 
     # 6. 저장
     if args.dry_run:
