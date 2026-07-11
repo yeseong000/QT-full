@@ -51,7 +51,8 @@ import time
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
-import followup_pool as fup     # 떠오르는 질문 v3 — 후보 풀 아키텍처(KB 커버리지 기반 카테고리 + 결정적 선택 + 독립 그라운딩 검수)
+import followup_pool as fup     # 떠오르는 질문 공용 유틸(답변 생성·중복 판정·KB 커버리지) — 단순 파이프라인이 재사용
+import followup_simple as fs    # 떠오르는 질문 (단순화 파이프라인) — 생성 4o · 판정/교체 mini · 답겹침 코드 하드게이트
 # followup_verify.py(2차 검증·가드, v2)는 이 v3로 대체되어 더 이상 여기서 import하지 않는다.
 # 파일은 참고용으로 남겨뒀다(모듈 docstring에 DEPRECATED 표기).
 
@@ -551,38 +552,108 @@ def save_json(data: dict, output_path: Path) -> Path:
 
 # ===== 본문 순서(앞/뒤) 분할 플래너 =====
 PASSAGE_SPLIT_SYSTEM = """당신은 성경 본문을 묵상 단위로 나누는 편집자입니다.
-주어진 본문을 '자연스러운 장면 전환점'을 기준으로 정확히 2개의 연속 구간으로 나누세요.
+주어진 본문이 '한 편의 단일 묵상'이 좋은지, '독립된 2막(2분할)'이 좋은지 먼저 판정하세요.
 
-규칙:
-- 두 구간은 서로 겹치지 않고, 본문 전체를 빠짐없이 덮어야 합니다 (앞 구간 끝절 + 1 = 뒤 구간 첫절).
-- 인물·사건·장소가 바뀌는 지점에서 끊으세요. 절 수를 기계적으로 절반 내지 마세요.
-- 다만 두 구간의 분량이 지나치게 치우치지 않게 균형을 맞추세요(한쪽이 한두 절만 남지 않도록). 가장 자연스러운 전환점을 우선하되, 비슷한 분량으로 나눌 수 있는 전환점을 고르세요.
-- 각 구간의 '소주제'와 '교훈축'을 각각 한 줄로 쓰되, 두 구간의 교훈축은 서로 확실히 다른 측면이어야 합니다 (겹침 절대 금지).
-- 큰 주제는 유지하되, 앞 구간과 뒤 구간이 그 주제의 '서로 다른 면'을 비추게 하세요.
-- 조역(반면 교사)의 나쁜 행동만으로 두 구간의 교훈축을 모두 채우지 마세요. 가능하면 한 구간은 주인공의 선한 선택을, 다른 구간은 주인공의 실패·갈등·신앙적 긴장을 중심으로 하세요.
-- 본문에서 주인공이 예상 밖의 선택(분노·두려움·불신 등)을 하는 장면이 있다면, 그 구간의 교훈축은 반드시 그 내면의 갈등을 반영해야 합니다. 단순히 조역의 행동을 비판하는 교훈으로 대체하지 마세요.
+입력의 '본문_내용'은 각 줄이 「순번. 장:절 본문」 형식이고, 순번은 1부터 연속입니다.
 
-출력은 아래 JSON만 (설명·군더더기 금지):
-{"segments":[{"verse_start":정수,"verse_end":정수,"소주제":"한 줄","교훈축":"한 줄"},{"verse_start":정수,"verse_end":정수,"소주제":"한 줄","교훈축":"한 줄"}]}
+■ 핵심 판정 질문 (한 줄):
+"뒤 구간만 따로 떼어 읽어도, 앞과 다른 새 교훈을 주는 '독립된 묵상 카드'가 되는가?"
+→ 되면 2분할, 아니면 단일. 애매하면 단일로.
+
+▶ 2분할(독립된 2막) — 아래를 '모두' 만족할 때만:
+1. 독립된 2막: 뒤 구간이 앞을 재서술하지 않고, 새 사건·장면으로 이어받는 독립 단위
+2. 교훈축이 확실히 다름: 같은 교훈 반복이 아니라 한 주제의 '서로 다른 면'
+3. 각 구간이 독자적 가치: 각자 한 장의 묵상으로 설 만한 사건·인물·전환이 있음
+4. 분량 균형: 한쪽이 한두 절만 남지 않음
+5. 인물·사건·장소가 바뀌는 자연스러운 전환점이 있음(절 수를 기계적으로 반 내지 말 것)
+
+▶ 단일(한 편) — 하나라도 해당하면:
+1. 뒤 구간이 결말의 여운(denouement): 사건·교훈이 앞과 겹침
+2. 교훈 중복: 뒤가 앞 교훈의 재탕
+3. 분량 치우침: 한쪽이 너무 짧음
+4. 조역(반면 교사)의 같은 행동 반복뿐: 주인공의 새 선택·갈등이 없음
+5. 본문 자체가 한 호흡: 짧은 내러티브·선언·시(예: 애가)로 한 장면이 자연스러움
+
+■ 2분할로 나눌 때 규칙:
+- 두 구간은 순번 기준으로 연속·비겹침이며 본문 전체를 덮습니다(앞 구간 마지막 순번 다음이 뒤 구간 첫 순번).
+- 두 구간의 교훈축은 서로 확실히 다른 측면이어야 합니다(겹침 절대 금지).
+- 큰 주제는 유지하되, 앞·뒤가 그 주제의 '서로 다른 면'을 비추게 하세요.
+- 조역의 나쁜 행동만으로 두 교훈축을 채우지 마세요. 가능하면 한 구간은 주인공의 선한 선택, 다른 구간은 주인공의 실패·갈등·신앙적 긴장을 중심으로.
+- 주인공이 예상 밖의 선택(분노·두려움·불신 등)을 하는 장면이 있으면, 그 구간 교훈축은 그 내면의 갈등을 반영하세요.
+
+■ 출력은 아래 JSON만 (설명·군더더기 금지):
+· 단일이면: {"single": true, "이유": "한 줄"}
+· 2분할이면: {"split_after": 정수(1막 마지막 절의 순번), "구간1": {"소주제": "한 줄", "교훈축": "한 줄"}, "구간2": {"소주제": "한 줄", "교훈축": "한 줄"}}
 """
 
 
 _ZERO_COST = {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0, "cost_usd": 0.0, "cost_krw": 0.0}
 
 
+def _make_segment(verses: list, i0: int, i1: int, 소주제: str = "", 교훈축: str = "") -> dict:
+    """verses[i0..i1](양끝 포함)로 세그먼트 dict를 만든다.
+
+    경계를 절 번호가 아니라 '배열 인덱스'로 다루므로, 장이 바뀌며 절 번호가 되돌아가는
+    크로스챕터 본문(예: 2:12-3:5)에서도 안전하다.
+    """
+    seg_vs = verses[i0:i1 + 1]
+    first, last = seg_vs[0], seg_vs[-1]
+    multi_ch = len({v.get("chapter") for v in verses if v.get("chapter") is not None}) > 1
+
+    def _lbl(v):
+        return f"{v.get('chapter')}:{v['number']}" if multi_ch else f"{v['number']}"
+
+    구간 = _lbl(first) if first is last else f"{_lbl(first)}-{_lbl(last)}"
+    return {
+        "idx_start": i0,
+        "idx_end": i1,
+        "verse_start": first["number"],
+        "verse_end": last["number"],
+        "구간_label": 구간,
+        "소주제": 소주제,
+        "교훈축": 교훈축,
+    }
+
+
+def _segments_from_kb(verses: list, ds: list) -> list | None:
+    """KB '_단락구조'(2단락)를 인덱스 기준 세그먼트로 변환. 범위가 본문과 안 맞으면 None(→AI 폴백).
+
+    현재 '_단락구조'에는 단일 장 본문만 등록돼 있어 절 번호 매칭으로 충분하다.
+    """
+    try:
+        parsed = []
+        for d in ds:
+            a, b = [int(x) for x in str(d["범위"]).split("-")]
+            parsed.append((a, b, d.get("소주제", ""), d.get("교훈", d.get("교훈축", ""))))
+        (a0, b0, st0, ax0), (a1, b1, st1, ax1) = parsed
+        nums = [v["number"] for v in verses]
+        # 전체 커버 + 연속 확인 (단일 장 기준)
+        if a0 != nums[0] or b1 != nums[-1] or a1 != b0 + 1:
+            return None
+        i_split = nums.index(b0)  # seg0의 마지막 인덱스(0-based)
+        if not (0 <= i_split < len(verses) - 1):
+            return None
+        return [
+            _make_segment(verses, 0, i_split, st0, ax0),
+            _make_segment(verses, i_split + 1, len(verses) - 1, st1, ax1),
+        ]
+    except (KeyError, ValueError, TypeError, IndexError):
+        return None
+
+
 def plan_passage_split(qt_data: dict, kb_full: dict | None = None) -> tuple[list | str, dict] | tuple[None, None]:
     """본문을 1개(단일) 또는 2구간으로 나눈다.
 
-    1순위: KB의 검증된 '_단락구조'(본문별 단락 수·범위). 1단락→'SINGLE', 2단락→그 범위 사용(주석 근거).
-    2순위(KB에 없을 때): AI 분할 플래너로 2구간 결정.
+    1순위: KB의 검증된 '_단락구조'(본문별 단락 수·범위). 1단락→'SINGLE', 2단락→그 범위(주석 근거).
+    2순위(KB에 없을 때): AI 분할 플래너가 rubric으로 '단일 vs 2분할'을 판정한다.
+    구간 경계는 절 번호가 아니라 '순번(배열 인덱스)'으로 다뤄 크로스챕터 본문에서도 안전하다.
     반환: ('SINGLE', cost) / (segments, cost) / (None, None=실패)
     """
     verses = qt_data.get("verses", [])
     if len(verses) < 2:
         log("본문 절 수가 너무 적어 단일로 진행합니다.", "INFO")
         return "SINGLE", dict(_ZERO_COST)
-    nums = [v["number"] for v in verses]
-    vmin, vmax = min(nums), max(nums)
+    n = len(verses)
 
     # === 1순위: KB의 검증된 단락구조 (주석 근거) ===
     ref = qt_data.get("scripture_ref", "")
@@ -593,23 +664,19 @@ def plan_passage_split(qt_data: dict, kb_full: dict | None = None) -> tuple[list
             log(f"KB 단락구조: '{ref}' = 1단락 → 단일 묵상", "OK")
             return "SINGLE", dict(_ZERO_COST)
         if len(ds) == 2:
-            try:
-                segs = []
-                for d in ds:
-                    a, b = [int(x) for x in str(d["범위"]).split("-")]
-                    segs.append({"verse_start": a, "verse_end": b,
-                                 "소주제": d.get("소주제", ""), "교훈축": d.get("교훈", d.get("교훈축", ""))})
-                s0, e0 = segs[0]["verse_start"], segs[0]["verse_end"]
-                s1, e1 = segs[1]["verse_start"], segs[1]["verse_end"]
-                if s0 == vmin and e1 == vmax and s1 == e0 + 1 and s0 <= e0 < s1 <= e1:
-                    log(f"KB 단락구조: '{ref}' = 2단락 [{s0}-{e0}]/[{s1}-{e1}]", "OK")
-                    return segs, dict(_ZERO_COST)
-                log("KB 단락구조 범위가 본문과 불일치 → AI 플래너로 폴백", "WARN")
-            except (KeyError, ValueError, TypeError):
-                log("KB 단락구조 파싱 실패 → AI 플래너로 폴백", "WARN")
+            segs = _segments_from_kb(verses, ds)
+            if segs:
+                log(f"KB 단락구조: '{ref}' = 2단락 {segs[0]['구간_label']} / {segs[1]['구간_label']}", "OK")
+                return segs, dict(_ZERO_COST)
+            log("KB 단락구조 범위가 본문과 불일치 → AI 플래너로 폴백", "WARN")
 
-    # === 2순위: AI 분할 플래너 ===
-    body_text = "\n".join(f"{v['number']} {v['text']}" for v in verses)
+    # === 2순위: AI 분할 플래너 (rubric으로 단일/2분할 판정) ===
+    # 각 절에 순번(1..N)을 붙여 제공 → split_after가 장 경계와 무관하게 안전
+    def _line(i, v):
+        head = f"{i + 1}. {v.get('chapter')}:{v['number']}" if v.get("chapter") is not None else f"{i + 1}. {v['number']}"
+        return f"{head} {v['text']}"
+
+    body_text = "\n".join(_line(i, v) for i, v in enumerate(verses))
     payload = {
         "본문_참조": qt_data.get("scripture_ref", ""),
         "본문_제목": qt_data.get("title", ""),
@@ -633,32 +700,35 @@ def plan_passage_split(qt_data: dict, kb_full: dict | None = None) -> tuple[list
 
     try:
         parsed = json.loads(response.choices[0].message.content)
-        segments = parsed.get("segments", [])
     except json.JSONDecodeError as e:
         log(f"분할 플래너 JSON 파싱 실패: {e}", "ERR")
         return None, None
 
-    # 검증: 2구간, 연속·비겹침, 본문 전체 커버
-    nums = [v["number"] for v in verses]
-    vmin, vmax = min(nums), max(nums)
-    if not isinstance(segments, list) or len(segments) != 2:
-        log(f"분할 결과가 2구간이 아닙니다 (받음: {len(segments) if isinstance(segments, list) else 'N/A'})", "ERR")
-        return None, None
-    try:
-        s0, e0 = int(segments[0]["verse_start"]), int(segments[0]["verse_end"])
-        s1, e1 = int(segments[1]["verse_start"]), int(segments[1]["verse_end"])
-    except (KeyError, ValueError, TypeError):
-        log("분할 결과에 verse_start/verse_end 정수가 없습니다.", "ERR")
-        return None, None
-    if not (s0 == vmin and e1 == vmax and s1 == e0 + 1 and s0 <= e0 < s1 <= e1):
-        log(f"분할 범위가 연속·전체커버 규칙을 어겼습니다: [{s0}-{e0}] / [{s1}-{e1}] (본문 {vmin}-{vmax})", "WARN")
-        # 규칙 위반 시 기계적 절반으로 보정 (안전망)
-        mid = nums[len(nums) // 2 - 1]
-        segments[0]["verse_start"], segments[0]["verse_end"] = vmin, mid
-        segments[1]["verse_start"], segments[1]["verse_end"] = nums[len(nums) // 2], vmax
-        log(f"→ 절반 분할로 보정: [{vmin}-{mid}] / [{nums[len(nums)//2]}-{vmax}]", "INFO")
-
     cost_info = calc_cost(response.usage)
+
+    # 단일 판정 (rubric상 '독립 카드' 가치 미달)
+    seg_list = parsed.get("segments")
+    if parsed.get("single") is True or (isinstance(seg_list, list) and len(seg_list) == 1):
+        log(f"AI 판정: 단일 묵상 — {str(parsed.get('이유', ''))[:50]}", "OK")
+        return "SINGLE", cost_info
+
+    # 2분할 판정: split_after = 1막 마지막 절의 순번(1-based)
+    split_after = parsed.get("split_after")
+    try:
+        split_after = int(split_after)
+    except (TypeError, ValueError):
+        split_after = None
+    if split_after is None or not (1 <= split_after <= n - 1):
+        log(f"split_after 무효({split_after}) → 순번 절반으로 보정", "WARN")
+        split_after = n // 2
+    i = split_after - 1  # seg0의 마지막 인덱스(0-based)
+    m1 = parsed.get("구간1", {}) or {}
+    m2 = parsed.get("구간2", {}) or {}
+    segments = [
+        _make_segment(verses, 0, i, m1.get("소주제", ""), m1.get("교훈축", "")),
+        _make_segment(verses, i + 1, n - 1, m2.get("소주제", ""), m2.get("교훈축", "")),
+    ]
+    log(f"AI 판정: 2분할 {segments[0]['구간_label']} / {segments[1]['구간_label']}", "OK")
     return segments, cost_info
 
 
@@ -678,9 +748,15 @@ def build_segment_payload(
     prev_scene이 있으면(=뒤 구간) 앞 구간을 이미 읽은 독자에게 '이어서' 들려주는 2막으로 생성한다.
     배경·도입을 재서술하지 않고, 앞 구간이 끝난 지점을 받아 한 걸음 나아가는 '이음 장면'으로 연다.
     """
-    vs, ve = int(segment["verse_start"]), int(segment["verse_end"])
-    seg_verses = [v for v in qt_data.get("verses", []) if vs <= v.get("number", -1) <= ve]
+    verses_all = qt_data.get("verses", [])
+    if "idx_start" in segment and "idx_end" in segment:
+        # 인덱스 기준(크로스챕터 안전): 절 번호가 장 경계에서 되돌아가도 정확히 슬라이스
+        seg_verses = verses_all[segment["idx_start"]:segment["idx_end"] + 1]
+    else:
+        vs, ve = int(segment["verse_start"]), int(segment["verse_end"])
+        seg_verses = [v for v in verses_all if vs <= v.get("number", -1) <= ve]
     seg_body = "\n".join(f"{v['number']} {v['text']}" for v in seg_verses)
+    구간_범위 = segment.get("구간_label") or f"{segment.get('verse_start')}-{segment.get('verse_end')}"
     if prev_scene:
         # === 뒤 구간: 1막을 이어받는 2막 ===
         instruction = (
@@ -704,7 +780,7 @@ def build_segment_payload(
         "본문_참조": qt_data.get("scripture_ref", ""),
         "본문_제목": qt_data.get("title", ""),
         "본문_내용": seg_body,
-        "구간_범위": f"{vs}-{ve}",
+        "구간_범위": 구간_범위,
         "구간_소주제": segment.get("소주제", ""),
         "구간_교훈축": segment.get("교훈축", ""),
         "집중_지시": instruction,
@@ -1071,14 +1147,15 @@ def main() -> int:
             segments = []  # 아래 2구간 루프 건너뜀
         else:
             for s in segments:
-                log(f"  · {s['verse_start']}-{s['verse_end']}절 / 교훈축: {s.get('교훈축', '')[:40]}", "OK")
+                log(f"  · {s.get('구간_label') or (str(s['verse_start']) + '-' + str(s['verse_end']))} / 교훈축: {s.get('교훈축', '')[:40]}", "OK")
 
         prev_lesson = None
         prev_scene = None
         prev_range = None
         seg_questions = oryun_questions  # 구간0→Q1, 구간1→Q2 (질문 1개면 공유, 없으면 None)
         for idx, seg in enumerate(segments):
-            label = f"{'앞' if idx == 0 else '뒤'}부분({seg['verse_start']}-{seg['verse_end']})"
+            seg_label = seg.get("구간_label") or f"{seg['verse_start']}-{seg['verse_end']}"
+            label = f"{'앞' if idx == 0 else '뒤'}부분({seg_label})"
             log(f"[{label}] 5단 호흡 생성 중...", "INFO")
             seg_q = None
             if seg_questions:
@@ -1100,7 +1177,7 @@ def main() -> int:
             for k in total_cost:
                 total_cost[k] = round(total_cost[k] + cost_info[k], 6)
             variant = {key: deep_dive[key] for key in REQUIRED_KEYS}
-            variant["구간"] = f"{seg['verse_start']}-{seg['verse_end']}"
+            variant["구간"] = seg_label
             variant["소주제"] = seg.get("소주제", "")
             if seg_q:
                 variant["오륜질문"] = seg_q
@@ -1110,7 +1187,7 @@ def main() -> int:
             prev_lesson = f"통찰: {deep_dive['통찰']}\n연결: {deep_dive['연결']}"
             # 다음 구간이 '이음 장면'으로 자연스럽게 이어받도록 이번 장면·범위를 넘김
             prev_scene = deep_dive.get("장면", "")
-            prev_range = f"{seg['verse_start']}-{seg['verse_end']}"
+            prev_range = seg_label
     else:
         # === 질문별 / 단일 모드 (기존) ===
         if args.variants:
@@ -1147,22 +1224,23 @@ def main() -> int:
             variants.append(variant)
 
     # 4. 더 깊이 묻기 (Follow-up Q&A) — variants[0] 기준 1회만 (실패해도 본 묵상은 살림)
-    #    v3 후보 풀 아키텍처: KB 커버리지에 따라 그날 카테고리를 정하고, 코드가 결정적으로
-    #    9개를 고른 뒤, 선택된 것만 답변을 쓰고, 독립 그라운딩 검수로 근거를 한 번 더 확인한다.
-    log("더 깊이 묻기 생성 중 (후보 풀)...", "INFO")
+    #    단순화 파이프라인: 4o로 후보 18개 생성 → mini 판정(본문·5단 재진술 + 답 겹침 묶음) →
+    #    코드가 답 겹치는 묶음을 하드게이트로 확정 → 카테고리 다양하게 9개 선택 → 선택된 것만 4o로 답변.
+    log("더 깊이 묻기 생성 중 (단순화 파이프라인 · 생성 4o)...", "INFO")
     follow_up_items = follow_up_cost = followup_meta = None
     try:
         follow_up_history = load_same_book_followup_history(qt_data)
-        follow_up_items, follow_up_cost, followup_meta = fup.run_pipeline(
+        follow_up_items, follow_up_cost, followup_meta = fs.run_simple(
             _fu_chat_v2, qt_data, kb, variants[0], history=follow_up_history, log=log,
         )
         log(
-            f"더 깊이 묻기 OK · 카테고리 제외 {followup_meta['dropped_categories']} · "
-            f"후보 시도 {followup_meta['candidate_attempts']}회 · 그라운딩 {followup_meta['grounding_rounds']}회 · "
+            f"더 깊이 묻기 OK · 카테고리 {len(followup_meta['covered_categories'])}종 · "
+            f"서로 다른 지식 {followup_meta['distinct_knowledge_in_final']}/9 · "
+            f"GPT 호출 {followup_meta['gpt_calls']}회 · "
             f"토큰 {follow_up_cost['total_tokens']} / 비용 약 {follow_up_cost['cost_krw']:.2f}원",
             "OK",
         )
-    except fup.FollowUpPoolError as e:
+    except Exception as e:
         log(f"더 깊이 묻기 파이프라인 실패 — 건너뜀 (5단 호흡은 정상 저장됨): {e}", "WARN")
         follow_up_items = follow_up_cost = followup_meta = None
 

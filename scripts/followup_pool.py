@@ -247,7 +247,8 @@ def _same_context(a, b):
 # 단계에서 종종 어겨진다 — 그래서 프롬프트에만 맡기지 않고 선택 단계에서 코드로
 # 걸러낸다. followup_verify.py의 _BANNED 규칙과 동일한 패턴을 재사용.
 _BANNED_PATTERN = re.compile(
-    r"이유는?\s*무엇|왜\s|의미는?\s*무엇|어떤\s*의미|무엇을\s*의미|배경은?\s*무엇"
+    r"이유|까닭|동기|원인|계기"  # "~는 무엇" 조합만이 아니라 조사가 뭐든(이유가/이유로/이유 때문에 등) 다 잡는다
+    r"|왜\s|의미는?\s*무엇|어떤\s*의미|무엇을\s*의미|배경은?\s*무엇"
     r"|교훈|평가할|어떻게\s*평가|진정성|어떤\s*영향|어떻게\s*이해"
 )
 
@@ -420,14 +421,14 @@ def write_answers(chat, qt, kb, deep5, tree, total_cost, *, only_role_ids=None):
     }
     last_err = None
     for _ in range(MAX_ANSWER_ATTEMPTS):
-        data, cost = chat(ANSWER_MODEL, system, payload, "followup_answers",
-                           _answer_schema(role_ids), 0.5, 6000)
-        _add_cost(total_cost, cost)
-        answers = {a.get("role_id"): a.get("answer") for a in data.get("answers", []) if isinstance(a, dict)}
         try:
+            data, cost = chat(ANSWER_MODEL, system, payload, "followup_answers",
+                               _answer_schema(role_ids), 0.5, 6000)
+            _add_cost(total_cost, cost)
+            answers = {a.get("role_id"): a.get("answer") for a in data.get("answers", []) if isinstance(a, dict)}
             _validate_answers(answers, role_ids)
             return answers
-        except ValueError as e:
+        except Exception as e:  # JSON 파싱 실패(응답 잘림 등) 포함 — 재시도로 넘긴다
             last_err = e
     raise FollowUpPoolError(f"답변 생성 검증 실패: {last_err}")
 
@@ -457,9 +458,12 @@ _GROUNDING_SCHEMA = {
                         "추정성_표현으로_완화됨", "근거없이_단정함",
                     ]},
                     "unsupported_claims": {"type": "array", "items": {"type": "string"}},
+                    "payoff": {"type": "string", "enum": ["새로운_통찰", "이미_다룬_5단의_재진술"]},
+                    "overlapping_5단_quote": {"type": "string"},
                     "note": {"type": "string"},
                 },
-                "required": ["role_id", "grounding", "unsupported_claims", "note"],
+                "required": ["role_id", "grounding", "unsupported_claims", "payoff",
+                             "overlapping_5단_quote", "note"],
                 "additionalProperties": False,
             },
         },
@@ -471,14 +475,38 @@ _GROUNDING_SCHEMA = {
 }
 
 
-def run_grounding_check(chat, qt, kb, tree, total_cost, *, only_role_ids=None):
+def _deep5_text(deep5):
+    return " ".join(str((deep5 or {}).get(k) or "") for k in ("장면", "질문", "맥락", "통찰", "연결"))
+
+
+def _quote_verified(quote, deep5_text):
+    """인용문이 실제로 이미_다룬_5단 안에 있는지 코드로 대조한다 — 짧은(우연 일치 가능성
+    있는) 인용은 신뢰하지 않는다."""
+    q = _norm(quote)
+    if len(q) < 8:
+        return False
+    return q in _norm(deep5_text)
+
+
+def run_grounding_check(chat, qt, kb, deep5, tree, total_cost, *, only_role_ids=None, log=None):
     slots = [{"role_id": m["role_id"], "question": m["question"], "answer": m.get("answer", "")}
              for m in _iter_all(tree) if only_role_ids is None or m["role_id"] in only_role_ids]
     system = _read(GROUNDING_PROMPT_PATH)
     payload = {"본문_참조": qt.get("scripture_ref", ""), "본문_내용": _body_text(qt),
-               "KB": kb, "검수_대상": slots}
+               "KB": kb, "이미_다룬_5단": deep5, "검수_대상": slots}
     data, cost = chat(GROUNDING_MODEL, system, payload, "grounding_check", _GROUNDING_SCHEMA, 0.1, 5000)
     _add_cost(total_cost, cost)
+
+    # 판정 근거를 코드로 대조한다 — "이미_다룬_5단의_재진술"이라면서 실제로 그 문장을
+    # 인용 못 하면(또는 인용했는데 5단 텍스트에 없으면) 근거 없는 주장으로 보고
+    # 새로운_통찰로 되돌린다. 검수 단계 자신이 자기 판정 근거를 지어내는 걸 막는다.
+    deep5_text = _deep5_text(deep5)
+    for f in data.get("findings", []):
+        if f.get("payoff") == "이미_다룬_5단의_재진술" and not _quote_verified(f.get("overlapping_5단_quote", ""), deep5_text):
+            if log:
+                log(f"    검수 자체 검증 실패 — {f.get('role_id')}의 '재진술' 판정이 실제 5단 텍스트로 "
+                    f"확인 안 됨(인용: '{f.get('overlapping_5단_quote', '')[:40]}') → 새로운_통찰로 되돌림", "WARN")
+            f["payoff"] = "새로운_통찰"
     return data
 
 
@@ -568,9 +596,17 @@ def run_pipeline(chat, qt_data, kb, deep5, *, history=None, log=None):
     all_candidates = []
     selected, attempt = None, 0
     for attempt in range(1, MAX_CANDIDATE_ATTEMPTS + 1):
-        batch = generate_candidate_pool(
-            chat, qt_data, kb, category_counts, history, deep5, attempt=attempt, total_cost=total_cost,
-        )
+        try:
+            batch = generate_candidate_pool(
+                chat, qt_data, kb, category_counts, history, deep5, attempt=attempt, total_cost=total_cost,
+            )
+        except Exception as e:
+            # 응답이 max_tokens에 잘려 JSON이 깨지는 등 호출 자체가 실패해도 배치 하나를
+            # 날린 것으로 보고 다음 시도로 넘어간다 — 여기서 그냥 죽으면 그동안 쌓은
+            # all_candidates·비용이 전부 버려진다.
+            if log:
+                log(f"  후보 생성 시도 {attempt} 실패(재시도): {e}", "WARN")
+            continue
         batch = [c for c in batch if isinstance(c, dict)]
         all_candidates.extend(batch)
         if log:
@@ -593,30 +629,54 @@ def run_pipeline(chat, qt_data, kb, deep5, *, history=None, log=None):
     # 매 교체 뒤에는 반드시 다시 검수한다 — 마지막 교체 라운드를 검증 없이 그냥
     # 내보내면(이전 버그) 방금 바꿔 넣은 답이 근거 있는지 아무도 확인하지 않은 채
     # 최종본에 들어간다.
+    # 검수는 두 축을 본다 — ①근거없이 단정한 문장(그라운딩) ②KB·본문엔 있지만 이미
+    # 5단 묵상(본문 따라가기)이 다룬 내용의 재진술이거나, 본문만 읽어도 바로 알 수 있는
+    # 사실확인형이라 STEP2로서 알맹이가 없는 경우(페이오프). 근거는 있어도 가치가
+    # 없는 질문("낮잠 자는 동안 무엇을 했나요" — 5단 '장면'에 이미 나온 내용)은
+    # 그라운딩만으로는 못 잡아서 따로 판정한다.
+    _BAD_PAYOFF = {"이미_다룬_5단의_재진술"}
+
+    def _is_bad(f):
+        return f.get("grounding") == "근거없이_단정함" or f.get("payoff") in _BAD_PAYOFF
+
+    def _safe_grounding_check(**kwargs):
+        # 응답 잘림 등으로 검수 호출 자체가 실패해도 하루 콘텐츠 전체를 죽이지 않는다 —
+        # 1회 재시도 후에도 안 되면 "이번엔 검수 없이 통과"로 fail-open한다.
+        for _ in range(2):
+            try:
+                return run_grounding_check(chat, qt_data, kb, deep5, tree, total_cost, log=log, **kwargs)
+            except Exception as e:
+                if log:
+                    log(f"  검수 호출 실패(재시도): {e}", "WARN")
+        return {"findings": []}
+
     grounding_rounds = 0
-    report = run_grounding_check(chat, qt_data, kb, tree, total_cost)
+    report = _safe_grounding_check()
     grounding_rounds += 1
-    flagged_findings = [f for f in report.get("findings", []) if f.get("grounding") == "근거없이_단정함"]
+    flagged_findings = [f for f in report.get("findings", []) if _is_bad(f)]
     for _ in range(MAX_GROUNDING_ROUNDS):
         flagged = [f["role_id"] for f in flagged_findings]
         if not flagged:
             break
         if log:
-            log(f"  그라운딩 검수 {grounding_rounds}회차: 근거 부족 {len(flagged)}건 → 풀에서 교체", "WARN")
+            log(f"  검수 {grounding_rounds}회차: 문제 {len(flagged)}건 → 풀에서 교체", "WARN")
             for f in flagged_findings:
                 claims = " / ".join(f.get("unsupported_claims") or [])[:200]
-                log(f"    - {f['role_id']}: {f.get('note', '')[:80]} :: {claims}", "WARN")
+                log(f"    - {f['role_id']}: [{f.get('grounding')}/{f.get('payoff')}] {f.get('note', '')[:80]} :: {claims}", "WARN")
         tree, replaced = replace_flagged(chat, qt_data, kb, deep5, tree, flagged, candidates, history,
                                           total_cost, log=log)
         if not replaced:
             break
-        report = run_grounding_check(chat, qt_data, kb, tree, total_cost)
+        report = _safe_grounding_check()
         grounding_rounds += 1
-        flagged_findings = [f for f in report.get("findings", []) if f.get("grounding") == "근거없이_단정함"]
+        flagged_findings = [f for f in report.get("findings", []) if _is_bad(f)]
 
     unresolved = [f["role_id"] for f in flagged_findings]
     if unresolved and log:
-        log(f"  그라운딩 미해결(재시도 소진) — 원본 답변 그대로 저장됨: {unresolved}", "ERR")
+        log(f"  검수 미해결(재시도 소진) — 원본 답변 그대로 저장됨: {unresolved}", "ERR")
+        for f in flagged_findings:  # 마지막 라운드가 왜 걸었는지 사유를 남긴다 — 이전엔 여기가 비어 있었다
+            claims = " / ".join(f.get("unsupported_claims") or [])[:200]
+            log(f"    - {f['role_id']}: [{f.get('grounding')}/{f.get('payoff')}] {f.get('note', '')[:120]} :: {claims}", "ERR")
 
     items = [
         {"question": m["question"], "answer": m["answer"],
