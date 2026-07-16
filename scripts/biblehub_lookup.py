@@ -8,6 +8,7 @@ generate_kb.py가 GPT 프롬프트에 "실제 조사된 자료"로 끼워 넣는
 실패해도 조용히 넘어간다(사이트 구조 변경·차단·네트워크 문제) — KB 생성 자체가
 막히면 안 되므로, 이 모듈은 항상 "있으면 보탬, 없으면 기존 방식대로" 취급된다.
 """
+import re
 import time
 from bs4 import BeautifulSoup
 
@@ -133,4 +134,68 @@ def format_for_prompt(research: dict) -> str:
         for num, d in research["strongs"].items():
             lines.append(f"- H{num}: {d['meta']}")
             lines.append(f"  정의: {d['definition']}")
+    return "\n".join(lines)
+
+
+# ===== 공개(PD) 주석 — "왜 이런 뜻인가"를 문장으로 =====
+_AUTHOR_TRIM = [
+    "'s Commentary for English Readers", "'s Exposition of the Entire Bible",
+    "'s Notes on the Bible", " Biblical Commentary on the Old Testament",
+    " Bible Commentary", "'s Commentary Critical and Explanatory on the Whole Bible",
+]
+
+
+def fetch_verse_commentary(book_slug: str, chapter: int, verse: int,
+                            *, max_authors: int = 3, max_chars: int = 420) -> list[tuple[str, str]] | None:
+    """그 절의 공개 주석 [(저자, 본문), ...] 최대 max_authors개. 저작권 풀린 주석만 게시되는 페이지다.
+    저자명은 vheading2, 본문은 이어지는 <p>. 없으면 None."""
+    html = _get(f"https://biblehub.com/commentaries/{book_slug}/{chapter}-{verse}.htm")
+    if not html:
+        return None
+    soup = BeautifulSoup(html, "lxml")
+    out: list[tuple[str, str]] = []
+    cur, buf = None, []
+    for el in soup.find_all(["div", "p"]):
+        if "vheading2" in (el.get("class") or []):
+            if cur and buf:
+                out.append((cur, " ".join(buf)))
+            cur, buf = el.get_text(" ", strip=True), []
+        elif el.name == "p" and cur:
+            t = el.get_text(" ", strip=True)
+            if t and len(t) > 25:
+                buf.append(t)
+    if cur and buf:
+        out.append((cur, " ".join(buf)))
+
+    cleaned = []
+    for author, text in out[:max_authors]:
+        for suffix in _AUTHOR_TRIM:
+            author = author.replace(suffix, "")
+        text = re.sub(r"\s+", " ", text).strip()
+        if len(text) > max_chars:
+            text = text[:max_chars].rsplit(" ", 1)[0] + "…"
+        cleaned.append((author.strip(), text))
+    return cleaned or None
+
+
+def format_commentary_for_prompt(verse_commentaries: dict, book_ko: str | None = None,
+                                  chapter: int | None = None) -> str | None:
+    """{절번호: [(저자, 본문)]} → 프롬프트용 텍스트. 비면 None.
+
+    각 주석 앞에 '앵커 꼬리표'([저자 · 책 장:절])를 달아, 모델이 source에 그 꼬리표를
+    그대로 옮겨 적게 한다(생성 후 generate_kb가 "저자, 책 장:절"로 확정 — 지어내기 0·추적 가능).
+    book_ko·chapter가 없으면 옛 형식(절 번호만)으로 폴백한다.
+    """
+    if not verse_commentaries:
+        return None
+    lines = [
+        "[Bible Hub 공개 주석 — 저작권이 풀린 옛 주석가들이 '이 구절이 왜 이런 뜻인지' 설명한 실제 자료다(영문). "
+        "배경·신학을 밝힐 근거로 삼되, 주석마다 견해가 갈리면 '주의점'에 견해차를 명시하라. 없는 내용은 지어내지 마라. "
+        "★ 이 주석을 근거로 쓸 땐, 각 주석 앞의 대괄호 꼬리표(예: [Gill · 사무엘하 7:16])를 통째로 source에 옮겨 적어라. "
+        "꼬리표에 없는 주석가 이름을 당신의 기억으로 새로 지어내지 마라.]"
+    ]
+    for v in sorted(verse_commentaries):
+        for author, text in verse_commentaries[v]:
+            tag = f"[{author} · {book_ko} {chapter}:{v}]" if (book_ko and chapter) else f"[{author} · {v}절]"
+            lines.append(f"  - {tag}: {text}")
     return "\n".join(lines)
