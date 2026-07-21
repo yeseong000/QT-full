@@ -59,3 +59,7 @@ data/deep_dive/_noKB/
 data/deep_dive/_KBnoQ/
 data/deep_dive/_2to1/
 data/deep_dive/_1to2/
+
+# 공개 주석 로컬 DB (143MB) — 클라우드는 HelloAO에서 즉석 캐시하므로 커밋 불필요
+data/reference/commentary.db
+scratchpad_*
