@@ -58,20 +58,22 @@
   <style>
     /* ========== 시간대별 단일 배경색 (PNG dominant 대표색) ==========
        그라디언트/블러 X — 단일 solid color로 깔끔하게 */
-    html[data-time-slot="dawn"]      body { background-color: #E5D0C0; }
-    html[data-time-slot="morning"]   body { background-color: #EFE6CD; }
-    html[data-time-slot="afternoon"] body { background-color: #ECE3D2; }
-    html[data-time-slot="evening"]   body { background-color: #F5C672; }
+    /* ── 시간대별 배경 — 모바일(STEP 풀화면) 값 (기본, <481px) ── */
+    html[data-time-slot="dawn"]      body { background-color: #CFC3D5; }
+    html[data-time-slot="morning"]   body { background-color: #F7F2D6; }
+    html[data-time-slot="afternoon"] body { background-color: #EBE9C7; }
+    html[data-time-slot="evening"]   body { background-color: #EADAC0; }
     html[data-time-slot="night"]     body { background-color: #131B2E; }
-    /* step 페이지: common.css의 ambient mesh 그라데이션 끔 — 시간대 단색으로 깔끔하게 */
+    /* step 페이지: common.css의 ambient mesh 그라데이션 끔 — 시간대 단색으로 */
     html[data-time-slot] body { background-image: none; }
 
-    /* 저녁: 외부 바탕(body)을 단색 #F5C672 대신, 안쪽 카드·묵상달력과 같은
-       흐릿한 주황 그라데이션(--ambient-mesh)으로. (PC·태블릿·모바일 공통) */
-    html[data-time-slot="evening"] body {
-      background-color: var(--bg-paper);
-      background-image: var(--ambient-mesh);
-      background-attachment: fixed;
+    /* ── PC(≥481px) 프레임(카드) 바깥 여백 배경 — 단색 강제 (common.js 주입 그라데이션 덮음) ── */
+    @media (min-width: 481px) {
+      html[data-time-slot="dawn"]      body { background: #DAD5DE !important; }
+      html[data-time-slot="morning"]   body { background: #F3EFE3 !important; }
+      html[data-time-slot="afternoon"] body { background: #EAEADF !important; }
+      html[data-time-slot="evening"]   body { background: #ECE5D8 !important; }
+      html[data-time-slot="night"]     body { background: #131B2E !important; }
     }
 
     /* 야간 시간대 텍스트 흰색 처리 */
