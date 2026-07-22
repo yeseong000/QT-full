@@ -120,6 +120,41 @@
       font-weight: 600;
     }
 
+    /* ── 제목(오늘의 본문) 형광펜 밑줄 애니메이션 ──
+       band 폭 0→100%(1회차) → 사라짐 → 0→100%(2회차) → 멈춤. 글자 전체를 덮음. */
+    .scripture-title { line-height: 1.3; }
+    .hl {
+      position: relative;
+      display: inline-block;
+      padding: 0 3px;
+    }
+    .hl__text {
+      position: relative;
+      z-index: 2;
+      white-space: nowrap;
+    }
+    .hl__band {
+      position: absolute;
+      left: 0;
+      z-index: 1;
+      width: 0;
+      bottom: 7%;
+      height: 84%;
+      background: rgba(245, 185, 66, 0.42);   /* 형광펜 머스터드 (앱 하이라이트색) */
+      border-radius: 4px;
+      mix-blend-mode: multiply;               /* 밝은 종이 위: 잉크 겹치는 느낌 */
+      pointer-events: none;
+    }
+    /* 밤(#131B2E): 곱하기 블렌드가 안 먹혀 사라짐 → 따뜻한 앰버를 블렌드 없이 그대로 */
+    html[data-time-slot="night"] .hl__band {
+      background: rgba(245, 185, 66, 0.38);
+      mix-blend-mode: normal;
+    }
+    /* 모션 최소화 설정 시: 애니메이션 없이 바로 채워서 표시 */
+    @media (prefers-reduced-motion: reduce) {
+      .hl__band { width: 100%; transition: none; }
+    }
+
     .verse-line {
       font-size: var(--text-scripture);
       line-height: 1.85;
@@ -322,13 +357,18 @@
       <div class="top-bar__right" style="width: 44px;"></div>
     </header>
 
-    <!-- 페이지 제목 -->
-    <h1 class="page-title">말씀을 깊이 새겨보세요</h1>
+    <!-- 페이지 제목 = 오늘의 본문 (형광펜 애니메이션) -->
+    <h1 class="page-title scripture-title">
+      <span class="hl">
+        <span class="hl__band"></span>
+        <span class="hl__text" id="scriptureRef">—</span>
+      </span>
+    </h1>
 
     <!-- 성경 본문 카드 -->
     <section class="card" id="scriptureCard">
       <div class="scripture-ref">
-        <span id="scriptureRef">—</span>
+        <span>오늘의 본문</span>
         <span class="version-badge">개역개정</span>
       </div>
       <div id="versesContainer">
@@ -422,6 +462,7 @@
 
       document.getElementById('scriptureRef').textContent = qt.scripture_ref;
       document.title = `${qt.title} · 주만나`;
+      playTitleHighlight();
 
       const container = document.getElementById('versesContainer');
       container.innerHTML = qt.verses.map(v => `
@@ -442,6 +483,28 @@
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#39;');
+    }
+
+    // ========== 제목 형광펜 애니메이션 (또박또박 · 1.4초 긋기 · 중간 텀 0.7초 · 총 2회) ==========
+    // 1회차 긋고 → (0.7초 멈춤) → 사라짐 → 새로 긋고 멈춤. 겹치지 않음.
+    function playTitleHighlight() {
+      const band = document.querySelector('.scripture-title .hl__band');
+      if (!band) return;
+      // 모션 최소화 사용자는 애니메이션 없이 바로 표시
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        band.style.width = '100%';
+        return;
+      }
+      const DUR = 1400, EASE = 'cubic-bezier(.33,1,.68,1)', HOLD = 570, GAP = 130;  // HOLD+GAP = 중간 텀 0.7초
+      const draw = () => { band.style.transition = `width ${DUR}ms ${EASE}`; band.style.width = '100%'; };
+      band.style.transition = 'none'; band.style.opacity = '1'; band.style.width = '0';
+      band.getBoundingClientRect();                          // 강제 리플로우
+      draw();                                                // 1회차
+      setTimeout(() => {
+        band.style.transition = 'none'; band.style.opacity = '0'; band.style.width = '0';  // 리셋(사라짐)
+        band.getBoundingClientRect();
+        setTimeout(() => { band.style.opacity = '1'; draw(); }, GAP);                       // 2회차 → 멈춤
+      }, DUR + HOLD);
     }
 
     // ========== 이벤트 ==========
