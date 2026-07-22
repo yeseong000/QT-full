@@ -730,7 +730,7 @@ html[data-theme="dark"] .card {
 .fab {
   position: absolute;
   right: 20px;
-  bottom: calc(120px + env(safe-area-inset-bottom, 0));
+  bottom: calc(100px + env(safe-area-inset-bottom, 0));
   width: 52px;
   height: 52px;
   border-radius: 50%;
@@ -741,7 +741,9 @@ html[data-theme="dark"] .card {
   backdrop-filter: blur(20px) saturate(1.8);
   border: 0.5px solid rgba(255, 255, 255, 0.55);
   box-shadow:
-    var(--shadow-float),
+    0 14px 34px rgba(45, 35, 25, 0.30),   /* 넓고 부드러운 그림자 — 배경에서 확실히 떠 보이게 */
+    0 6px 14px rgba(45, 35, 25, 0.18),
+    0 2px 4px rgba(45, 35, 25, 0.12),
     inset 0 1px 0 rgba(255, 255, 255, 0.7);   /* 위쪽 빛 맺힘 */
   display: grid;
   place-items: center;
@@ -753,7 +755,8 @@ html[data-theme="dark"] .fab {
   background: rgba(40, 44, 52, 0.55);
   border-color: rgba(255, 255, 255, 0.12);
   box-shadow:
-    var(--shadow-float),
+    0 14px 34px rgba(0, 0, 0, 0.55),   /* 다크: 더 짙은 그림자로 배경에서 분리 */
+    0 6px 14px rgba(0, 0, 0, 0.40),
     inset 0 1px 0 rgba(255, 255, 255, 0.12);
 }
 .fab:active {
