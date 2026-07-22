@@ -140,14 +140,19 @@
       width: 0;
       bottom: 7%;
       height: 84%;
-      background: rgba(245, 185, 66, 0.42);   /* 형광펜 머스터드 (앱 하이라이트색) */
+      background: rgba(255, 191, 102, 0.35);  /* 폴백(아침색) — 시간대별 값은 아래 규칙에서 지정 */
       border-radius: 4px;
       mix-blend-mode: multiply;               /* 밝은 종이 위: 잉크 겹치는 느낌 */
       pointer-events: none;
     }
-    /* 밤(#131B2E): 곱하기 블렌드가 안 먹혀 사라짐 → 따뜻한 앰버를 블렌드 없이 그대로 */
+    /* 시간대별 형광색 (낮 4개는 위 base의 곱하기 블렌드 유지) */
+    html[data-time-slot="dawn"]      .hl__band { background: rgba(231, 136, 136, 0.30); }
+    html[data-time-slot="morning"]   .hl__band { background: rgba(255, 191, 102, 0.35); }
+    html[data-time-slot="afternoon"] .hl__band { background: rgba(255, 224, 26, 0.35); }
+    html[data-time-slot="evening"]   .hl__band { background: rgba(255, 241, 51, 0.40); }
+    /* 밤(#131B2E): 곱하기가 안 먹혀 사라짐 → 파란 형광 + 일반 블렌드 */
     html[data-time-slot="night"] .hl__band {
-      background: rgba(245, 185, 66, 0.38);
+      background: rgba(138, 173, 255, 0.38);
       mix-blend-mode: normal;
     }
     /* 모션 최소화 설정 시: 애니메이션 없이 바로 채워서 표시 */
