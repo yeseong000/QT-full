@@ -140,16 +140,16 @@
       width: 0;
       bottom: 7%;
       height: 84%;
-      background: rgba(255, 191, 102, 0.35);  /* 폴백(아침색) — 시간대별 값은 아래 규칙에서 지정 */
+      background: rgba(255, 130, 77, 0.40);   /* 폴백(아침색) — 시간대별 값은 아래 규칙에서 지정 */
       border-radius: 4px;
       mix-blend-mode: multiply;               /* 밝은 종이 위: 잉크 겹치는 느낌 */
       pointer-events: none;
     }
     /* 시간대별 형광색 (낮 4개는 위 base의 곱하기 블렌드 유지) */
     html[data-time-slot="dawn"]      .hl__band { background: rgba(231, 136, 136, 0.30); }
-    html[data-time-slot="morning"]   .hl__band { background: rgba(255, 191, 102, 0.35); }
+    html[data-time-slot="morning"]   .hl__band { background: rgba(255, 130, 77, 0.40); }
     html[data-time-slot="afternoon"] .hl__band { background: rgba(255, 224, 26, 0.35); }
-    html[data-time-slot="evening"]   .hl__band { background: rgba(255, 241, 51, 0.40); }
+    html[data-time-slot="evening"]   .hl__band { background: rgba(221, 255, 87, 0.40); }
     /* 밤(#131B2E): 곱하기가 안 먹혀 사라짐 → 파란 형광 + 일반 블렌드 */
     html[data-time-slot="night"] .hl__band {
       background: rgba(138, 173, 255, 0.38);
@@ -490,26 +490,27 @@
         .replace(/'/g, '&#39;');
     }
 
-    // ========== 제목 형광펜 애니메이션 (또박또박 · 1.4초 긋기 · 중간 텀 0.7초 · 총 2회) ==========
-    // 1회차 긋고 → (0.7초 멈춤) → 사라짐 → 새로 긋고 멈춤. 겹치지 않음.
+    // ========== 제목 형광펜 애니메이션 (또박또박 · 1.4초 긋기 · 중간 텀 0.7초 · 2회 → 4.5초 주기 반복) ==========
+    // 1회차 긋고 → (0.7초 멈춤) → 사라짐 → 2회차 긋기. 이 한 묶음을 4.5초마다 반복. PC·모바일 공통.
+    let titleHlTimer = null;
     function playTitleHighlight() {
       const band = document.querySelector('.scripture-title .hl__band');
       if (!band) return;
-      // 모션 최소화 사용자는 애니메이션 없이 바로 표시
-      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-        band.style.width = '100%';
-        return;
-      }
-      const DUR = 1400, EASE = 'cubic-bezier(.33,1,.68,1)', HOLD = 570, GAP = 130;  // HOLD+GAP = 중간 텀 0.7초
+      const DUR = 1400, EASE = 'cubic-bezier(.33,1,.68,1)', HOLD = 570, GAP = 130, PERIOD = 4500;  // HOLD+GAP=중간 텀 0.7초
       const draw = () => { band.style.transition = `width ${DUR}ms ${EASE}`; band.style.width = '100%'; };
-      band.style.transition = 'none'; band.style.opacity = '1'; band.style.width = '0';
-      band.getBoundingClientRect();                          // 강제 리플로우
-      draw();                                                // 1회차
-      setTimeout(() => {
-        band.style.transition = 'none'; band.style.opacity = '0'; band.style.width = '0';  // 리셋(사라짐)
-        band.getBoundingClientRect();
-        setTimeout(() => { band.style.opacity = '1'; draw(); }, GAP);                       // 2회차 → 멈춤
-      }, DUR + HOLD);
+      function cycle() {
+        band.style.transition = 'none'; band.style.opacity = '1'; band.style.width = '0';
+        band.getBoundingClientRect();                        // 강제 리플로우
+        draw();                                              // 1회차
+        setTimeout(() => {
+          band.style.transition = 'none'; band.style.opacity = '0'; band.style.width = '0';  // 리셋(사라짐)
+          band.getBoundingClientRect();
+          setTimeout(() => { band.style.opacity = '1'; draw(); }, GAP);                       // 2회차
+        }, DUR + HOLD);
+      }
+      cycle();                                               // 진입 즉시 1회
+      if (titleHlTimer) clearInterval(titleHlTimer);
+      titleHlTimer = setInterval(cycle, PERIOD);             // 이후 4.5초 주기로 반복
     }
 
     // ========== 이벤트 ==========
