@@ -59,10 +59,10 @@
     /* ========== 시간대별 단일 배경색 (PNG dominant 대표색) ==========
        그라디언트/블러 X — 단일 solid color로 깔끔하게 */
     /* ── 시간대별 배경 — 모바일(STEP 풀화면) 값 (기본, <481px) ── */
-    html[data-time-slot="dawn"]      body { background-color: #CFC3D5; }
-    html[data-time-slot="morning"]   body { background-color: #F7F2D6; }
-    html[data-time-slot="afternoon"] body { background-color: #EBE9C7; }
-    html[data-time-slot="evening"]   body { background-color: #EADAC0; }
+    html[data-time-slot="dawn"]      body { background-color: #989DBE; }
+    html[data-time-slot="morning"]   body { background-color: #EEE7B5; }
+    html[data-time-slot="afternoon"] body { background-color: #B6D6DC; }
+    html[data-time-slot="evening"]   body { background-color: #D2A587; }
     html[data-time-slot="night"]     body { background-color: #131B2E; }
     /* step 페이지: common.css의 ambient mesh 그라데이션 끔 — 시간대 단색으로 */
     html[data-time-slot] body { background-image: none; }
@@ -125,6 +125,12 @@
     /* ── 제목(오늘의 본문) 형광펜 밑줄 애니메이션 ──
        band 폭 0→100%(1회차) → 사라짐 → 0→100%(2회차) → 멈춤. 글자 전체를 덮음. */
     .scripture-title { line-height: 1.3; }
+    /* 제목 글씨색 (시간대별) */
+    html[data-time-slot="dawn"]      .scripture-title { color: #FFFFFF; }
+    html[data-time-slot="morning"]   .scripture-title { color: #FFFFFF; }
+    html[data-time-slot="afternoon"] .scripture-title { color: #FFFFFF; }
+    html[data-time-slot="evening"]   .scripture-title { color: #FDFDFD; }
+    html[data-time-slot="night"]     .scripture-title { color: #FFFFFF; }
     .hl {
       position: relative;
       display: inline-block;
@@ -142,16 +148,16 @@
       width: 0;
       bottom: 7%;
       height: 84%;
-      background: rgba(255, 130, 77, 0.40);   /* 폴백(아침색) — 시간대별 값은 아래 규칙에서 지정 */
+      background: rgba(255, 218, 78, 0.53);   /* 폴백(아침색) — 시간대별 값은 아래 규칙에서 지정 */
       border-radius: 4px;
       mix-blend-mode: multiply;               /* 밝은 종이 위: 잉크 겹치는 느낌 */
       pointer-events: none;
     }
     /* 시간대별 형광색 (낮 4개는 위 base의 곱하기 블렌드 유지) */
-    html[data-time-slot="dawn"]      .hl__band { background: rgba(231, 136, 136, 0.30); }
-    html[data-time-slot="morning"]   .hl__band { background: rgba(255, 130, 77, 0.40); }
-    html[data-time-slot="afternoon"] .hl__band { background: rgba(255, 224, 26, 0.35); }
-    html[data-time-slot="evening"]   .hl__band { background: rgba(221, 255, 87, 0.40); }
+    html[data-time-slot="dawn"]      .hl__band { background: rgba(176, 44, 206, 0.30); }
+    html[data-time-slot="morning"]   .hl__band { background: rgba(255, 218, 78, 0.53); }
+    html[data-time-slot="afternoon"] .hl__band { background: rgba(60, 138, 255, 0.35); }
+    html[data-time-slot="evening"]   .hl__band { background: rgba(255, 97, 27, 0.38); }
     /* 밤(#131B2E): 곱하기가 안 먹혀 사라짐 → 파란 형광 + 일반 블렌드 */
     html[data-time-slot="night"] .hl__band {
       background: rgba(138, 173, 255, 0.38);
