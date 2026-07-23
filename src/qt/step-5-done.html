@@ -46,16 +46,52 @@
   <style>
     /* ========== 시간대별 단일 배경색 (PNG dominant 대표색) ==========
        streak-hero는 자체 그라디언트 디자인 보존 */
-    html[data-time-slot="dawn"]      body { background-color: #E5D0C0; }
-    html[data-time-slot="morning"]   body { background-color: #EFE6CD; }
-    html[data-time-slot="afternoon"] body { background-color: #ECE3D2; }
-    /* 저녁: 외부 바탕을 단색 대신 안쪽 카드·묵상달력과 같은 흐릿한 주황 그라데이션(--ambient-mesh)으로 */
-    html[data-time-slot="evening"]   body {
-      background-color: var(--bg-paper);
-      background-image: var(--ambient-mesh);
-      background-attachment: fixed;
+    /* ── 낮(새벽·아침·오후·저녁): 배경 흰색 고정 / 밤: 기존 어두운 배경 유지 ── */
+    html[data-time-slot="dawn"] body,
+    html[data-time-slot="morning"] body,
+    html[data-time-slot="afternoon"] body,
+    html[data-time-slot="evening"] body { background: #FFFFFF !important; }
+    html[data-time-slot="night"] body { background-color: #131B2E; }
+    html[data-time-slot] body { background-image: none; }
+    @media (min-width: 481px) {
+    html[data-time-slot="dawn"] body,
+    html[data-time-slot="morning"] body,
+    html[data-time-slot="afternoon"] body,
+    html[data-time-slot="evening"] body { background: #FFFFFF !important; }
+      html[data-time-slot="night"] body { background: #131B2E !important; }
     }
-    html[data-time-slot="night"]     body { background-color: #131B2E; }
+
+    /* 낮: 프레임 안쪽(app-container)도 흰색 — PC에서 mesh 대신 흰 배경 통일 */
+    html[data-time-slot="dawn"] .app-container,
+    html[data-time-slot="morning"] .app-container,
+    html[data-time-slot="afternoon"] .app-container,
+    html[data-time-slot="evening"] .app-container {
+      background-color: #FFFFFF;
+      background-image: none;
+    }
+
+    /* ── 시간대별 포인트색: 액센트 토큰을 덮어써 진행 바·배지·절 숫자·카드 아이콘·다음 버튼까지 일괄 적용 ── */
+    html[data-time-slot="dawn"] { --accent-sage:#8A6B9E; --accent-sage-dark:#75588A; --accent-sage-soft:#F0EBF4; --accent-sage-text:#6E5080; --check-active:#8A6B9E; --bg-soft:#F0EBF4; --card-tint:#FAF8FC; }
+    html[data-time-slot="morning"] { --accent-sage:#C68A3E; --accent-sage-dark:#AA7430; --accent-sage-soft:#F8EFE1; --accent-sage-text:#8E6224; --check-active:#C68A3E; --bg-soft:#F8EFE1; --card-tint:#FDFAF4; }
+    html[data-time-slot="afternoon"] { --accent-sage:#5B7DB1; --accent-sage-dark:#4A6897; --accent-sage-soft:#E9EFF7; --accent-sage-text:#3F5B85; --check-active:#5B7DB1; --bg-soft:#E9EFF7; --card-tint:#F7FAFD; }
+    html[data-time-slot="evening"] { --accent-sage:#C1798A; --accent-sage-dark:#A66175; --accent-sage-soft:#F7EAEE; --accent-sage-text:#8E4F60; --check-active:#C1798A; --bg-soft:#F7EAEE; --card-tint:#FDF8F9; }
+
+    /* ── 흰 배경이므로 카드 섹션에 아주 옅은 톤 (낮 4개) ── */
+    html[data-time-slot="dawn"] .card,
+    html[data-time-slot="morning"] .card,
+    html[data-time-slot="afternoon"] .card,
+    html[data-time-slot="evening"] .card,
+    html[data-time-slot="dawn"] .meditation-card,
+    html[data-time-slot="morning"] .meditation-card,
+    html[data-time-slot="afternoon"] .meditation-card,
+    html[data-time-slot="evening"] .meditation-card,
+    html[data-time-slot="dawn"] .scene-card,
+    html[data-time-slot="morning"] .scene-card,
+    html[data-time-slot="afternoon"] .scene-card,
+    html[data-time-slot="evening"] .scene-card {
+      background: var(--card-tint);
+      border: 1px solid rgba(0, 0, 0, 0.06);
+    }
     html[data-time-slot="night"] { color: #FFFFFF; }
     html[data-time-slot="night"] .celebration__title { color: #FFFFFF; }
     html[data-time-slot="night"] .celebration__subtitle { color: rgba(255, 255, 255, 0.75); }

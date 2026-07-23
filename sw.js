@@ -15,7 +15,7 @@
  * (SW 코드 자체가 안 바뀌면 iOS도 SW 재설치 안 함 → 그래서 버전 bump 필수)
  */
 
-const SW_VERSION = 'v20260722-006';
+const SW_VERSION = 'v20260722-007';
 const CACHE_NAME = `hainaqt-${SW_VERSION}`;
 const OFFLINE_FALLBACK = '/src/index.html';
 
