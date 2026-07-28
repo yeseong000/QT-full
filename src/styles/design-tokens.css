@@ -178,7 +178,8 @@ html[data-font-style="noto-serif"] {
    ========================================================================== */
 
 /* ─── 🌙 DARK — Midnight (숲 밤 + 달빛 세이지 액센트) ─────────────────── */
-html[data-theme="dark"] {
+html[data-theme="dark"],
+html[data-time-slot="dawn"] {
   /* 브라우저에 다크 테마임을 명시 → 폼 컨트롤/스크롤바/자동완성 배경이 다크로 렌더 */
   color-scheme: dark;
 
