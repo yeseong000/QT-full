@@ -107,12 +107,12 @@ function pickTimeSlot(date = new Date()) {
   return 'night';
 }
 
-// 시간대 기반 자동 배경(다크/라이트) — 어두운 시간대(밤)만 dark.
-// (새벽은 실제 일러스트가 밝은 파스텔이라 라이트로 둔다 — 저녁과 동일한 처리)
+// 시간대 기반 자동 배경(다크/라이트) — 어두운 시간대(밤·새벽)는 dark.
+// (새벽=밤 다크 통일: 사용자 요청. 홈 일러스트 배경은 시간대별로 유지하고 UI 토큰만 다크로.)
 // pickTimeSlot이 오버라이드를 반영하므로 수동 선택 시에도 다크/라이트가 함께 따라간다.
 function pickAutoTheme(date = new Date()) {
   const slot = pickTimeSlot(date);
-  return (slot === 'night') ? 'dark' : 'default';
+  return (slot === 'night' || slot === 'dawn') ? 'dark' : 'default';
 }
 
 // 시간대별 "주위 배경(ambient)" — 홈 화면 5색 팔레트(SKY/GROUND)를 연하게 풀어낸

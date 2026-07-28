@@ -1058,9 +1058,9 @@
       evening:   'linear-gradient(180deg, #DEAD98 0%, #F5C672 100%)',
       night:     'linear-gradient(180deg, #082252 0%, #2A3A5C 100%)',
     };
-    // 어두운 시간대 — 카드/토큰도 다크로 전환. 밤만 다크.
-    // (새벽은 실제 일러스트가 밝은 파스텔이라 라이트로 둠 — 저녁과 동일 처리)
-    const DARK_SLOTS = { night: true };
+    // 어두운 시간대 — 카드/토큰도 다크로 전환. 밤·새벽 다크(사용자 요청: 새벽=밤 통일).
+    // (시간대별 일러스트 배경은 유지하고 UI 토큰만 다크로 — common.js pickAutoTheme과 일치)
+    const DARK_SLOTS = { night: true, dawn: true };
 
     // 시간대 순환 순서 + 버튼 아이콘 (단일 버튼이 현재 slot을 표시, 탭하면 다음으로 순환)
     const SLOT_ORDER = ['dawn', 'morning', 'afternoon', 'evening', 'night'];
