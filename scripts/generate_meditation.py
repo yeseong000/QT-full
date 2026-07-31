@@ -359,6 +359,30 @@ def call_openai(messages: list, max_retries: int = 1, *, temperature: float = TE
     raise RuntimeError(f"API 호출 최종 실패: {last_err}")
 
 
+# ===== 떠오르는 질문: 베스트-of-N 답변 겹침 채점용 임베딩 =====
+FOLLOW_UP_BEST_OF_N = 3               # N번 뽑아 답변 겹침 최소 세트 자동 선택(1이면 사실상 단발)
+FOLLOW_UP_EMBED_MODEL = "text-embedding-3-small"
+
+
+def _embed_texts(texts: list) -> list:
+    """문장 리스트 → 임베딩 벡터 리스트 (best-of-N 답변 겹침 채점용). text-embedding-3-small은
+    100만 토큰당 $0.02라 하루 답변 몇십 개는 사실상 0원."""
+    try:
+        from openai import OpenAI
+    except ImportError:
+        raise RuntimeError("openai 라이브러리가 필요합니다.")
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        raise RuntimeError("OPENAI_API_KEY가 없습니다.")
+    client = OpenAI(api_key=api_key)
+    out = []
+    for i in range(0, len(texts), 100):
+        batch = texts[i:i + 100]
+        resp = client.embeddings.create(model=FOLLOW_UP_EMBED_MODEL, input=batch)
+        out.extend(item.embedding for item in resp.data)
+    return out
+
+
 # ===== 더 깊이 묻기 (Follow-up Q&A) =====
 def _fu_chat(model, system, payload, schema_name, schema, temperature, max_tokens):
     """followup_verify 모듈용 chat 어댑터(구) — call_openai로 호출해 파싱된 dict만 반환.
@@ -1230,8 +1254,9 @@ def main() -> int:
     follow_up_items = follow_up_cost = followup_meta = None
     try:
         follow_up_history = load_same_book_followup_history(qt_data)
-        follow_up_items, follow_up_cost, followup_meta = fs.run_simple(
+        follow_up_items, follow_up_cost, followup_meta = fs.run_best_of_n(
             _fu_chat_v2, qt_data, kb, variants[0], history=follow_up_history, log=log,
+            n=FOLLOW_UP_BEST_OF_N, embed=_embed_texts,
         )
         log(
             f"더 깊이 묻기 OK · 카테고리 {len(followup_meta['covered_categories'])}종 · "

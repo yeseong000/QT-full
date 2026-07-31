@@ -13,7 +13,7 @@ concurrency:
 jobs:
   fetch:
     runs-on: ubuntu-latest
-    timeout-minutes: 20    # 크롤링+묵상+이미지 합산 여유
+    timeout-minutes: 30    # 크롤링+묵상+이미지 합산 여유 (떠오르는 질문 best-of-N 여러 번 생성 대비 상향)
     permissions:
       contents: write    # 커밋/푸시 권한
     env:

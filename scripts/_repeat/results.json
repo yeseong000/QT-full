@@ -1,0 +1,174 @@
+{
+ "2026-07-14": {
+  "runs": [
+   {
+    "anchor_fail": 0,
+    "copies": 0,
+    "fix_rounds": 2,
+    "distinct_verses": 8,
+    "candidates": 13,
+    "xref_used": 1,
+    "kb_used": 0,
+    "safe_cat": 4,
+    "overlap": 0,
+    "max_sim": 0.714,
+    "cost": 143.2
+   },
+   {
+    "anchor_fail": 0,
+    "copies": 0,
+    "fix_rounds": 0,
+    "distinct_verses": 8,
+    "candidates": 15,
+    "xref_used": 1,
+    "kb_used": 2,
+    "safe_cat": 4,
+    "overlap": 1,
+    "max_sim": 0.798,
+    "cost": 103.8
+   },
+   {
+    "anchor_fail": 0,
+    "copies": 0,
+    "fix_rounds": 0,
+    "distinct_verses": 9,
+    "candidates": 12,
+    "xref_used": 1,
+    "kb_used": 1,
+    "safe_cat": 5,
+    "overlap": 0,
+    "max_sim": 0.726,
+    "cost": 103.7
+   }
+  ]
+ },
+ "2026-07-15": {
+  "runs": [
+   {
+    "anchor_fail": 1,
+    "copies": 0,
+    "fix_rounds": 0,
+    "distinct_verses": 9,
+    "candidates": 19,
+    "xref_used": 2,
+    "kb_used": 0,
+    "safe_cat": 2,
+    "overlap": 0,
+    "max_sim": 0.686,
+    "cost": 121.7
+   },
+   {
+    "anchor_fail": 1,
+    "copies": 0,
+    "fix_rounds": 0,
+    "distinct_verses": 8,
+    "candidates": 15,
+    "xref_used": 2,
+    "kb_used": 2,
+    "safe_cat": 2,
+    "overlap": 3,
+    "max_sim": 0.792,
+    "cost": 118.5
+   },
+   {
+    "anchor_fail": 1,
+    "copies": 0,
+    "fix_rounds": 0,
+    "distinct_verses": 9,
+    "candidates": 20,
+    "xref_used": 2,
+    "kb_used": 1,
+    "safe_cat": 3,
+    "overlap": 1,
+    "max_sim": 0.848,
+    "cost": 124.8
+   }
+  ]
+ },
+ "2026-07-16": {
+  "runs": [
+   {
+    "anchor_fail": 1,
+    "copies": 0,
+    "fix_rounds": 0,
+    "distinct_verses": 8,
+    "candidates": 16,
+    "xref_used": 2,
+    "kb_used": 0,
+    "safe_cat": 0,
+    "overlap": 1,
+    "max_sim": 0.804,
+    "cost": 119.2
+   },
+   {
+    "anchor_fail": 0,
+    "copies": 0,
+    "fix_rounds": 0,
+    "distinct_verses": 7,
+    "candidates": 14,
+    "xref_used": 1,
+    "kb_used": 0,
+    "safe_cat": 1,
+    "overlap": 1,
+    "max_sim": 0.863,
+    "cost": 114.4
+   },
+   {
+    "anchor_fail": 0,
+    "copies": 0,
+    "fix_rounds": 0,
+    "distinct_verses": 9,
+    "candidates": 16,
+    "xref_used": 2,
+    "kb_used": 2,
+    "safe_cat": 1,
+    "overlap": 3,
+    "max_sim": 0.87,
+    "cost": 147.9
+   }
+  ]
+ },
+ "2026-07-17": {
+  "runs": [
+   {
+    "anchor_fail": 0,
+    "copies": 0,
+    "fix_rounds": 0,
+    "distinct_verses": 9,
+    "candidates": 20,
+    "xref_used": 0,
+    "kb_used": 0,
+    "safe_cat": 4,
+    "overlap": 0,
+    "max_sim": 0.733,
+    "cost": 115.3
+   },
+   {
+    "anchor_fail": 0,
+    "copies": 0,
+    "fix_rounds": 0,
+    "distinct_verses": 9,
+    "candidates": 14,
+    "xref_used": 1,
+    "kb_used": 1,
+    "safe_cat": 5,
+    "overlap": 0,
+    "max_sim": 0.748,
+    "cost": 113.0
+   },
+   {
+    "anchor_fail": 0,
+    "copies": 0,
+    "fix_rounds": 0,
+    "distinct_verses": 9,
+    "candidates": 19,
+    "xref_used": 0,
+    "kb_used": 0,
+    "safe_cat": 8,
+    "overlap": 0,
+    "max_sim": 0.544,
+    "cost": 111.8
+   }
+  ]
+ }
+}

@@ -19,7 +19,7 @@ concurrency:
 jobs:
   fetch:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 30    # 떠오르는 질문 best-of-N 여러 번 생성 대비 상향
     permissions:
       contents: write
     env:

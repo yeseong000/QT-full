@@ -1,0 +1,150 @@
+{
+ "2026-07-14": {
+  "runs": [
+   {
+    "anchor_fail": 0,
+    "copies": 0,
+    "fix_rounds": 0,
+    "distinct_verses": 9,
+    "candidates": 15,
+    "xref_used": 0,
+    "overlap": 1,
+    "max_sim": 0.757,
+    "cost": 105.5
+   },
+   {
+    "anchor_fail": 0,
+    "copies": 0,
+    "fix_rounds": 0,
+    "distinct_verses": 9,
+    "candidates": 19,
+    "xref_used": 1,
+    "overlap": 0,
+    "max_sim": 0.687,
+    "cost": 106.0
+   },
+   {
+    "anchor_fail": 0,
+    "copies": 0,
+    "fix_rounds": 0,
+    "distinct_verses": 9,
+    "candidates": 14,
+    "xref_used": 0,
+    "overlap": 0,
+    "max_sim": 0.701,
+    "cost": 106.5
+   }
+  ]
+ },
+ "2026-07-15": {
+  "runs": [
+   {
+    "anchor_fail": 1,
+    "copies": 0,
+    "fix_rounds": 0,
+    "distinct_verses": 9,
+    "candidates": 16,
+    "xref_used": 1,
+    "overlap": 1,
+    "max_sim": 0.758,
+    "cost": 169.8
+   },
+   {
+    "anchor_fail": 2,
+    "copies": 0,
+    "fix_rounds": 0,
+    "distinct_verses": 9,
+    "candidates": 19,
+    "xref_used": 3,
+    "overlap": 1,
+    "max_sim": 0.867,
+    "cost": 120.2
+   },
+   {
+    "anchor_fail": 1,
+    "copies": 0,
+    "fix_rounds": 0,
+    "distinct_verses": 9,
+    "candidates": 21,
+    "xref_used": 1,
+    "overlap": 1,
+    "max_sim": 0.778,
+    "cost": 126.7
+   }
+  ]
+ },
+ "2026-07-16": {
+  "runs": [
+   {
+    "anchor_fail": 0,
+    "copies": 0,
+    "fix_rounds": 2,
+    "distinct_verses": 8,
+    "candidates": 12,
+    "xref_used": 2,
+    "overlap": 3,
+    "max_sim": 0.797,
+    "cost": 116.5
+   },
+   {
+    "anchor_fail": 1,
+    "copies": 0,
+    "fix_rounds": 0,
+    "distinct_verses": 7,
+    "candidates": 17,
+    "xref_used": 2,
+    "overlap": 0,
+    "max_sim": 0.726,
+    "cost": 116.2
+   },
+   {
+    "anchor_fail": 0,
+    "copies": 0,
+    "fix_rounds": 2,
+    "distinct_verses": 8,
+    "candidates": 16,
+    "xref_used": 2,
+    "overlap": 6,
+    "max_sim": 0.874,
+    "cost": 119.6
+   }
+  ]
+ },
+ "2026-07-17": {
+  "runs": [
+   {
+    "anchor_fail": 1,
+    "copies": 0,
+    "fix_rounds": 2,
+    "distinct_verses": 8,
+    "candidates": 15,
+    "xref_used": 1,
+    "overlap": 2,
+    "max_sim": 0.814,
+    "cost": 116.5
+   },
+   {
+    "anchor_fail": 0,
+    "copies": 0,
+    "fix_rounds": 2,
+    "distinct_verses": 7,
+    "candidates": 13,
+    "xref_used": 3,
+    "overlap": 2,
+    "max_sim": 0.923,
+    "cost": 113.2
+   },
+   {
+    "anchor_fail": 1,
+    "copies": 0,
+    "fix_rounds": 0,
+    "distinct_verses": 9,
+    "candidates": 18,
+    "xref_used": 1,
+    "overlap": 0,
+    "max_sim": 0.7,
+    "cost": 107.3
+   }
+  ]
+ }
+}

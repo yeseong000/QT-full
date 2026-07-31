@@ -1,0 +1,161 @@
+{
+ "2026-07-14": {
+  "runs": [
+   {
+    "anchor_fail": 0,
+    "copies": 0,
+    "fix_rounds": 1,
+    "distinct_verses": 8,
+    "candidates": 12,
+    "xref_used": 1,
+    "overlap": 1,
+    "max_sim": 0.776,
+    "cost": 105.2
+   },
+   {
+    "anchor_fail": 0,
+    "copies": 0,
+    "fix_rounds": 0,
+    "distinct_verses": 6,
+    "candidates": 17,
+    "xref_used": 1,
+    "overlap": 1,
+    "max_sim": 0.761,
+    "cost": 108.6
+   },
+   {
+    "anchor_fail": 0,
+    "copies": 0,
+    "fix_rounds": 0,
+    "distinct_verses": 9,
+    "candidates": 13,
+    "xref_used": 1,
+    "overlap": 1,
+    "max_sim": 0.825,
+    "cost": 102.5
+   },
+   {
+    "anchor_fail": 0,
+    "copies": 0,
+    "fix_rounds": 2,
+    "distinct_verses": 8,
+    "candidates": 13,
+    "xref_used": 2,
+    "overlap": 0,
+    "max_sim": 0.744,
+    "cost": 106.1
+   }
+  ]
+ },
+ "2026-07-15": {
+  "runs": [
+   {
+    "anchor_fail": 0,
+    "copies": 0,
+    "fix_rounds": 0,
+    "distinct_verses": 8,
+    "candidates": 12,
+    "xref_used": 2,
+    "overlap": 0,
+    "max_sim": 0.729,
+    "cost": 113.6
+   },
+   {
+    "anchor_fail": 0,
+    "copies": 0,
+    "fix_rounds": 0,
+    "distinct_verses": 9,
+    "candidates": 15,
+    "xref_used": 2,
+    "overlap": 0,
+    "max_sim": 0.669,
+    "cost": 115.0
+   },
+   {
+    "anchor_fail": 0,
+    "copies": 0,
+    "fix_rounds": 0,
+    "distinct_verses": 7,
+    "candidates": 15,
+    "xref_used": 2,
+    "overlap": 1,
+    "max_sim": 0.791,
+    "cost": 151.1
+   }
+  ]
+ },
+ "2026-07-16": {
+  "runs": [
+   {
+    "anchor_fail": 0,
+    "copies": 0,
+    "fix_rounds": 2,
+    "distinct_verses": 7,
+    "candidates": 12,
+    "xref_used": 2,
+    "overlap": 2,
+    "max_sim": 0.831,
+    "cost": 119.5
+   },
+   {
+    "anchor_fail": 0,
+    "copies": 0,
+    "fix_rounds": 0,
+    "distinct_verses": 6,
+    "candidates": 14,
+    "xref_used": 2,
+    "overlap": 0,
+    "max_sim": 0.733,
+    "cost": 114.8
+   },
+   {
+    "anchor_fail": 0,
+    "copies": 0,
+    "fix_rounds": 0,
+    "distinct_verses": 9,
+    "candidates": 20,
+    "xref_used": 2,
+    "overlap": 0,
+    "max_sim": 0.711,
+    "cost": 120.7
+   }
+  ]
+ },
+ "2026-07-17": {
+  "runs": [
+   {
+    "anchor_fail": 0,
+    "copies": 0,
+    "fix_rounds": 1,
+    "distinct_verses": 7,
+    "candidates": 14,
+    "xref_used": 2,
+    "overlap": 0,
+    "max_sim": 0.686,
+    "cost": 113.8
+   },
+   {
+    "anchor_fail": 0,
+    "copies": 0,
+    "fix_rounds": 0,
+    "distinct_verses": 8,
+    "candidates": 19,
+    "xref_used": 2,
+    "overlap": 1,
+    "max_sim": 0.78,
+    "cost": 114.0
+   },
+   {
+    "anchor_fail": 0,
+    "copies": 0,
+    "fix_rounds": 0,
+    "distinct_verses": 9,
+    "candidates": 20,
+    "xref_used": 0,
+    "overlap": 0,
+    "max_sim": 0.684,
+    "cost": 116.9
+   }
+  ]
+ }
+}
