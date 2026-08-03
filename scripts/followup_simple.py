@@ -16,7 +16,7 @@
 뒤 마지막에 딱 한 번 → 교체 때문에 헛돌아도 버려지는 건 값싼 질문(mini)뿐.
 """
 import re
-from collections import Counter
+from collections import Counter, defaultdict
 
 import followup_pool as fp
 import openbible_xref
@@ -1162,16 +1162,155 @@ def _overlap_score(items, embed):
     return flags, round(mx, 4)
 
 
+# ===== 임베딩 관문: 답이 겹치는 질문은 빼고 '정직한 가변 개수'로 =====
+# 배경(2026-08-03 실측): 9개를 억지로 채우는 게 문제였다. 객관 잣대(답변 임베딩 코사인
+#   ≥0.75)로 9일을 재보니 7일은 9개에서 이미 깨끗했고, 겹침은 '압살롬 도망'처럼 본문이
+#   극단적으로 단일주제인 날에만 몰렸다. 그런 날엔 9개를 채우는 순간 같은 답이 여러 번
+#   나온다. 그래서 답이 겹치는 쌍은 하나만 남기고 빼서, 그날 본문이 정직하게 감당하는
+#   개수(보통 9, 가끔 5~8)만 내보낸다. 개수를 줄이는 게 손해가 아니라 중복을 없애는 것.
+# best-of-N과의 관계: 관문은 best-of-N '뒤'에 선다. 먼저 N판 중 제일 깨끗한 판을 고르고
+#   (조기 종료 그대로 → 비용 불변), 그러고도 남은 겹침만 관문이 자른다. 순서를 뒤집어
+#   run_simple 안에 넣으면 매 판이 '겹침 0'으로 보고돼 항상 1판에서 멈춘다(=best-of-N 무력화).
+_GATE_KEEP_GWANJU_FIRST = True   # 한 그룹에서 살릴 하나를 고를 때 검증된 관주형을 우선한다
+
+
+def _uf_groups(pairs, n):
+    """겹침 쌍을 union-find로 묶어 그룹 목록(각 그룹=인덱스 오름차순)으로 반환."""
+    parent = list(range(n))
+
+    def find(x):
+        while parent[x] != x:
+            parent[x] = parent[parent[x]]
+            x = parent[x]
+        return x
+
+    for a, b in pairs:
+        ra, rb = find(a), find(b)
+        if ra != rb:
+            parent[rb] = ra
+    groups = defaultdict(list)
+    for i in range(n):
+        groups[find(i)].append(i)
+    return [sorted(v) for v in groups.values()]
+
+
+def _flat_nodes(items):
+    """중첩 구조(메인3+꼬리6)를 (메인idx, 꼬리idx, 질문, 답변) 평탄 목록으로. 꼬리idx=-1이면 메인."""
+    nodes = []
+    for i, m in enumerate(items):
+        nodes.append((i, -1, m.get("question", ""), m.get("answer", "")))
+        for j, t in enumerate(m.get("follow_ups") or []):
+            nodes.append((i, j, t.get("question", ""), t.get("answer", "")))
+    return nodes
+
+
+def apply_embed_gate(items, meta, embed, *, log=None):
+    """답변 임베딩이 ≥0.75로 겹치는 질문을 '그룹당 1개'만 남기고 빼낸다.
+
+    - 살릴 하나 고르는 우선순위: ①검증된 관주형(배경지식형) ②메인 ③먼저 나온 것.
+      0.75는 '선별 그물이지 판결'이 아니라 오탐이 있다 → 가치 큰 관주형을 우선 살리는 보수적 선택.
+    - 메인이 잘리면 그 가지에서 살아남은 첫 꼬리를 메인으로 승격하고 나머지 꼬리를 그 밑에 붙인다
+      (겹치지도 않은 멀쩡한 꼬리까지 부모와 함께 버리지 않으려고). 가지가 통째로 비면 그 가지는 뺀다.
+    - 답변이 비었거나 임베딩이 실패하면 아무것도 안 자르고 원본을 그대로 돌려준다(안전 우선).
+    반환: (items, meta) — meta['embed_gate']에 무엇을 왜 뺐는지 기록.
+    """
+    nodes = _flat_nodes(items)
+    answers = [a for _i, _j, _q, a in nodes]
+    if not items or not answers or not all(answers) or embed is None:
+        return items, meta
+    try:
+        vecs = embed(answers)
+    except Exception as e:
+        if log:
+            log(f"  [관문] 임베딩 실패 — 관문 건너뜀(원본 {len(nodes)}개 유지): {str(e)[:70]}", "WARN")
+        return items, meta
+
+    # 검증된 관주형 표시: meta['candidates']의 anchor_type=='관주' + anchor_ok(원자료 대조 통과)
+    gwanju_q = {c["question"] for c in (meta.get("candidates") or [])
+                if c.get("anchor_type") == "관주" and c.get("anchor_ok")}
+    is_gwanju = [nodes[k][2] in gwanju_q for k in range(len(nodes))]
+
+    flagged, max_sim = [], 0.0
+    for a in range(len(vecs)):
+        for b in range(a + 1, len(vecs)):
+            s = _cosine(vecs[a], vecs[b])
+            max_sim = max(max_sim, s)   # 걸린 쌍만이 아니라 '전체 쌍'의 최고치 — 안 걸린 날도 여유를 보려고
+            if s >= _SIM_THRESHOLD:
+                flagged.append((a, b, round(s, 4)))
+
+    keep = set()
+    dropped = []
+    for group in _uf_groups([(a, b) for a, b, _s in flagged], len(nodes)):
+        if len(group) == 1:
+            keep.add(group[0])
+            continue
+        # ①관주 ②메인(꼬리idx==-1) ③먼저 나온 것 — 튜플이 작을수록 우선
+        winner = min(group, key=lambda k: (not (_GATE_KEEP_GWANJU_FIRST and is_gwanju[k]),
+                                           nodes[k][1] != -1, k))
+        keep.add(winner)
+        for k in group:
+            if k != winner:
+                sim = max((s for a, b, s in flagged if winner in (a, b) and k in (a, b)), default=None)
+                dropped.append({"question": nodes[k][2], "kept_instead": nodes[winner][2],
+                                "sim": sim, "was_main": nodes[k][1] == -1})
+
+    # 살아남은 것만으로 메인+꼬리 구조 재조립 (메인이 잘리면 첫 생존 꼬리가 승격)
+    new_items, promoted = [], []
+    for i, m in enumerate(items):
+        branch = [k for k in range(len(nodes)) if nodes[k][0] == i and k in keep]
+        if not branch:
+            continue
+        head, tails = branch[0], branch[1:]
+        if nodes[head][1] != -1:      # 메인이 잘려 꼬리가 올라온 경우
+            promoted.append({"from": nodes[head][2], "replaced_main": m.get("question", "")})
+        src = (lambda k: m if nodes[k][1] == -1 else (m.get("follow_ups") or [])[nodes[k][1]])
+        new_items.append({
+            "question": src(head).get("question", ""), "answer": src(head).get("answer", ""),
+            "follow_ups": [{"question": src(k).get("question", ""),
+                            "answer": src(k).get("answer", "")} for k in tails],
+        })
+
+    meta = dict(meta)
+    meta["embed_gate"] = {
+        "threshold": _SIM_THRESHOLD,
+        "before_count": len(nodes),
+        "final_count": len(keep),
+        "dropped_by_embed": len(nodes) - len(keep),
+        "flagged_pairs": len(flagged),
+        "max_sim": round(max_sim, 4),
+        "mains_after": len(new_items),
+        "gwanju_kept": sum(1 for k in keep if is_gwanju[k]),
+        "dropped": dropped,
+        "promoted": promoted,
+    }
+    if log:
+        if dropped:
+            log(f"  [관문] 답 겹침 {len(flagged)}쌍 → {len(nodes)}개 중 {len(dropped)}개 뺌 "
+                f"(최종 {len(keep)}개 · 메인 {len(new_items)}가지"
+                + (f" · 꼬리 승격 {len(promoted)}건" if promoted else "") + ")", "OK")
+            for d in dropped:
+                log(f"     뜻 {d['sim']} 겹침으로 뺌: {d['question'][:40]} (남긴 것: {d['kept_instead'][:40]})", "INFO")
+        else:
+            log(f"  [관문] 답 겹침 없음 — {len(nodes)}개 전부 유지", "OK")
+    return new_items, meta
+
+
 def run_best_of_n(chat, qt, kb, deep5, *, history=None, mode="none", log=None,
                   n=3, embed=None, target=0):
     """run_simple을 최대 n번 실행해 '답변 임베딩 겹침'이 제일 적은 세트를 고른다.
     - embed: 문장 리스트→벡터 리스트 함수(주입). None이면 best-of-N 끄고 run_simple 1회(기존 동작).
     - target: 겹침쌍이 이 값 이하인 세트가 나오면 조기 종료(비용 절약).
     - 한 run이 실패하면(예: 답변 role_id 불일치) 그 판만 건너뛰고 다음 판 사용.
+    - 고른 세트에 마지막으로 임베딩 관문(apply_embed_gate)을 통과시킨다 → 그러고도 남은
+      겹침만 잘려 개수가 가변(보통 9, 겹치는 날만 5~8)이 된다.
     반환: (items, 누적_cost, meta) — run_simple과 동일 시그니처. meta['best_of_n']에 선택 기록.
     """
-    if embed is None or n <= 1:
+    if embed is None:   # 임베딩이 없으면 판 고르기도 관문도 못 한다 → 옛 단발 동작 그대로
         return run_simple(chat, qt, kb, deep5, history=history, mode=mode, log=log)
+    if n <= 1:          # 판 고르기만 끄고 관문은 살린다
+        items, cost, meta = run_simple(chat, qt, kb, deep5, history=history, mode=mode, log=log)
+        items, meta = apply_embed_gate(items, meta, embed, log=log)
+        return items, cost, meta
 
     best = None  # (score, items, cost, meta, flags, mx, run_idx)
     attempts = []
@@ -1207,4 +1346,6 @@ def run_best_of_n(chat, qt, kb, deep5, *, history=None, mode="none", log=None,
                          "chosen_flags": flags, "chosen_max_sim": mx, "attempts": attempts}
     if log:
         log(f"  [best-of-{n}] {len(attempts)}판 중 run{run_idx} 채택 (답겹침 {flags}건 · 최고 {mx})", "OK")
+    # 제일 깨끗한 판에도 남아 있는 겹침만 관문이 자른다 → 정직한 가변 개수
+    items, meta = apply_embed_gate(items, meta, embed, log=log)
     return items, acc_cost, meta
