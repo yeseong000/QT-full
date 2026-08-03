@@ -32,8 +32,11 @@ def regen(date: str):
     # 저장 파일의 최상위 5키(장면/질문/맥락/통찰/연결)는 항상 variants[0]와 동일 → 그대로 deep5로 사용
     deep5 = existing
 
-    items, cost, meta = fs.run_simple(
-        gm._fu_chat_v2, qt, kb, deep5, history=history, log=gm.log
+    # 운영과 똑같은 경로로 부른다 — run_best_of_n(판 고르기) + 임베딩 관문(가변 개수).
+    # run_simple을 직접 부르면 관문을 건너뛰어 '운영에서 나올 결과'와 달라진다.
+    items, cost, meta = fs.run_best_of_n(
+        gm._fu_chat_v2, qt, kb, deep5, history=history, log=gm.log,
+        n=gm.FOLLOW_UP_BEST_OF_N, embed=gm._embed_texts,
     )
 
     shutil.copy(str(path), str(path) + ".prefix.bak")
@@ -41,11 +44,14 @@ def regen(date: str):
     existing["_cost_followup"] = cost
     existing["_followup_meta"] = meta
     gm.save_json(existing, path)
+    g = meta.get("embed_gate") or {}
+    total = sum(1 + len(m.get("follow_ups") or []) for m in items)
     print(
         f"[DONE] {date} method={meta.get('generation_method')} "
         f"candidate_count={meta.get('candidate_count')} "
-        f"distinct={meta.get('distinct_knowledge_in_final')}/9 "
-        f"gpt_calls={meta.get('gpt_calls')} fix_rounds={meta.get('fix_rounds')}"
+        f"질문 {total}개(메인 {len(items)}가지) "
+        f"관문:{g.get('dropped_by_embed', '-')}개뺌/최고유사도 {g.get('max_sim', '-')} "
+        f"gpt_calls={meta.get('gpt_calls')} 비용 {cost.get('cost_krw', 0):.1f}원"
     )
 
 

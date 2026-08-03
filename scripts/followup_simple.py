@@ -1282,6 +1282,16 @@ def apply_embed_gate(items, meta, embed, *, log=None):
         "gwanju_kept": sum(1 for k in keep if is_gwanju[k]),
         "dropped": dropped,
         "promoted": promoted,
+        # 관문에 들어가기 '전' 상태를 통째로 남긴다 — 잘린 질문의 답변까지 있어야 사람이
+        # "이게 진짜 중복인가"를 나중에 직접 판정할 수 있다(2026-08-03: 안 남겨서 못 봤다).
+        "before_nodes": [{"q": nodes[k][2], "a": nodes[k][3], "kept": k in keep,
+                          "gwanju": is_gwanju[k],
+                          "main_idx": nodes[k][0], "tail_idx": nodes[k][1]}
+                         for k in range(len(nodes))],
+        # 문턱 근처 쌍도 남긴다(0.60↑) — 문턱을 올릴지 내릴지 판단할 재료
+        "pair_sims": [[a, b, round(_cosine(vecs[a], vecs[b]), 4)]
+                      for a in range(len(vecs)) for b in range(a + 1, len(vecs))
+                      if _cosine(vecs[a], vecs[b]) >= 0.60],
     }
     if log:
         if dropped:
@@ -1296,10 +1306,13 @@ def apply_embed_gate(items, meta, embed, *, log=None):
 
 
 def run_best_of_n(chat, qt, kb, deep5, *, history=None, mode="none", log=None,
-                  n=3, embed=None, target=0):
+                  n=3, embed=None, target=1):
     """run_simple을 최대 n번 실행해 '답변 임베딩 겹침'이 제일 적은 세트를 고른다.
     - embed: 문장 리스트→벡터 리스트 함수(주입). None이면 best-of-N 끄고 run_simple 1회(기존 동작).
-    - target: 겹침쌍이 이 값 이하인 세트가 나오면 조기 종료(비용 절약).
+    - target: 겹침쌍이 이 값 이하인 세트가 나오면 조기 종료(비용 절약). 기본 1 — 관문이 생긴
+      뒤로는 겹침 1건은 어차피 관문이 지우므로 0을 고집할 이유가 없다. 0이면 조기 종료가
+      거의 안 걸려 매일 n판을 다 돌린다(2026-08-03 실측 3일: 9판 전부 소진, 하루 471원).
+      1로 풀면 같은 3일이 6판으로 줄고 최종 결과는 세 날 모두 동일했다.
     - 한 run이 실패하면(예: 답변 role_id 불일치) 그 판만 건너뛰고 다음 판 사용.
     - 고른 세트에 마지막으로 임베딩 관문(apply_embed_gate)을 통과시킨다 → 그러고도 남은
       겹침만 잘려 개수가 가변(보통 9, 겹치는 날만 5~8)이 된다.
