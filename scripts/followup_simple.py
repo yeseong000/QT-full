@@ -67,12 +67,12 @@ _Q_WRAPPER = """# 떠오르는 질문 — 질문 후보 생성기 (질문만, �
   - ✓ 6절 "…벧르홉 아람 사람과 소바 아람 사람의 보병…" → `verse: 6, anchor: "벧르홉 아람 사람"`
   - ✗ `anchor: "아람 용병 고용"` (본문에 없는 네 요약 — 탈락)
 
-**② 관주형** (`anchor_type: "관주"`) — 그 절이 **다른 성경 구절과 어떻게 이어지는지** 묻는 질문
-- `verse` 오늘 본문의 절 번호 · `anchor` **`관주_연결`에 실제로 적힌 구절 참조를 그대로** (예: `"시편 8:4"`)
-  - ✓ `관주_연결`에 "7:18 ↔ 시편 8:4(135표)"가 있으면 → `verse: 18, anchor_type: "관주", anchor: "시편 8:4"`
-  - ✗ 목록에 없는 구절을 갖다 붙이면 탈락한다. 연결된 구절의 내용도 지어내지 마라.
-- 카테고리는 `연결 질문`을 쓴다. **`관주_연결`이 있는 날엔 2~3개를 꼭 넣어라** — 본문 글자만으로는 안 열리는 각도다.
-- 다만 **절반을 넘기지 마라.** 이 코너의 목적은 오늘 본문을 더 이해하는 것이지 성경 상식 퀴즈가 아니다.
+**② 관주형 = 배경지식형** (`anchor_type: "관주"`) — 관주 구절이 알려주는 '오늘 본문의 숨은 배경'을 여는 질문. **그냥 "다른 성경과 연결되나요?"가 아니다.** 오늘 본문에 나오지만 초신자가 모를 ⓐ **낯선 인물의 정체** · ⓑ **본문이 인용하는 옛 사건** · ⓒ **그 행동·판결의 근거가 된 율법·관습**을 그 관주 구절로 밝힌다.
+- `verse` 오늘 본문의 절 번호 · `anchor` **`관주_연결`에 실제로 적힌 구절 참조를 그대로** (예: `"삼하 23:39"`). 목록에 없는 구절을 지어내면 탈락한다.
+- 질문은 그 배경을 **콕 집어** 연다. 답을 흘리는 '누가·어느'를 쓰지 말고 '**어떻게·어떤·원래 어떤 사람/사건**'으로.
+  - ✗ **뭉개기 절대 금지** (소재가 오늘 것 그대로라 다른 질문과 답이 겹친다): "우리아 사건은 **다른 성경 구절과 어떻게 연결되나요?**" / "**비슷한 이름의** 다른 인물은?" / "**다른 성경에도** 비슷한 게 있나요?"
+  - ✓ **배경을 물어 소재가 갈라진다:** "다윗이 죽음으로 내몬 '**헷 사람 우리아**'는 **원래 어떤 사람**이었나요?" (→ 삼하 23:39, 다윗의 37용사) / "다윗이 양을 '**네 배로 갚으라**'(12:6) 한 건 **어떤 근거**였나요?" (→ 출 22:1, 도둑 배상법)
+- 재해석·신학 논쟁 성격의 연결(회개 신학·남 판단 등)은 이 각도가 아니다. 카테고리는 `연결 질문`. **`관주_연결`이 있는 날엔 이 배경지식형을 1~2개 꼭** 넣되, 절반을 넘기지 마라(성경 상식 퀴즈가 아니다).
 
 **③ KB형** (`anchor_type: "KB"`) — `지식`의 `인물`·`주의점`·`신학_핵심` 재료를 파고드는 질문
 - `anchor` **그 재료에 붙은 번호를 그대로** (예: `"7:인물#2"`, `"7:주의점#5"`) · `verse`는 `0`으로 둔다
@@ -779,8 +779,26 @@ def _assemble_diverse(pool, history, log=None):
     # 자리(절·anchor) 사용 현황은 메인·꼬리 선택에 걸쳐 공유해야 한다 — 따로 두면
     # 메인이 쓴 절을 꼬리가 그대로 다시 쓴다.
     verse_counts, used_anchors, cat_counts = Counter(), set(), Counter()
-    mains = _pick_diverse(clean, 3, prefer_main=True, verse_counts=verse_counts,
-                          used_anchors=used_anchors, cats=cat_counts)
+    # §8 소프트 예약: 검증된 관주(배경지식형) 후보 1개를 메인3 고정칸에 먼저 배치한다.
+    # 관주는 '오늘 본문 밖' 구절이라 나머지 메인·꼬리와 소재가 구조적으로 안 겹친다 →
+    # STEP2 중복의 상당수(메인3 블록발)를 없앤다. 그날 검증된 관주 후보가 없으면 예약을
+    # 자동 해제한다(억지로 만들면 없는 연결을 지어낸다). 예약분을 먼저 자리·카테고리 카운터에
+    # 반영한 뒤 나머지 2개를 뽑으므로 _pick_diverse의 자리·묶음·상한과 충돌하지 않는다.
+    _gwanju = [c for c in clean if c.get("anchor_type") == "관주" and c["anchor_ok"]]
+    _res = _pick_diverse(_gwanju, 1, prefer_main=True, verse_counts=verse_counts,
+                         used_anchors=used_anchors, cats=cat_counts)
+    reserved = _res[0] if _res else None
+    if reserved is not None:
+        others = _pick_diverse([c for c in clean if c is not reserved], 2, prefer_main=True,
+                               verse_counts=verse_counts, used_anchors=used_anchors, cats=cat_counts)
+        mains = (others + [reserved])[:3]        # 관주를 메인3(마지막 슬롯)에 고정
+        if log:
+            log(f"  [simple] 관주 메인3 예약: '{reserved['q'][:28]}' ({reserved['verse']}절↔{reserved['anchor']})", "INFO")
+    else:
+        mains = _pick_diverse(clean, 3, prefer_main=True, verse_counts=verse_counts,
+                              used_anchors=used_anchors, cats=cat_counts)
+        if log:
+            log("  [simple] 관주 예약 해제 — 검증된 관주 후보 없음(정상)", "INFO")
     used_clusters = {m["cluster"] for m in mains}
     rest = [c for c in clean if c not in mains]
     tails = _pick_diverse(rest, 6, used_clusters=used_clusters, avoid_cats={m["cat"] for m in mains},
