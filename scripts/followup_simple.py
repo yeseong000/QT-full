@@ -15,6 +15,7 @@
 (체2의 '메인에 꼬리 포함', 체3의 본문·5단 재진술). 비싼 답변(4o)은 질문이 다 깨끗해진
 뒤 마지막에 딱 한 번 → 교체 때문에 헛돌아도 버려지는 건 값싼 질문(mini)뿐.
 """
+import datetime
 import re
 from collections import Counter, defaultdict
 
@@ -130,7 +131,8 @@ _JUDGE_WRAPPER = """# 떠오르는 질문 — 알맹이/재진술 판정기
 질문 문장이나 카테고리가 달라도 **답을 쓰면 사실상 같은 지식·맥락을 설명하게 되는 질문들**이 있다. 독자는 묶음당 1개만 있으면 그 지식을 얻는다 — 나머지는 같은 걸 반복하는 것이다.
 
 **반드시 이 순서로 판단해라:**
-1. 각 질문마다 먼저 `answer_gist`에 **"이 질문에 답하면 결국 무슨 내용을 설명하게 되나"를 한 줄로** 적는다. (질문 표현이 아니라 '답의 알맹이'를 적어라)
+1. 각 질문마다 먼저 `answer_gist`에 **"이 질문에 답하면 결국 무슨 내용을 설명하게 되나"를 2~3문장으로** 적는다. (질문 표현이 아니라 '답의 알맹이'를 적어라)
+   - **한 줄로 줄이지 마라.** 답에 들어갈 핵심 사실(인물·장소·사건·수치·해석)을 실제로 담아라. 이 gist는 지난 질문과 겹치는지 재는 잣대로도 쓰이는데, 짧게 쓸수록 판정이 나빠진다(실측: 한 문장 88% / 답변 수준 100%).
 2. 그다음 **answer_gist가 실질적으로 같거나 크게 겹치는 질문들**을 `answer_groups`로 묶는다.
 
 **특히 조심할 패턴 — 같은 대상(숫자·인물·사건·장소)의 '의미/상징성/이유/배경/영향'을 각각 물으면 답이 같다:**
@@ -144,7 +146,7 @@ _JUDGE_WRAPPER = """# 떠오르는 질문 — 알맹이/재진술 판정기
 의심스러우면 두 질문의 `answer_gist`를 나란히 놓고 "이 두 답을 각각 쓰면 독자가 서로 다른 걸 배우나, 같은 걸 두 번 배우나"를 물어라. 같은 걸 배우면 한 묶음이다.
 
 ## 출력
-`{"evaluations": [{"id":"...", "answer_gist":"답 핵심 한 줄", "verdict":"...", "note":"..."}], "answer_groups": [["id1","id3"], ...]}`
+`{"evaluations": [{"id":"...", "answer_gist":"답의 알맹이 2~3문장", "verdict":"...", "note":"..."}], "answer_groups": [["id1","id3"], ...]}`
 — evaluations는 모든 후보(answer_gist 먼저), answer_groups는 gist가 겹치는 묶음만(2개 이상)."""
 
 _QFIX_WRAPPER = """# 떠오르는 질문 — 질문 부분 교체기 (질문만)
@@ -255,11 +257,72 @@ def _dup_same_day(q, topic, pq, pt):
     return False
 
 
+# ===== 지난 질문과의 중복: 글자가 아니라 '뜻'으로, 최근 며칠만 =====
+# 0804 실측(사무엘하 34일·질문 306개·46,665쌍, 정답표=답변이 실제 겹치는 17쌍):
+#   옛 잣대(질문 글자겹침 0.48) → 17쌍 중 0쌍 적중. 대신 답이 딴판인 6쌍을 잘못 막았다.
+#   막힌 6쌍의 날짜 간격은 5·7·21·21·24·26일 — 먼 날짜만 막고 가까운 날은 다 통과시켰다.
+#   실제 피해: 8/4 "압살롬이 헤브론을 선택한 이유"가 32일 전 "다윗이 헤브론을 선택한 이유"와
+#   글자 0.68로 닮았다는 이유로 탈락(다윗은 하나님께 물어 갔고 압살롬은 상징을 도용 — 답이 정반대).
+#   진짜 중복 17쌍은 100%가 3일 이내·같은 장에서 났다(1일 14 / 2일 2 / 3일 1 / 4일 이상 0).
+# 임계 0.75 = 걸린 41건을 사장님이 전수 검토한 결과(중복맞음 15·억울함 22·모르겠음 4)에서
+#   억울한 차단이 0이 되는 지점. 방침: "중복 차단은 최소한의 장치, 온전히 같은 것만 막는다."
+_HIST_WINDOW_DAYS = 3
+_HIST_SIM = 0.75
+_CORE_SENTS = 3
+_CORE_VECS: dict = {}
+
+
+def _core_shape(text):
+    """지난 답변을 gist와 '같은 모양'(앞 2~3문장)으로 자른다 — 길이가 다르면 유사도가 눌린다."""
+    parts = [x for x in re.split(r"(?<=[.!?요])\s+", (text or "").strip()) if x]
+    return " ".join(parts[:_CORE_SENTS]) if parts else (text or "")
+
+
+def _days_between(a, b):
+    try:
+        return abs((datetime.date.fromisoformat(b[:10]) - datetime.date.fromisoformat(a[:10])).days)
+    except Exception:
+        return None
+
+
+def _hist_index(history, embed, today, *, log=None):
+    """최근 창 안의 지난 질문을 답변 벡터와 함께 색인한다."""
+    rows = [h for h in (history or []) if h.get("question")]
+    base = today or max((h.get("date", "") for h in rows), default="")
+    if base:
+        rows = [h for h in rows
+                if (_days_between(base, h.get("date", "")) or 0) <= _HIST_WINDOW_DAYS]
+    texts = [_core_shape(h.get("answer", "")) for h in rows]
+    vecs = [None] * len(rows)
+    if embed is not None and any(texts):
+        try:
+            got = embed([t for t in texts if t])
+            it = iter(got)
+            vecs = [next(it) if t else None for t in texts]
+        except Exception as e:
+            if log:
+                log(f"  [지난중복] 임베딩 실패 — 대조 건너뜀: {str(e)[:70]}", "WARN")
+    return [{"date": h.get("date", ""), "question": h.get("question", ""), "vec": v}
+            for h, v in zip(rows, vecs)]
+
+
+def _hist_dup_embed(core, index):
+    """gist가 창 안의 지난 답과 뜻으로 겹치면 그 날짜를 돌려준다. 근거가 없으면 막지 않는다."""
+    cv = _CORE_VECS.get(core or "")
+    if not cv or not index:
+        return None
+    best, best_date = 0.0, None
+    for row in index:
+        if not row["vec"]:
+            continue
+        sim = _cosine(cv, row["vec"])
+        if sim > best:
+            best, best_date = sim, row["date"]
+    return best_date if best >= _HIST_SIM else None
+
+
 def _hist_dup(q, topic, history):
-    for h in history:
-        hq = h.get("question", "")
-        if fp._same_context(q, hq) or (topic and fp._same_context(topic, hq)):
-            return h.get("date", "")
+    """옛 글자 잣대 — 실측 적중 0/17이라 판정에서 뺐다(호출부 호환용으로만 남긴다)."""
     return None
 
 
@@ -858,7 +921,7 @@ def _assemble_diverse(pool, history, log=None):
     # 겹치는 후보를 여기서 '삭제'하지 않는다 — 겹침은 _gate_clusters가 이미 같은 묶음으로
     # 합쳐놨고, 선택 단계가 묶음당 하나만 뽑는다. 삭제하면 그 묶음의 유일한 후보까지 날아가
     # 고를 수 있는 소재 수가 오히려 줄어든다(2026-07-14 실측: 묶음 9개 → 8개).
-    clean = [c for c in pool if c["verdict"] == _GOOD and not _hist_dup(c["q"], c["topic"], history)]
+    clean = [c for c in pool if c["verdict"] == _GOOD and not c.get("hist_dup")]
     if len(clean) < 9:  # 깨끗한 게 모자라면 플래그된 것 중 덜 나쁜 걸 보충(드문 경우)
         clean = clean + [c for c in pool if c not in clean][: 9 - len(clean)]
 
@@ -951,6 +1014,7 @@ def _cand_dump(pool):
              "cluster": c["cluster"], "was_main": c["was_main"], "selected": c["sel"],
              "verse": c["verse"], "anchor": c["anchor"], "anchor_ok": c["anchor_ok"],
              "anchor_type": c.get("anchor_type", "본문"), "gist": c.get("gist", ""),
+             "hist_dup": c.get("hist_dup", ""),
              "from_qfix": c.get("from_qfix", False)} for c in pool]
 
 
@@ -1003,7 +1067,7 @@ def _refill_from_pool(tree, pool, problems, history, log=None):
             cur_a.add(_anchor_key(c))
     cats = Counter(n.get("category", "") for n in nodes.values())
     spares = [c for c in pool if not c["sel"] and c["verdict"] == _GOOD and c["anchor_ok"]
-              and not _hist_dup(c["q"], c["topic"], history)]
+              and not c.get("hist_dup")]
     filled = []
     for rid in list(problems):
         node = nodes.get(rid)
@@ -1123,8 +1187,10 @@ def _usable_kb(kb):
 
 
 # ===== 오케스트레이션 =====
-def run_simple(chat, qt, kb, deep5, *, history=None, mode="none", log=None, recent=None):
+def run_simple(chat, qt, kb, deep5, *, history=None, mode="none", log=None, recent=None,
+               embed=None, today=""):
     history = history or []
+    today = today or qt.get("date", "")
     total_cost = dict(_ZERO_COST)
     kb_use = _usable_kb(kb)
 
@@ -1151,7 +1217,29 @@ def run_simple(chat, qt, kb, deep5, *, history=None, mode="none", log=None, rece
     if log and bad:
         log(f"  [simple/{mode}] 출처 기록 검증 실패 {len(bad)}/{len(pool)}건(원자료에 없는 anchor → 후순위): "
             + "; ".join(_slot_desc(c, 12) for c in bad[:5]), "WARN")
-    pool = _gate_clusters(pool, log=log)  # 의미↔영향 코드 하드게이트로 지식묶음 확정
+    pool = _gate_clusters(pool, log=log)
+
+    # 지난 질문 대조 — 최근 3일치 답변과 '뜻'으로 비교(글자 잣대는 적중 0/17이라 폐기)
+    hist_index = _hist_index(history, embed, today, log=log)
+    _CORE_VECS.clear()
+    cores = sorted({c.get("gist", "") for c in pool if c.get("gist")})
+    if cores and hist_index and embed is not None:
+        try:
+            for text, vec in zip(cores, embed([_core_shape(t) for t in cores])):
+                if vec:
+                    _CORE_VECS[text] = vec
+        except Exception as e:
+            if log:
+                log(f"  [지난중복] gist 임베딩 실패 — 대조 건너뜀: {str(e)[:70]}", "WARN")
+    hits = 0
+    for c in pool:
+        d = _hist_dup_embed(c.get("gist", ""), hist_index)
+        c["hist_dup"] = d or ""
+        if d:
+            hits += 1
+    if log:
+        log(f"  [지난중복] 최근 {_HIST_WINDOW_DAYS}일치 {len(hist_index)}개와 대조 → "
+            f"후보 {len(pool)}개 중 {hits}개가 지난 답과 겹침(유사도 {_HIST_SIM}+)", "INFO")  # 의미↔영향 코드 하드게이트로 지식묶음 확정
     tree = _assemble_diverse(pool, history, log=log)
     role_v = {c["q"]: c["verdict"] for c in pool}  # 질문문→판정 (잔여 검사용)
 
@@ -1443,9 +1531,11 @@ def run_best_of_n(chat, qt, kb, deep5, *, history=None, mode="none", log=None,
     반환: (items, 누적_cost, meta) — run_simple과 동일 시그니처. meta['best_of_n']에 선택 기록.
     """
     if embed is None:   # 임베딩이 없으면 판 고르기도 관문도 못 한다 → 옛 단발 동작 그대로
-        return run_simple(chat, qt, kb, deep5, history=history, mode=mode, log=log, recent=recent)
+        return run_simple(chat, qt, kb, deep5, history=history, mode=mode, log=log, recent=recent,
+                          embed=embed, today=qt.get('date', ''))
     if n <= 1:          # 판 고르기만 끄고 관문은 살린다
-        items, cost, meta = run_simple(chat, qt, kb, deep5, history=history, mode=mode, log=log, recent=recent)
+        items, cost, meta = run_simple(chat, qt, kb, deep5, history=history, mode=mode, log=log, recent=recent,
+                          embed=embed, today=qt.get('date', ''))
         items, meta = apply_embed_gate(items, meta, embed, log=log)
         return items, cost, meta
 
@@ -1457,7 +1547,8 @@ def run_best_of_n(chat, qt, kb, deep5, *, history=None, mode="none", log=None,
     possible_kinds = (1 if _xref_text(qt) else 0) + (1 if recent else 0)
     for r in range(1, n + 1):
         try:
-            items, cost, meta = run_simple(chat, qt, kb, deep5, history=history, mode=mode, log=log, recent=recent)
+            items, cost, meta = run_simple(chat, qt, kb, deep5, history=history, mode=mode, log=log, recent=recent,
+                          embed=embed, today=qt.get('date', ''))
         except Exception as e:
             last_err = e
             if log:

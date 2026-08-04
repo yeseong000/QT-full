@@ -154,18 +154,28 @@ def _book_from_ref(ref: str) -> str:
     return m.group(1) if m else ""
 
 
-def _flatten_follow_up_questions(items: list) -> list[str]:
-    questions: list[str] = []
+def _flatten_follow_up_questions(items: list) -> list[dict]:
+    """(질문, 답변) 쌍으로 편다. 지난 질문 중복은 '뜻'으로 재야 하는데(0804 실측), 그러려면
+    질문 문장만이 아니라 그때 쓴 답변이 있어야 한다."""
+    out: list[dict] = []
     for main in items or []:
-        q = (main.get("question") or "").strip() if isinstance(main, dict) else ""
+        if not isinstance(main, dict):
+            continue
+        q = (main.get("question") or "").strip()
         if q:
-            questions.append(q)
-        if isinstance(main, dict):
-            for tail in main.get("follow_ups") or []:
-                tq = (tail.get("question") or "").strip() if isinstance(tail, dict) else ""
-                if tq:
-                    questions.append(tq)
-    return questions
+            out.append({"question": q, "answer": (main.get("answer") or "").strip()})
+        for tail in main.get("follow_ups") or []:
+            if not isinstance(tail, dict):
+                continue
+            tq = (tail.get("question") or "").strip()
+            if tq:
+                out.append({"question": tq, "answer": (tail.get("answer") or "").strip()})
+    return out
+
+
+def history_questions_only(history: list[dict]) -> list[dict]:
+    """프롬프트에는 답변을 빼고 넣는다 — 240개×400자면 토큰이 감당이 안 된다."""
+    return [{"date": h.get("date", ""), "question": h.get("question", "")} for h in history or []]
 
 
 def load_same_book_followup_history(qt_data: dict, *, limit: int = 240) -> list[dict]:
@@ -201,7 +211,8 @@ def load_same_book_followup_history(qt_data: dict, *, limit: int = 240) -> list[
             continue
 
         for question in _flatten_follow_up_questions(data.get("follow_up_questions", [])):
-            history.append({"date": date, "question": question})
+            history.append({"date": date, "question": question["question"],
+                            "answer": question["answer"]})
             if len(history) >= limit:
                 return history
     return history
@@ -503,7 +514,7 @@ def generate_follow_up(qt_data: dict, kb: dict | None, deep_dive: dict) -> tuple
             "본문_내용": body_text,
             "오륜_질문": qt_data.get("oryun_questions", []),
             "지식": fuv.usable_kb(kb),   # 해당 장 KB 없으면 None (어원 지어내기 차단)
-            "같은_책_기존_STEP2_질문": load_same_book_followup_history(qt_data),
+            "같은_책_기존_STEP2_질문": history_questions_only(load_same_book_followup_history(qt_data)),
             "이미_다룬_5단": {
                 "장면": deep_dive.get("장면", ""),
                 "질문": deep_dive.get("질문", ""),
