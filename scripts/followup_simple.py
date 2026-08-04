@@ -58,9 +58,26 @@ _Q_WRAPPER = """# 떠오르는 질문 — 질문 후보 생성기 (질문만, �
 
 오늘 본문·`지식`·`관주_연결`·`최근_본문`에 근거해 **질문 후보를 최대 {N}개**까지 만든다. **답변은 만들지 않는다** — 질문 문장만. 후보는 전부 대등하다(메인·꼬리를 나누지 마라 — 화면 배치는 코드가 알아서 한다).
 
-## 먼저 확보할 것
-`관주_연결`이 비어 있지 않으면 **관주형 1~2개를 맨 앞에** 만든다. 오늘 본문 밖을 근거로 삼아 나머지와 답이 구조적으로 안 겹치는 자리라, 빠지면 그날 9개가 서로 닮아진다.
-(전날형은 별도 생성기가 맡으니 여기서는 만들지 않는다.)
+## 여기서 만들지 않는 것
+**관주형·전날형은 별도 생성기가 맡는다.** 여기서는 오늘 본문(`본문_내용`)과 `지식`만으로 만들어라.
+
+## 순서가 중요하다 — 관찰이 먼저, 질문은 그다음
+
+**질문부터 쓰지 마라.** 먼저 `observations`에 **절을 하나씩 훑으며 '이상한 것'**을 적는다. 그다음 관찰 하나당 질문 하나를 만든다.
+
+**관찰이란 '어? 왜 이렇게 적혀 있지?' 하는 지점이다.** 인물의 속셈을 짐작하는 게 아니라, 본문에 실제로 적힌 것 중 눈에 걸리는 것이다.
+- ✓ "2절 — 찾아온 사람에게 하필 **출신 지파**를 먼저 물었다"
+- ✓ "5절 — 입 맞추기 전에 **절하려는 걸 붙들어 막았다**"
+- ✓ "3절 — '왕께서 재판할 사람을 세우지 아니하셨다'는 **압살롬의 주장이다. 사실인지 확인이 필요하다**"
+- ✓ "6절 — 서술자가 여기서 딱 한 번 '**훔치니라**'라고 판정을 내린다"
+- ✗ "압살롬이 민심을 얻으려 했다" (관찰이 아니라 해석 — 이런 건 적지 마라)
+
+**관찰은 `kind`로 나눈다.** `본문`(오늘 절) · `관주`(그 절의 `관주_연결` 중 눈에 띄는 구절 — `ref`에 구절 참조) · `전날`(`최근_본문`과 이어지는 대목) · `KB`(`지식` 재료 — `ref`에 재료 번호).
+**절마다 `관주_연결`을 반드시 훑어라.** 오늘 본문이 얇은 날일수록 여기에 재료가 있다.
+
+## 질문 개수는 관찰이 정한다
+**관찰 하나당 질문 하나.** 관찰이 8개면 질문도 8개다. **개수를 채우려고 같은 관찰에서 질문을 두 개 뽑지 마라.**
+오늘 본문이 얇아(절이 적거나 장면이 하나뿐) 본문 관찰이 적게 나오면, **관주 관찰을 3개까지 늘려** 채운다. 억지로 본문을 쥐어짜지 마라.
 
 **개수보다 '서로 다름'이 먼저다.** 서로 다른 질문거리가 {N}개보다 적으면 **거기서 멈춰라 — 적게 내도 된다.** 같은 질문을 문장만 바꾸거나 그대로 복사해서 개수를 채우는 건 **가장 나쁜 결과**다(코드가 잡아내 통째로 버린다). 재료가 얇은 날엔 12개만 나와도 정상이다.
 
@@ -72,12 +89,12 @@ _Q_WRAPPER = """# 떠오르는 질문 — 질문 후보 생성기 (질문만, �
   - ✓ 6절 "…벧르홉 아람 사람과 소바 아람 사람의 보병…" → `verse: 6, anchor: "벧르홉 아람 사람"`
   - ✗ `anchor: "아람 용병 고용"` (본문에 없는 네 요약 — 탈락)
 
-**② 관주형 = 배경지식형** (`anchor_type: "관주"`) — 관주 구절이 알려주는 '오늘 본문의 숨은 배경'을 여는 질문. **그냥 "다른 성경과 연결되나요?"가 아니다.** 오늘 본문에 나오지만 초신자가 모를 ⓐ **낯선 인물의 정체** · ⓑ **본문이 인용하는 옛 사건** · ⓒ **그 행동·판결의 근거가 된 율법·관습**을 그 관주 구절로 밝힌다.
+**② 관주형** (`anchor_type: "관주"`) — 관주 구절이 알려주는 '오늘 본문의 숨은 배경'을 여는 질문. **그냥 "다른 성경과 연결되나요?"가 아니다.** 오늘 본문에 나오지만 초신자가 모를 ⓐ **낯선 인물의 정체** · ⓑ **본문이 인용하는 옛 사건** · ⓒ **그 행동·판결의 근거가 된 율법·관습**을 그 관주 구절로 밝힌다.
 - `verse` 오늘 본문의 절 번호 · `anchor` **`관주_연결`에 실제로 적힌 구절 참조를 그대로** (예: `"삼하 23:39"`). 목록에 없는 구절을 지어내면 탈락한다.
 - 질문은 그 배경을 **콕 집어** 연다. 답을 흘리는 '누가·어느'를 쓰지 말고 '**어떻게·어떤·원래 어떤 사람/사건**'으로.
   - ✗ **뭉개기 절대 금지** (소재가 오늘 것 그대로라 다른 질문과 답이 겹친다): "우리아 사건은 **다른 성경 구절과 어떻게 연결되나요?**" / "**비슷한 이름의** 다른 인물은?" / "**다른 성경에도** 비슷한 게 있나요?"
   - ✓ **배경을 물어 소재가 갈라진다:** "다윗이 죽음으로 내몬 '**헷 사람 우리아**'는 **원래 어떤 사람**이었나요?" (→ 삼하 23:39, 다윗의 37용사) / "다윗이 양을 '**네 배로 갚으라**'(12:6) 한 건 **어떤 근거**였나요?" (→ 출 22:1, 도둑 배상법)
-- 재해석·신학 논쟁 성격의 연결(회개 신학·남 판단 등)은 이 각도가 아니다. 카테고리는 `연결 질문`. **`관주_연결`이 있는 날엔 이 배경지식형을 1~2개 꼭** 넣되, 절반을 넘기지 마라(성경 상식 퀴즈가 아니다).
+- 재해석·신학 논쟁 성격의 연결(회개 신학·남 판단 등)은 이 각도가 아니다. **카테고리는 반드시 `관주`**(옛 이름 '연결 질문'은 쓰지 마라). **`관주_연결`이 있는 날엔 이 배경지식형을 1~2개 꼭** 넣되, 절반을 넘기지 마라(성경 상식 퀴즈가 아니다).
 
 **③ KB형** (`anchor_type: "KB"`) — `지식`의 `인물`·`주의점`·`신학_핵심` 재료를 파고드는 질문
 - `anchor` **그 재료에 붙은 번호를 그대로** (예: `"7:인물#2"`, `"7:주의점#5"`) · `verse`는 `0`으로 둔다
@@ -206,14 +223,28 @@ def _q_gen_schema(n):
     계층을 두면 '꼬리 = 메인의 후속 질문'이 되어 같은 소재로 뭉치는 게 정상 동작이 되고,
     그 순간 서로 다른 지식의 개수가 메인 수(6)에 묶인다."""
     lp, lr = _q_leaf()
-    # minItems를 n으로 못박으면 '서로 다른 게 없어도 개수는 채워야 한다'가 되어, 모델이
-    # 같은 질문을 복사해 낸다(2026-07-16 실측). 하한을 9(최종 필요 수)보다 조금 위에 두어
-    # 재료가 얇은 날엔 적게 낼 수 있게 한다.
+    # 2026-08-04 개편 — 개수 하한(minItems 12)을 없앴다.
+    #   왜: 프롬프트는 "재료가 얇은 날엔 적게 내도 된다"라고 하는데 스키마가 12개를 강제해
+    #   모순이었다. 8/03(6절짜리 단일 장면) 실측에서 13개가 나왔고 그중 12개가 "왜/의도/의미"
+    #   형태였다 — 하한을 채우려고 같은 소재에 '왜'를 반복한 것이다. 결과적으로 답이 한 점으로
+    #   수렴해 최종 2개까지 무너졌다. 이제 개수는 '관찰'이 정한다.
+    #
+    # observations를 candidates보다 먼저 받는 이유: 한 번에 "질문 N개"를 요구하면 모델은
+    #   가장 쉬운 패턴(인물의 속셈 묻기)으로 몰린다. 절을 하나씩 훑어 '이상한 것'을 먼저
+    #   적게 하면 질문이 그 관찰에서 파생돼 자연히 갈라진다. (사장님 자료조사 원칙과 같다:
+    #   본문 관찰 먼저, 해석은 나중)
+    obs = {"type": "object", "properties": {
+               "verse": {"type": "integer"},
+               "note": {"type": "string"},
+               "kind": {"type": "string", "enum": ["본문", "관주", "전날", "KB"]},
+               "ref": {"type": "string"}},
+           "required": ["verse", "note", "kind", "ref"], "additionalProperties": False}
     return {"type": "object", "properties": {
-                "candidates": {"type": "array", "minItems": min(12, n), "maxItems": n,
+                "observations": {"type": "array", "minItems": 6, "maxItems": 20, "items": obs},
+                "candidates": {"type": "array", "maxItems": n,
                                "items": {"type": "object", "properties": lp, "required": lr,
                                          "additionalProperties": False}}},
-            "required": ["candidates"], "additionalProperties": False}
+            "required": ["observations", "candidates"], "additionalProperties": False}
 
 
 def _judge_schema():
@@ -519,6 +550,169 @@ def _xref_text(qt, log=None):
         return None
 
 
+_BACKGROUND_WRAPPER = """# 떠오르는 질문 — 배경지식형 전용 생성기
+
+오늘 본문에 나오는 **낯선 것의 정체**를 밝히는 질문을 **재료가 있는 만큼만** 만든다(최대 4개). 답변은 만들지 않는다.
+
+## 없으면 만들지 마라 (가장 중요)
+배경지식은 **매일 있는 게 아니다.** 그날 재료가 없으면 **빈 목록을 내라. 그건 실패가 아니다.**
+- 본문에 **장소 이름이 안 나오면** 지명 질문은 없다.
+- `지식`에 **어원 자료가 없으면** 원어 질문은 만들지 마라. 원어 뜻을 짐작해서 쓰면 거짓이 된다.
+- `지식`에 인물·관습 재료가 없고 본문으로도 확인이 안 되면 그 갈래는 건너뛴다.
+- **1개만 나와도 정상이고, 0개도 정상이다.** 개수를 채우려고 아는 척하지 마라.
+
+## 네 갈래에서 골고루 (가능한 것만)
+- **지명** — 본문에 나오는 장소. 어디쯤이고 어떤 곳이었나
+- **어원** — 본문에 실제로 적힌 낱말·이름의 원어 뜻이나 유래
+- **문화·관습** — 그 행동·물건·절차가 당시에 무엇이었나 (제도·법·의식)
+- **인물 배경** — 본문 인물의 정체·과거·관계
+- **번역·사본** — 개역개정의 어떤 낱말이 다른 번역·사본과 갈리는 곳
+
+**같은 갈래로 몰지 마라.** 넷 중 서로 다른 갈래로 채운다.
+
+## 왜 이 갈래인가 (실측)
+답이 '사실'이라 서로 안 겹친다 — 답 겹침 비율이 어원 0% · 지명 0% · 인물 8% · 문화 13%다.
+반면 속셈·의미를 묻는 질문은 48~55%가 겹친다. **이 갈래가 그날 질문을 살린다.**
+
+## 반드시 지킬 것
+- `anchor`는 오늘 본문 절에서 **글자 그대로 복사한 2~15자**(그 낯선 것이 나오는 대목). 코드가 대조한다.
+- **속셈을 묻지 마라.** "왜 그랬나 / 무슨 의도인가"는 이 생성기의 일이 아니다.
+  - ✗ "압살롬이 병거와 말을 준비한 이유는 무엇인가요?" (속셈)
+  - ✓ "왕이 아닌 사람이 병거와 호위병을 두는 게 당시에 허용된 일이었나요?" (제도)
+  - ✗ "성문에서 송사를 들은 이유는?" (속셈)
+  - ✓ "재판이 왜 하필 성문에서 열렸나요?" (관습)
+  - ✓ "'마음을 훔치다'는 히브리 원어로 어떻게 적혀 있나요?" (어원)
+- **`지식`에 없는 원어 뜻·현대 지명·역사 추정을 지어내지 마라.** 근거가 없으면 그 갈래는 건너뛴다.
+- **번역·사본은 특히 조심하라.** 그 구절 하나의 문제인지 성경 전반의 현상인지 구분해라. **"성경에서 종종 ~한다"처럼 일반화하지 마라** — 실제로 이 자리에서 거짓이 나갔다(2026-08-04: 삼하 15:7 한 곳의 사본 차이를 "성경에서 종종 발견돼요"라고 적었다). 근거가 확실하지 않으면 이 갈래는 만들지 마라.
+- 장절 번호·마크다운(`**`) 금지. `같은_책_기존_STEP2_질문`의 소재는 피한다.
+
+## 출력
+`{"candidates": [{"question","category","topic","verse","anchor"}]}` — **0~4개**(재료가 있는 만큼).
+`category`는 `"지명 정보"`·`"어원·유래"`·`"문화·관습"`·`"인물 배경"`·`"번역·사본"` 중 하나."""
+
+
+def _background_schema():
+    return {"type": "object", "properties": {
+        "candidates": {"type": "array", "maxItems": 4, "items": {"type": "object", "properties": {
+            "question": {"type": "string"},
+            "category": {"type": "string",
+                         "enum": ["지명 정보", "어원·유래", "문화·관습", "인물 배경", "번역·사본"]},
+            "topic": {"type": "string"}, "verse": {"type": "integer"}, "anchor": {"type": "string"}},
+            "required": ["question", "category", "topic", "verse", "anchor"],
+            "additionalProperties": False}}},
+        "required": ["candidates"], "additionalProperties": False}
+
+
+def _gen_background(chat, qt, kb, history, total_cost, log=None):
+    """배경지식(지명·어원·문화·인물) 전용. 본체에 맡기면 '왜 그랬나'로 몰려 이 갈래가 0개가 된다
+    (0803 실측: 후보 6개 전부 해석형, 배경지식 0). 사장님 지적대로 종류마다 제 몫을 만들게 한다."""
+    payload = {"본문_참조": qt.get("scripture_ref", ""), "본문_내용": fp._body_text(qt),
+               "지식": _kb_numbered(kb),
+               "같은_책_기존_STEP2_질문": [h.get("question", "") for h in (history or [])[:60]]}
+    try:
+        data, cost = chat(Q_MODEL, _BACKGROUND_WRAPPER, payload, "followup_background",
+                          _background_schema(), 0.7, 1800)
+        fp._add_cost(total_cost, cost)
+    except Exception as e:
+        if log:
+            log(f"  [배경지식] 생성 실패 — 건너뜀: {str(e)[:70]}", "WARN")
+        return []
+    vmap = {v["number"]: fp._norm(v["text"]) for v in qt.get("verses", [])}
+    out = []
+    for c in (data.get("candidates") or [])[:4]:
+        c["anchor_type"] = "본문"
+        c["question"] = re.sub(r"\*+", "", c.get("question", "")).strip()
+        if not _anchor_ok(c.get("verse"), c.get("anchor", ""), vmap, "본문"):
+            if log:
+                log(f"  [배경지식] 본문에 없는 근거로 버림: {c.get('verse')}절 '{c.get('anchor','')[:16]}'", "WARN")
+            continue
+        out.append(c)
+    if log:
+        cats = ", ".join(c.get("category", "") for c in out) or "없음"
+        log(f"  [배경지식] {len(out)}개 확보 ({cats})", "INFO")
+    return out
+
+
+_GWANJU_WRAPPER = """# 떠오르는 질문 — 관주형(다른 성경 구절로 여는 질문) 전용 생성기
+
+오늘 본문의 한 대목을 **관주 구절이 밝혀 주는 배경**으로 여는 질문을 **2~3개** 만든다. 답변은 만들지 않는다.
+
+## 반드시 지킬 것
+- `anchor`는 `관주_연결`에 **실제로 적힌 구절 참조를 그대로** 쓴다(예: `"열왕기상 1:5"`). 목록에 없는 걸 적으면 탈락한다.
+- `verse`는 그 관주가 달린 **오늘 본문 절 번호**.
+- **질문에 관주의 알맹이가 드러나야 한다.** 무엇을 알게 될지 보여야 독자가 눌러본다.
+- **장절 번호를 질문에 쓰지 마라.** 초신자는 '사사기 15:4-5'가 뭔지 모른다. 내용을 풀어 써라.
+- 답을 미리 흘리지 마라. 마크다운(`**`) 금지. `같은_책_기존_STEP2_질문`의 소재는 피한다.
+
+## 가장 중요 — 뭉개지 마라
+관주 구절을 받아놓고 "다른 성경 구절과 연결되나요"라고 물으면 **그 재료를 통째로 버리는 것**이다. 실제로 이런 실패가 반복됐다.
+
+- 관주 = 왕상 1:5(다윗의 또 다른 아들 아도니야도 병거와 오십 명을 준비함)
+  - ✗ "압살롬의 행동은 다윗 왕국의 정치적 불안정과 어떻게 연결되나요?" (아도니야가 한 글자도 없다)
+  - ✓ "다윗의 또 다른 아들도 병거와 오십 명을 준비한 적이 있나요?"
+- 관주 = 사사기 15:4-5(삼손이 여우 꼬리에 불을 붙여 블레셋 밭을 태움)
+  - ✗ "요압의 밭에 불을 지른 사건과 사사기 15:4-5의 사건은 어떻게 연결되나요?" (장절만 대서 궁금하지 않다)
+  - ✓ "남의 밭에 불을 지른 일이 성경에 또 있나요?"
+- 관주 = 삼하 12:7(나단이 다윗에게 "당신이 그 사람이라")
+  - ✗ "여인이 전한 이야기는 어떤 성경 구절과 연결되나요?"
+  - ✓ "다윗이 남의 이야기를 듣다가 자기 이야기인 걸 깨달은 적이 또 있나요?"
+
+## 무엇을 여는 질문인가
+오늘 본문에 나오지만 초신자가 모를 것을 관주로 밝힌다 — ⓐ 낯선 인물의 정체 ⓑ 본문이 빗대는 옛 사건 ⓒ 그 행동·판결의 근거가 된 율법·관습.
+
+## 만들 수 없으면 적게 내라
+쓸 만한 관주가 1개뿐이면 1개만 낸다. 억지로 채우려고 뭉개지 마라.
+
+## 출력
+`{"candidates": [{"question","topic","verse","anchor"}]}` — 1~3개. `topic`은 1~4단어 소재 라벨."""
+
+
+def _gwanju_schema():
+    return {"type": "object", "properties": {
+        "candidates": {"type": "array", "maxItems": 3, "items": {"type": "object", "properties": {
+            "question": {"type": "string"}, "topic": {"type": "string"},
+            "verse": {"type": "integer"}, "anchor": {"type": "string"}},
+            "required": ["question", "topic", "verse", "anchor"], "additionalProperties": False}}},
+        "required": ["candidates"], "additionalProperties": False}
+
+
+def _gen_gwanju(chat, qt, history, total_cost, log=None):
+    """관주형 = 다른 성경 구절이 밝혀 주는 배경. (지명·어원·문화·인물을 다루는
+    배경지식형과는 다른 갈래다 — 이름이 겹쳐 헷갈렸던 부분을 0804에 정리했다.)
+    전용 호출로 뺀다. 본체 프롬프트에 규칙만 두면 '다른 성경 구절과 연결되나요' 같은
+    뭉개기가 반복됐다(0801 두 건·0803 한 건 — 받은 관주는 아도니야·나단·아비멜렉이었는데
+    질문에 한 글자도 안 들어갔다). 전날형을 전용 호출로 뺐더니 해결된 것과 같은 처방."""
+    xtext = _xref_text(qt, log=log)
+    if not xtext:
+        return []
+    payload = {"본문_참조": qt.get("scripture_ref", ""), "본문_내용": fp._body_text(qt),
+               "관주_연결": xtext,
+               "같은_책_기존_STEP2_질문": [h.get("question", "") for h in (history or [])[:60]]}
+    try:
+        data, cost = chat(Q_MODEL, _GWANJU_WRAPPER, payload, "followup_gwanju",
+                          _gwanju_schema(), 0.7, 1600)
+        fp._add_cost(total_cost, cost)
+    except Exception as e:
+        if log:
+            log(f"  [관주형] 생성 실패 — 건너뜀: {str(e)[:70]}", "WARN")
+        return []
+    xmap = _xref_map(qt)
+    out = []
+    for c in (data.get("candidates") or [])[:3]:
+        c["anchor_type"] = "관주"
+        c["category"] = "관주"
+        c["question"] = re.sub(r"\*+", "", c.get("question", "")).strip()
+        if not _anchor_ok(c.get("verse"), c.get("anchor", ""), {}, "관주", xmap):
+            if log:
+                log(f"  [관주형] 관주 목록에 없어 버림: {c.get('verse')}절 '{c.get('anchor','')}'", "WARN")
+            continue
+        out.append(c)
+    if log:
+        log(f"  [관주형] {len(out)}개 확보" + ("".join(f" · {c['verse']}절↔{c['anchor']}" for c in out)
+                                            if out else " (쓸 만한 관주 없음)"), "INFO")
+    return out
+
+
 _PREVDAY_WRAPPER = """# 떠오르는 질문 — 전날형(앞 문맥형) 전용 생성기
 
 오늘 본문의 한 대목이 **바로 앞 며칠 본문에서 이어져 온 것**임을 여는 질문을 **1개만** 만든다. 답변은 만들지 않는다.
@@ -546,7 +740,7 @@ _PREVDAY_WRAPPER = """# 떠오르는 질문 — 전날형(앞 문맥형) 전용 
 
 ## 출력
 `{"candidates": [{"question","category","topic","verse","anchor","link"}]}` — 0개 또는 1개.
-`category`는 항상 `"연결 질문"`, `topic`은 1~4단어 소재 라벨, `link`는 답이 가리키는 앞 본문의 참조."""
+`category`는 항상 `"전날"`, `topic`은 1~4단어 소재 라벨, `link`는 답이 가리키는 앞 본문의 참조."""
 
 
 def _prevday_schema():
@@ -686,8 +880,11 @@ _CANON = {"주석": "주석형/본문관찰", "본문관찰": "주석형/본문�
           "지명": "지명 정보", "지리": "지명 정보",
           "어원": "어원·유래", "유래": "어원·유래",
           "인물": "인물 배경", "문화": "문화·관습", "관습": "문화·관습",
+          "번역": "번역·사본", "사본": "번역·사본",
           "신학": "신학/해석 견해", "해석": "신학/해석 견해",
-          "연결": "연결 질문", "랜덤": "랜덤"}
+          "관주": "관주", "전날": "전날", "랜덤": "랜덤",
+          # 옛 라벨 흡수 — 모델이 아직 "연결"이라 붙여도 관주로 본다(근거는 anchor가 정한다)
+          "연결": "관주"}
 
 
 def _canon_cat(c):
@@ -712,7 +909,8 @@ _SAFE_MIN = 4                     # 최종 9개 중 안전군에서 최소 이�
 _CAT_CAP = {"신학/해석 견해": 2,   # 48% — 지금 평균 2.6개
             "본문 디테일": 2,      # 55%
             "주석형/본문관찰": 2,
-            "연결 질문": 2}
+            "관주": 3,          # 본문이 얇은 날 여기로 채운다(0803: 본문 6절뿐, 관주는 절마다 6개)
+            "전날": 1}          # 하루 1개 — 과거 되짚기가 많아지면 오늘 본문이 얇아진다
 
 
 def _cat_cap(cat):
@@ -1196,7 +1394,11 @@ def run_simple(chat, qt, kb, deep5, *, history=None, mode="none", log=None, rece
 
     # ① 후보 생성
     branches = _gen_candidates(chat, qt, kb_use, deep5, history, total_cost, log=log, recent=recent)
+    gwan = _gen_gwanju(chat, qt, history, total_cost, log=log)
     prev = _gen_prevday(chat, qt, recent, history, total_cost, log=log)
+    if gwan:
+        base = max((bb["idx"] for bb in branches), default=-1) + 1
+        branches = branches + [{"idx": base + i, "main": c, "tails": []} for i, c in enumerate(gwan)]
     if prev:
         calls_extra = 1
         base = max((b["idx"] for b in branches), default=-1) + 1
@@ -1396,8 +1598,22 @@ def _flat_nodes(items):
     return nodes
 
 
+# 2026-08-04 사장님 결정 — 관문은 '자르지 않고 기록만' 한다.
+#
+# 왜: 8/03 실측에서 9개 중 7개가 잘려 최종 2개가 됐다. 원인은 '연쇄 병합'이다.
+#   관문은 겹치는 쌍을 union-find로 줄줄이 이어 붙이는데(단일 연결),
+#   A~B가 겹치고 B~C가 겹치면 A~C가 안 겹쳐도 A·B·C가 한 덩어리가 된다.
+#   그날 걸린 쌍 10개가 이어져 8개가 한 덩어리가 됐고, 덩어리당 1개만 남기니 7개가 사라졌다.
+#   병거(1절)와 입맞춤(5절)은 서로 안 겹쳤을 텐데 중간에 낀 것들 때문에 같이 묶였다.
+# 그래서 자르는 동작만 끄고 판정 결과는 meta['embed_gate']에 그대로 남긴다 —
+# 무엇이 왜 겹쳤는지 계속 볼 수 있어야 연쇄 병합을 고칠 때 근거가 된다.
+# 중복 제거는 그 앞 단계(판정기의 answer_groups)가 이미 맡고 있다.
+GATE_CUT = False
+
+
 def apply_embed_gate(items, meta, embed, *, log=None):
     """답변 임베딩이 ≥0.75로 겹치는 질문을 '그룹당 1개'만 남기고 빼낸다.
+    GATE_CUT=False면 실제로 빼지 않고 무엇이 걸렸는지 기록만 남긴다.
 
     - 살릴 하나 고르는 우선순위: ①검증된 관주형(배경지식형) ②메인 ③먼저 나온 것.
       0.75는 '선별 그물이지 판결'이 아니라 오탐이 있다 → 가치 큰 관주형을 우선 살리는 보수적 선택.
@@ -1445,6 +1661,26 @@ def apply_embed_gate(items, meta, embed, *, log=None):
                 sim = max((s for a, b, s in flagged if winner in (a, b) and k in (a, b)), default=None)
                 dropped.append({"question": nodes[k][2], "kept_instead": nodes[winner][2],
                                 "sim": sim, "was_main": nodes[k][1] == -1})
+
+    if not GATE_CUT:
+        # 기록만 하고 원본을 그대로 돌려준다 — 연쇄 병합 때문에 과하게 잘린다(위 주석 참고).
+        meta = dict(meta)
+        meta["embed_gate"] = {
+            "cut_enabled": False, "threshold": _SIM_THRESHOLD, "before_count": len(nodes),
+            "final_count": len(nodes), "flagged_pairs": len(flagged),
+            "max_sim": round(max_sim, 4),
+            "would_drop": [{"question": nodes[k][2], "kept_instead": nodes[w][2]}
+                           for group in _uf_groups([(a, b) for a, b, _s in flagged], len(nodes))
+                           if len(group) > 1
+                           for w in [min(group, key=lambda k: (not (_GATE_KEEP_GWANJU_FIRST and is_gwanju[k]),
+                                                               nodes[k][1] != -1, k))]
+                           for k in group if k != w],
+            "flagged_detail": [{"a": nodes[a][2], "b": nodes[b][2], "sim": s} for a, b, s in flagged],
+        }
+        if log:
+            log(f"  [관문] 겹침 {len(flagged)}쌍 감지 · 최고 {round(max_sim,3)} — "
+                f"자르지 않고 기록만 (연쇄 병합 문제로 중단, 사장님 결정 0804)", "INFO")
+        return items, meta
 
     # 살아남은 것만으로 메인+꼬리 구조 재조립 (메인이 잘리면 첫 생존 꼬리가 승격)
     new_items, promoted = [], []
