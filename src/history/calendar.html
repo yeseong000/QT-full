@@ -144,6 +144,26 @@
     .app-container[data-time-slot="night"] .archive-empty { color: rgba(255, 255, 255, 0.7); }
     .app-container[data-time-slot="night"] .archive-empty__title { color: #FFFFFF; }
     .app-container[data-time-slot="night"] .archive-empty__desc { color: rgba(255, 255, 255, 0.6); }
+    /* night — 요약 다시보기 시트 */
+    .app-container[data-time-slot="night"] .digest-nav__btn {
+      background: rgba(255, 255, 255, 0.08);
+      color: rgba(255, 255, 255, 0.92);
+    }
+    .app-container[data-time-slot="night"] .digest-nav__btn:active { background: rgba(255, 255, 255, 0.18); }
+    .app-container[data-time-slot="night"] .digest-nav__btn:disabled {
+      background: transparent;
+      color: rgba(255, 255, 255, 0.25);
+    }
+    .app-container[data-time-slot="night"] .digest-nav__date { color: #FFFFFF; }
+    .app-container[data-time-slot="night"] .digest-nav__ref { color: rgba(255, 255, 255, 0.62); }
+    .app-container[data-time-slot="night"] .digest-scene { background: rgba(255, 255, 255, 0.06); }
+    .app-container[data-time-slot="night"] .digest-line { color: rgba(255, 255, 255, 0.92); }
+    .app-container[data-time-slot="night"] .digest-line::before {
+      background: rgba(168, 181, 208, 0.22);
+      color: #DCE4F2;
+    }
+    .app-container[data-time-slot="night"] .digest-note { color: rgba(255, 255, 255, 0.62); }
+    .app-container[data-time-slot="night"] .digest-skeleton__bar { background: rgba(255, 255, 255, 0.10); }
 
     /* 미리보기 카드 등장 시 스크롤바로 인한 폭 변화 방지 */
     .app-scroll {
@@ -195,6 +215,16 @@
     }
     .header-action-btn svg { width: 22px; height: 22px; }
     .header-action-btn:active { background: var(--accent-sage-soft); }
+    /* 액션 두 개(요약 다시보기 · 나의 묵상)를 한 덩어리로 우측 정렬.
+       버튼마다 margin-left:auto를 두면 남는 폭이 나뉘어 사이가 벌어지므로 래퍼가 대신 민다. */
+    .archive-header__actions {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 2px;
+    }
+    .archive-header__actions .header-action-btn { margin-left: 0; margin-right: 0; }
+    .archive-header__actions .header-action-btn:last-child { margin-right: -10px; }
 
     /* 상단 헤더 — 월 이동 + 성장 꽃 (카드 없이 떠 있는 영역) */
     .month-hero {
@@ -767,6 +797,176 @@
       color: var(--text-secondary);
     }
 
+    /* ==========================================================
+       요약 다시보기 시트 (헤더 아이콘 → 날짜별 오늘의 장면 + 5줄 요약)
+       셸(backdrop/panel/handle/header/close)은 .archive-sheet를 그대로 재사용하고,
+       내부 콘텐츠만 .digest-* 로 정의한다. night·데스크톱 규칙도 함께 상속됨. */
+    .digest-sheet .archive-sheet__body { padding: 0 0 20px; }
+
+    /* 날짜 이동 줄 — ◀ 날짜 ▶ (스크롤에 딸려 올라가지 않게 body 밖 고정) */
+    .digest-nav {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      padding: 2px 12px 12px;
+      flex-shrink: 0;
+    }
+    .digest-nav__btn {
+      width: 40px;
+      height: 40px;
+      flex-shrink: 0;
+      display: grid;
+      place-items: center;
+      border: 0;
+      border-radius: 50%;
+      background: rgba(0, 0, 0, 0.04);
+      color: var(--text-primary);
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      transition: background-color 120ms ease, transform 160ms cubic-bezier(0.32, 0.72, 0, 1);
+    }
+    .digest-nav__btn svg { width: 20px; height: 20px; }
+    .digest-nav__btn:active { transform: scale(0.9); background: var(--accent-sage-soft); }
+    .digest-nav__btn:disabled {
+      background: transparent;
+      color: var(--text-placeholder);
+      cursor: default;
+      transform: none;
+    }
+    .digest-nav__center {
+      flex: 1;
+      min-width: 0;
+      text-align: center;
+    }
+    .digest-nav__date {
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      color: var(--text-primary);
+    }
+    .digest-nav__ref {
+      font-size: 12.5px;
+      color: var(--text-secondary);
+      margin-top: 2px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* 오늘의 장면 — 여러 장이면 우측 하단 뱃지, 그림 탭으로 다음 장 */
+    .digest-scene {
+      position: relative;
+      margin: 0 16px 16px;
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      background: rgba(0, 0, 0, 0.04);
+      line-height: 0;
+    }
+    .digest-scene[hidden] { display: none; }
+    .digest-scene--multi { cursor: pointer; }
+    .digest-scene__img {
+      display: block;
+      width: 100%;
+      height: auto;
+      transition: opacity 180ms ease;
+    }
+    .digest-scene--fading .digest-scene__img { opacity: 0.25; }
+    .digest-scene__badge {
+      position: absolute;
+      right: 10px;
+      bottom: 10px;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 5px 11px;
+      border: 0;
+      border-radius: var(--radius-pill);
+      background: rgba(0, 0, 0, 0.46);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      color: #FFFFFF;
+      font-family: inherit;
+      font-size: 11.5px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      line-height: 1;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .digest-scene__badge[hidden] { display: none; }
+    .digest-scene__badge svg { width: 11px; height: 11px; }
+
+    /* 5줄 요약 */
+    .digest-lines {
+      list-style: none;
+      margin: 0;
+      padding: 0 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 11px;
+      counter-reset: digestline;
+    }
+    .digest-line {
+      position: relative;
+      padding-left: 27px;
+      font-size: 14.5px;
+      line-height: 1.62;
+      letter-spacing: -0.01em;
+      /* --text-body는 타이포 섹션에서 16px로 재정의돼 색으로 못 씀 → --text-primary 사용 */
+      color: var(--text-primary);
+    }
+    .digest-line::before {
+      counter-increment: digestline;
+      content: counter(digestline);
+      position: absolute;
+      left: 0;
+      top: 2.5px;
+      width: 19px;
+      height: 19px;
+      border-radius: 50%;
+      background: var(--accent-sage-soft);
+      color: var(--accent-sage-text);
+      font-size: 11px;
+      font-weight: 700;
+      display: grid;
+      place-items: center;
+      line-height: 1;
+    }
+
+    /* 요약이 아직 없는 날 / 로딩 */
+    .digest-note {
+      padding: 28px 24px 32px;
+      text-align: center;
+      font-size: 13px;
+      line-height: 1.6;
+      color: var(--text-secondary);
+    }
+    .digest-note[hidden] { display: none; }
+    .digest-note__emoji {
+      font-size: 30px;
+      line-height: 1;
+      margin-bottom: 10px;
+    }
+    .digest-skeleton { padding: 0 20px; }
+    .digest-skeleton[hidden] { display: none; }
+    .digest-skeleton__bar {
+      height: 13px;
+      border-radius: 7px;
+      background: rgba(0, 0, 0, 0.05);
+      margin-bottom: 12px;
+      animation: digestPulse 1.3s ease-in-out infinite;
+    }
+    .digest-skeleton__bar:nth-child(2) { width: 88%; animation-delay: 90ms; }
+    .digest-skeleton__bar:nth-child(3) { width: 94%; animation-delay: 180ms; }
+    .digest-skeleton__bar:nth-child(4) { width: 76%; animation-delay: 270ms; }
+    @keyframes digestPulse {
+      0%, 100% { opacity: 1; }
+      50%      { opacity: 0.45; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .digest-skeleton__bar { animation: none; }
+    }
+
     /* 데스크톱 — 가운데 모달 (max-width 440px) */
     @media (min-width: 768px) {
       .archive-sheet__panel {
@@ -803,16 +1003,27 @@
         </svg>
       </button>
       <h1 class="archive-title">묵상 달력</h1>
-      <button class="header-action-btn" id="openArchiveBtn" aria-label="묵상 모아보기">
-        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="9" y1="6" x2="20" y2="6"/>
-          <line x1="9" y1="12" x2="20" y2="12"/>
-          <line x1="9" y1="18" x2="20" y2="18"/>
-          <circle cx="4.5" cy="6" r="1.2" fill="currentColor" stroke="none"/>
-          <circle cx="4.5" cy="12" r="1.2" fill="currentColor" stroke="none"/>
-          <circle cx="4.5" cy="18" r="1.2" fill="currentColor" stroke="none"/>
-        </svg>
-      </button>
+      <div class="archive-header__actions">
+        <!-- 요약 다시보기 — 그림(장면) + 5줄 요약을 날짜별로 넘겨 보는 시트 -->
+        <button class="header-action-btn" id="openDigestBtn" aria-label="요약 다시보기">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="4" width="18" height="13" rx="2.5"/>
+            <circle cx="8.5" cy="9" r="1.4"/>
+            <path d="M3.5 14.5 L8 10.5 L11.5 13.5 L15 10 L20.5 15"/>
+            <line x1="7" y1="20.5" x2="17" y2="20.5"/>
+          </svg>
+        </button>
+        <button class="header-action-btn" id="openArchiveBtn" aria-label="묵상 모아보기">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="9" y1="6" x2="20" y2="6"/>
+            <line x1="9" y1="12" x2="20" y2="12"/>
+            <line x1="9" y1="18" x2="20" y2="18"/>
+            <circle cx="4.5" cy="6" r="1.2" fill="currentColor" stroke="none"/>
+            <circle cx="4.5" cy="12" r="1.2" fill="currentColor" stroke="none"/>
+            <circle cx="4.5" cy="18" r="1.2" fill="currentColor" stroke="none"/>
+          </svg>
+        </button>
+      </div>
     </header>
 
     <!-- 상단 헤더 — 월 이동 + 성장 꽃 (카드 없이 떠 있는 영역) -->
@@ -931,6 +1142,68 @@
            <div class="archive-empty__emoji" aria-hidden="true">🌱</div>
            <div class="archive-empty__title">아직 완료한 묵상이 없어요</div>
            <div class="archive-empty__desc">달력에서 오늘 묵상을 시작해 볼까요</div>
+         </div>
+       </div>
+     </div>
+   </div>
+
+   <!-- 요약 다시보기 시트 (오늘의 장면 + 5줄 요약, 날짜 좌우 이동) -->
+   <div class="archive-sheet digest-sheet" id="digestSheet" aria-hidden="true">
+     <div class="archive-sheet__backdrop" id="digestBackdrop"></div>
+     <div class="archive-sheet__panel" role="dialog" aria-modal="true" aria-labelledby="digestSheetTitle">
+       <div class="archive-sheet__handle" aria-hidden="true"></div>
+       <header class="archive-sheet__header">
+         <h2 id="digestSheetTitle" class="archive-sheet__title">요약 다시보기</h2>
+         <button class="archive-sheet__close" id="closeDigestBtn" aria-label="닫기">
+           <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+             <line x1="6" y1="6" x2="18" y2="18"/>
+             <line x1="6" y1="18" x2="18" y2="6"/>
+           </svg>
+         </button>
+       </header>
+
+       <!-- ◀ 날짜 ▶ -->
+       <nav class="digest-nav">
+         <button class="digest-nav__btn" id="digestPrevBtn" aria-label="이전 날">
+           <svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round">
+             <path d="M15.5 5.5 L8 12 L15.5 18.5 Z"/>
+           </svg>
+         </button>
+         <div class="digest-nav__center">
+           <div class="digest-nav__date" id="digestDate" aria-live="polite">—</div>
+           <div class="digest-nav__ref" id="digestRef"></div>
+         </div>
+         <button class="digest-nav__btn" id="digestNextBtn" aria-label="다음 날">
+           <svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round">
+             <path d="M8.5 5.5 L16 12 L8.5 18.5 Z"/>
+           </svg>
+         </button>
+       </nav>
+
+       <div class="archive-sheet__body" id="digestBody">
+         <figure class="digest-scene" id="digestScene" hidden>
+           <img class="digest-scene__img" id="digestSceneImg" alt="오늘의 장면">
+           <button class="digest-scene__badge" id="digestSceneBadge" type="button" hidden aria-label="다음 장면 보기">
+             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+               <rect x="7" y="3" width="14" height="14" rx="2"/>
+               <path d="M3.5 7.5v11a2 2 0 0 0 2 2h11"/>
+             </svg>
+             <span id="digestSceneCount">1 / 1</span>
+           </button>
+         </figure>
+
+         <ol class="digest-lines" id="digestLines"></ol>
+
+         <div class="digest-skeleton" id="digestSkeleton" hidden aria-hidden="true">
+           <div class="digest-skeleton__bar"></div>
+           <div class="digest-skeleton__bar"></div>
+           <div class="digest-skeleton__bar"></div>
+           <div class="digest-skeleton__bar"></div>
+         </div>
+
+         <div class="digest-note" id="digestNote" hidden>
+           <div class="digest-note__emoji" aria-hidden="true">🌿</div>
+           <div id="digestNoteText">이 날은 아직 요약이 없어요</div>
          </div>
        </div>
      </div>
@@ -1087,10 +1360,27 @@
       document.getElementById('openArchiveBtn').addEventListener('click', openArchiveSheet);
       document.getElementById('closeArchiveBtn').addEventListener('click', closeArchiveSheet);
       document.getElementById('archiveBackdrop').addEventListener('click', closeArchiveSheet);
+
+      // 요약 다시보기 시트
+      document.getElementById('openDigestBtn').addEventListener('click', openDigestSheet);
+      document.getElementById('closeDigestBtn').addEventListener('click', closeDigestSheet);
+      document.getElementById('digestBackdrop').addEventListener('click', closeDigestSheet);
+      document.getElementById('digestPrevBtn').addEventListener('click', () => shiftDigest(-1));
+      document.getElementById('digestNextBtn').addEventListener('click', () => shiftDigest(+1));
+      document.getElementById('digestScene').addEventListener('click', cycleDigestScene);
+      setupDigestSwipe();
+
       document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && document.getElementById('archiveSheet').classList.contains('is-open')) {
-          closeArchiveSheet();
+        if (e.key === 'Escape') {
+          if (isDigestOpen()) { closeDigestSheet(); return; }
+          if (document.getElementById('archiveSheet').classList.contains('is-open')) {
+            closeArchiveSheet();
+          }
+          return;
         }
+        if (!isDigestOpen()) return;
+        if (e.key === 'ArrowLeft')  { e.preventDefault(); shiftDigest(-1); }
+        if (e.key === 'ArrowRight') { e.preventDefault(); shiftDigest(+1); }
       });
       document.getElementById('archiveList').addEventListener('click', (e) => {
         const btn = e.target.closest('button.archive-item');
@@ -1199,6 +1489,212 @@
           </button></li>
         `;
       }).join('');
+    }
+
+    // ==========================================================
+    // 요약 다시보기 — 오늘의 장면 + 5줄 요약을 날짜별로 넘겨 봄
+    //   5줄 요약: data/summary/{날짜}.json 의 lines[]
+    //   장면 그림: deep_dive 의 variants[].scene_image (없으면 {날짜}.{확장자} 탐색)
+    // ==========================================================
+    const DIGEST_MIN_DATE = '2026-04-22';   // 데이터 시작일 (data/qt 첫 파일)
+
+    let digestDate = todayISO;
+    let digestScenes = [];      // 현재 날짜의 장면 이미지 URL 목록
+    let digestSceneIdx = 0;
+    let digestReqId = 0;        // 빠르게 넘길 때 늦게 도착한 응답을 버리는 토큰
+    const digestCache = new Map();   // 날짜 → 로드 프라미스
+
+    // 없는 파일이 정상인 경로라 콘솔을 더럽히지 않도록 조용히 로드
+    async function loadJSONQuiet(path) {
+      try {
+        const res = await fetch(path);
+        if (!res.ok) return null;
+        return await res.json();
+      } catch (e) {
+        return null;
+      }
+    }
+
+    // 단일 모드(변형 없음) — 확장자를 차례로 시도해서 있는 그림 1장을 찾음
+    function probeSceneImage(dateISO) {
+      const exts = ['png', 'jpg', 'jpeg', 'webp'];
+      return new Promise((resolve) => {
+        let i = 0;
+        const tryNext = () => {
+          if (i >= exts.length) return resolve(null);
+          const url = `../images/scenes/${dateISO}.${exts[i]}`;
+          const probe = new Image();
+          probe.onload = () => resolve(url);
+          probe.onerror = () => { i += 1; tryNext(); };
+          probe.src = url;
+        };
+        tryNext();
+      });
+    }
+
+    async function resolveScenes(dateISO, deepDive) {
+      const variants = Array.isArray(deepDive?.variants) ? deepDive.variants : null;
+      if (variants && variants.length) {
+        const urls = variants
+          .map(v => v && v.scene_image)
+          .filter(Boolean)
+          .map(name => `../images/scenes/${name}`);
+        if (urls.length) return urls;
+      }
+      const single = await probeSceneImage(dateISO);
+      return single ? [single] : [];
+    }
+
+    function loadDigestDay(dateISO) {
+      if (digestCache.has(dateISO)) return digestCache.get(dateISO);
+      const task = (async () => {
+        const [summary, deepDive, qt] = await Promise.all([
+          loadJSONQuiet(`../../data/summary/${dateISO}.json`),
+          loadJSONQuiet(`../../data/deep_dive/${dateISO}.json`),
+          loadJSONQuiet(`../../data/qt/${dateISO}.json`),
+        ]);
+        const scenes = await resolveScenes(dateISO, deepDive);
+        return { summary, qt, scenes };
+      })();
+      digestCache.set(dateISO, task);
+      return task;
+    }
+
+    function setDigestScenes(urls) {
+      digestScenes = urls;
+      digestSceneIdx = 0;
+      const fig = document.getElementById('digestScene');
+      const img = document.getElementById('digestSceneImg');
+      const badge = document.getElementById('digestSceneBadge');
+
+      if (!urls.length) {
+        fig.hidden = true;
+        badge.hidden = true;
+        img.removeAttribute('src');
+        return;
+      }
+      fig.hidden = false;
+      fig.classList.remove('digest-scene--fading');
+      fig.classList.toggle('digest-scene--multi', urls.length > 1);
+      img.onerror = () => { fig.hidden = true; };
+      img.src = urls[0];
+      badge.hidden = urls.length <= 1;
+      document.getElementById('digestSceneCount').textContent = `1 / ${urls.length}`;
+    }
+
+    // 그림 탭 → 다음 장면 (마지막 장 다음은 처음으로)
+    function cycleDigestScene() {
+      if (digestScenes.length <= 1) return;
+      digestSceneIdx = (digestSceneIdx + 1) % digestScenes.length;
+      const fig = document.getElementById('digestScene');
+      const img = document.getElementById('digestSceneImg');
+      const url = digestScenes[digestSceneIdx];
+
+      fig.classList.add('digest-scene--fading');
+      const swap = () => {
+        img.src = url;
+        fig.classList.remove('digest-scene--fading');
+      };
+      const pre = new Image();
+      pre.onload = swap;
+      pre.onerror = swap;
+      pre.src = url;
+
+      document.getElementById('digestSceneCount').textContent =
+        `${digestSceneIdx + 1} / ${digestScenes.length}`;
+    }
+
+    async function renderDigest(dateISO) {
+      const reqId = ++digestReqId;
+      digestDate = dateISO;
+
+      const [y, mo, d] = dateISO.split('-').map(Number);
+      document.getElementById('digestDate').textContent =
+        Common.formatKoreanDate(new Date(y, mo - 1, d)) + (dateISO === todayISO ? ' · 오늘' : '');
+      document.getElementById('digestRef').textContent = '';
+      document.getElementById('digestPrevBtn').disabled = dateISO <= DIGEST_MIN_DATE;
+      document.getElementById('digestNextBtn').disabled = dateISO >= todayISO;
+
+      // 새 날짜 = 이전 내용 비우고 스켈레톤
+      const linesEl = document.getElementById('digestLines');
+      const noteEl = document.getElementById('digestNote');
+      const skelEl = document.getElementById('digestSkeleton');
+      linesEl.innerHTML = '';
+      noteEl.hidden = true;
+      skelEl.hidden = false;
+      setDigestScenes([]);
+      document.getElementById('digestBody').scrollTop = 0;
+
+      const { summary, qt, scenes } = await loadDigestDay(dateISO);
+      if (reqId !== digestReqId) return;   // 그 사이 다른 날짜로 넘어감
+
+      skelEl.hidden = true;
+      document.getElementById('digestRef').textContent =
+        summary?.scripture_ref || qt?.scripture_ref || '';
+      setDigestScenes(scenes);
+
+      const lines = Array.isArray(summary?.lines)
+        ? summary.lines.filter(s => s && String(s).trim())
+        : [];
+      linesEl.innerHTML = lines
+        .map(s => `<li class="digest-line">${escapeHTML(String(s).trim())}</li>`)
+        .join('');
+
+      if (lines.length === 0) {
+        document.getElementById('digestNoteText').textContent =
+          qt ? '이 날은 아직 요약이 없어요' : '이 날은 본문 데이터가 없어요';
+        noteEl.hidden = false;
+      }
+    }
+
+    function shiftDigest(delta) {
+      const next = shiftISO(digestDate, delta);
+      if (next > todayISO || next < DIGEST_MIN_DATE) return;
+      renderDigest(next);
+      // 같은 방향으로 한 칸 더 미리 받아 두면 연속으로 넘길 때 안 끊김
+      const ahead = shiftISO(next, delta);
+      if (ahead <= todayISO && ahead >= DIGEST_MIN_DATE) loadDigestDay(ahead);
+    }
+
+    function openDigestSheet() {
+      const sheet = document.getElementById('digestSheet');
+      sheet.classList.add('is-open');
+      sheet.setAttribute('aria-hidden', 'false');
+      document.body.style.overflow = 'hidden';
+      renderDigest(todayISO);          // 언제 열어도 오늘이 기준
+      loadDigestDay(shiftISO(todayISO, -1));
+    }
+
+    function closeDigestSheet() {
+      const sheet = document.getElementById('digestSheet');
+      sheet.classList.remove('is-open');
+      sheet.setAttribute('aria-hidden', 'true');
+      document.body.style.overflow = '';
+    }
+
+    function isDigestOpen() {
+      return document.getElementById('digestSheet').classList.contains('is-open');
+    }
+
+    // 좌우 스와이프로도 날짜 이동 (세로 스크롤과 겹치지 않게 가로 우세일 때만)
+    function setupDigestSwipe() {
+      const body = document.getElementById('digestBody');
+      let x0 = 0, y0 = 0, tracking = false;
+      body.addEventListener('touchstart', (e) => {
+        if (e.touches.length !== 1) { tracking = false; return; }
+        x0 = e.touches[0].clientX;
+        y0 = e.touches[0].clientY;
+        tracking = true;
+      }, { passive: true });
+      body.addEventListener('touchend', (e) => {
+        if (!tracking) return;
+        tracking = false;
+        const t = e.changedTouches[0];
+        const dx = t.clientX - x0;
+        const dy = t.clientY - y0;
+        if (Math.abs(dx) < 55 || Math.abs(dx) < Math.abs(dy) * 1.6) return;
+        shiftDigest(dx < 0 ? 1 : -1);   // 왼쪽으로 밀면 다음 날
+      }, { passive: true });
     }
 
     function jumpToDate(dateISO) {
