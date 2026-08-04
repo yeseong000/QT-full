@@ -311,6 +311,7 @@ def save_daily_summary(date: str, qt_data: dict, lines: list[str]) -> None:
 
 SUMMARY_MODEL = "gpt-4o"
 
+
 _SUMMARY_WRAPPER = """# 그날 핵심 요약 5줄
 
 오늘 큐티에서 **무슨 일이 있었고 왜 그랬는지**를 5줄로 남긴다. 며칠 뒤의 큐티가 '앞에서 무슨 일이
@@ -1495,7 +1496,7 @@ def main() -> int:
         follow_up_items = follow_up_cost = followup_meta = None
 
     # 4-2. 그날 핵심 요약 5줄 — 오늘 쓰는 게 아니라 '며칠 뒤가 되짚어 볼' 기록이다.
-    #      전날형 질문·답변이 이걸 근거로 앞 흐름을 이어 붙인다.
+    #      뒷날 질문·답변이 이걸 근거로 앞 흐름을 이어 붙인다.
     try:
         recent_for_sum = load_recent_passages(qt_data)
         daily_summary = generate_daily_summary(
