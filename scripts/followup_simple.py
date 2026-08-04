@@ -17,6 +17,7 @@
 """
 import datetime
 import re
+from difflib import SequenceMatcher
 from collections import Counter, defaultdict
 
 import followup_pool as fp
@@ -143,6 +144,16 @@ _JUDGE_WRAPPER = """# 떠오르는 질문 — 알맹이/재진술 판정기
 - **얕음** — 재진술은 아니지만, 답을 알아도 본문 이해가 안 바뀌는 트리비아.
 
 의심스러우면 '좋음'을 기본으로 주지 말고, 정말 답이 이미 있는지 본문·5단 문장과 대조해라. 너는 판정만 한다 — 고쳐 쓰지 않는다.
+
+## 갈래별 예외 (중요)
+
+각 후보에 `갈래`가 붙어 있다. `갈래`가 `관주`나 `전날`이면 **답이 오늘 본문 밖에 있다** — 오늘 본문·5단과 대조해 봐야 없는 게 당연하다.
+
+- **`갈래: 관주`** — 답은 `근거`에 적힌 **다른 성경 구절**의 내용이다. 오늘 본문에 없다고 '얕음'을 주지 마라. 다른 성경 이야기를 여는 것이 이 질문의 목적이다.
+  - ✓ 좋음 — "남의 밭에 불을 지른 일이 성경에 또 있나요?"(근거: 사사기 15:4-5 삼손) · "다말과 같은 이름을 가진 인물이 또 있나요?"(근거: 사무엘하 13:1)
+  - '얕음'은 그 관주 구절이 오늘 본문과 **아무 상관이 없을 때만** 준다.
+- **`갈래: 전날`** — 답은 **앞 며칠 본문**에 있다. 너에게는 앞 본문이 주어지지 않았으니, 오늘 5단과 소재가 겹쳐 보여도 '5단재진술'을 주지 마라.
+- 두 갈래에 줄 수 있는 부정 판정은 사실상 **`본문재진술`(답이 오늘 본문 절에 그대로 적혀 있는 경우)** 하나다.
 
 ## 두 번째 임무 — '답이 겹치는 지식 묶음' 그룹핑 (매우 중요)
 질문 문장이나 카테고리가 달라도 **답을 쓰면 사실상 같은 지식·맥락을 설명하게 되는 질문들**이 있다. 독자는 묶음당 1개만 있으면 그 지식을 얻는다 — 나머지는 같은 걸 반복하는 것이다.
@@ -484,6 +495,63 @@ def _anchor_ok(verse, anchor, vmap, atype="본문", xmap=None, kbmap=None):
     return bool(body) and na in body
 
 
+_REPAIR_MIN = 0.70      # 본문과 이만큼 닮았으면 '옮겨 적다 어긋난 것'으로 보고 고친다
+
+
+def _norm_map(s):
+    """정규화 문자열과 '정규화 위치 → 원문 위치' 대응표. 고친 근거를 원문 글자로 돌려주려고."""
+    out, idx = [], []
+    for i, ch in enumerate(s or ""):
+        n = fp._norm(ch)
+        if n:
+            out.append(n)
+            idx.append(i)
+    return "".join(out), idx
+
+
+def _repair_anchor(c, verses, *, log=None, tag=""):
+    """근거가 본문과 어긋나면 버리지 말고 '본문의 실제 글자'로 고쳐서 내보낸다.
+
+    모델은 복사기가 아니라 본문을 읽고 매번 다시 쓴다. 그래서 어긋남이 스펙트럼으로
+    나온다 — 절 번호만 틀림(글자 100%) → 낱말 빠뜨림 → 어미 바꿈(85%) → 뜻만 남기고
+    다시 씀(50%). 앞의 셋은 지어낸 게 아닌데 예전엔 다 버려서 전날형·배경지식형이
+    매일 1개씩 죽었다(0804 실측). 사장님 지시 0805: 대조→틀림→'수정 후 내보냄'.
+
+    반환: True면 c의 verse·anchor가 (필요하면) 본문 글자로 맞춰졌다. False면 못 고침.
+    """
+    na = fp._norm(c.get("anchor", ""))
+    if len(na) < 2:
+        return False
+    for num, text in verses:                     # ① 글자는 맞고 절 번호만 틀린 경우
+        nt, idx = _norm_map(text)
+        p = nt.find(na)
+        if p >= 0:
+            if c.get("verse") != num and log:
+                log(f"  [{tag}] 절 번호 교정: {c.get('verse')}절 → {num}절 '{c.get('anchor','')[:16]}'", "INFO")
+            c["verse"] = num
+            c["anchor"] = text[idx[p]: idx[p + len(na) - 1] + 1]
+            return True
+    best = (0.0, None, None)                     # ② 조금 어긋난 경우 — 제일 닮은 대목의 원문으로
+    for num, text in verses:
+        nt, idx = _norm_map(text)
+        blocks = [b for b in SequenceMatcher(None, na, nt, autojunk=False).get_matching_blocks() if b.size]
+        if not blocks:
+            continue
+        cov = sum(b.size for b in blocks) / len(na)
+        if cov > best[0]:
+            s, e = blocks[0].b, blocks[-1].b + blocks[-1].size - 1
+            best = (cov, num, text[idx[s]: idx[e] + 1])
+    if best[0] >= _REPAIR_MIN:
+        if log:
+            log(f"  [{tag}] 근거를 본문 글자로 교정(일치 {best[0]:.0%}): "
+                f"'{c.get('anchor','')[:16]}' → {best[1]}절 '{best[2][:20]}'", "INFO")
+        c["verse"], c["anchor"] = best[1], best[2]
+        return True
+    if log:
+        log(f"  [{tag}] 본문과 너무 달라 버림(일치 {best[0]:.0%}): '{c.get('anchor','')[:20]}'", "WARN")
+    return False
+
+
 def _slot_desc(c, cut=None):
     """차지한 자리를 사람·모델이 읽는 말로. KB형은 절 번호가 0이라 '0절'로 쓰면 헷갈린다."""
     a = c.get("anchor", "")
@@ -617,14 +685,12 @@ def _gen_background(chat, qt, kb, history, total_cost, log=None):
         if log:
             log(f"  [배경지식] 생성 실패 — 건너뜀: {str(e)[:70]}", "WARN")
         return []
-    vmap = {v["number"]: fp._norm(v["text"]) for v in qt.get("verses", [])}
+    verses = [(v["number"], v["text"]) for v in qt.get("verses", [])]
     out = []
     for c in (data.get("candidates") or [])[:4]:
         c["anchor_type"] = "본문"
         c["question"] = re.sub(r"\*+", "", c.get("question", "")).strip()
-        if not _anchor_ok(c.get("verse"), c.get("anchor", ""), vmap, "본문"):
-            if log:
-                log(f"  [배경지식] 본문에 없는 근거로 버림: {c.get('verse')}절 '{c.get('anchor','')[:16]}'", "WARN")
+        if not _repair_anchor(c, verses, log=log, tag="배경지식"):
             continue
         out.append(c)
     if log:
@@ -644,7 +710,23 @@ _GWANJU_WRAPPER = """# 떠오르는 질문 — 관주형(다른 성경 구절로
 - **장절 번호를 질문에 쓰지 마라.** 초신자는 '사사기 15:4-5'가 뭔지 모른다. 내용을 풀어 써라.
 - 답을 미리 흘리지 마라. 마크다운(`**`) 금지. `같은_책_기존_STEP2_질문`의 소재는 피한다.
 
-## 가장 중요 — 뭉개지 마라
+## 가장 중요 — 관주에 나오는 '이름'을 질문에 넣어라
+
+관주 구절에 나오는 **인물·장소·사건의 이름을 질문 문장에 그대로 써라.** 그게 이 질문의 알맹이다.
+- 왕상 1:5 → **아도니야** · 삿 9:29 → **아비멜렉** · 왕상 3:9 → **솔로몬** · 시 41:9 → **다윗이 쓴 시**
+
+**아래 표현은 쓰지 마라 (코드가 잡아내 버린다).**
+`다른 성경 구절` · `성경적 배경` · `성경의 다른 ~사건` · `성경에서 어느 순간` · `어떤 성경 구절` · `다른 성경 사건`
+이런 말은 **재료의 이름을 감추는 표현**이다. 독자는 무엇을 알게 될지 모르니 안 눌러본다.
+
+- ✗ "다윗이 지혜롭다는 평가는 어떤 **성경적 배경**을 가지고 있나요?" (왕상 3:9를 받고도 솔로몬을 안 씀)
+  → ✓ "지혜를 구한 왕이 다윗 말고 또 있었나요?"
+- ✗ "아히도벨이 돌아선 사건은 **성경에서 어느 순간**과 유사한가요?" (시 41:9를 받고도 안 씀)
+  → ✓ "다윗이 '믿던 친구가 나를 배반했다'고 노래한 시가 있는데, 누구를 두고 쓴 걸까요?"
+- ✗ "**성경의 다른 왕위 계승 사건**과 어떤 점에서 닮았나요?" (왕상 1:34를 받고도 솔로몬을 안 씀)
+  → ✓ "나팔을 불어 왕이 되었다고 알린 사람이 압살롬 말고 또 있나요?"
+
+## 뭉개지 마라
 관주 구절을 받아놓고 "다른 성경 구절과 연결되나요"라고 물으면 **그 재료를 통째로 버리는 것**이다. 실제로 이런 실패가 반복됐다.
 
 - 관주 = 왕상 1:5(다윗의 또 다른 아들 아도니야도 병거와 오십 명을 준비함)
@@ -657,23 +739,88 @@ _GWANJU_WRAPPER = """# 떠오르는 질문 — 관주형(다른 성경 구절로
   - ✗ "여인이 전한 이야기는 어떤 성경 구절과 연결되나요?"
   - ✓ "다윗이 남의 이야기를 듣다가 자기 이야기인 걸 깨달은 적이 또 있나요?"
 
+## 두 번째로 중요 — 오늘 본문의 낱말을 질문 안에 그대로 박아라
+
+`hook`에 **오늘 본문 절에서 글자 그대로 복사한 2~10자**를 적고, **그 소재를 질문 문장에서 실제로 다뤄라.**
+코드가 대조한다 — hook이 본문에 없거나 질문이 본문과 한 조각도 안 겹치면 버려진다. (어미는 바뀌어도 된다.)
+
+**그 절에서 가장 눈에 띄는 물건·장소·행동을 골라라.**
+- ✓ `hook: "병거와 말들"` → 질문 "…병거와 오십 명을 준비한 적이 있나요?"
+- ✓ `hook: "재판관이 되고"` → 질문 "…재판관이 되겠다고 선언한 적이 있나요?"
+- ✓ `"성문 곁"` · `"사십 년"` · `"이스라엘 모든 지파"` · `"나팔 소리"` · `"땅에 쏟아진 물"`
+
+이 규칙이 있는 이유 — 오늘 본문의 물건·장소·말이 질문에 없으면, 관주가 교리 구절일 때 질문이 이렇게 흘러간다.
+- ✗ (삼하 14:14 ↔ 히브리서 9:27을 받고) "사람이 죽음을 피할 수 없다는 점에서 성경은 어떤 교훈을 주나요?"
+  → 오늘 본문 낱말이 하나도 없다. 아무 날에나 붙는 설교가 됐다.
+  → ✓ `hook: "땅에 쏟아진 물"` — "여인이 말한 '땅에 쏟아진 물'은 무엇을 두고 한 말인가요?"
+
+**'교훈·가르침·의미·시사점'을 묻지 마라.** 오늘 본문의 그 낱말이 무엇인지·누구와 닮았는지를 물어라.
+
 ## 무엇을 여는 질문인가
 오늘 본문에 나오지만 초신자가 모를 것을 관주로 밝힌다 — ⓐ 낯선 인물의 정체 ⓑ 본문이 빗대는 옛 사건 ⓒ 그 행동·판결의 근거가 된 율법·관습.
 
 ## 만들 수 없으면 적게 내라
 쓸 만한 관주가 1개뿐이면 1개만 낸다. 억지로 채우려고 뭉개지 마라.
+`hook`을 질문에 못 넣을 관주라면, 그 관주는 오늘 본문과 직접 이어지지 않는다는 뜻이다 — 빼라.
+
+## `이름` 칸 — 관주 구절에 나오는 인물·장소 이름
+
+`이름`에 **그 관주 구절에 실제로 나오는 인물이나 장소의 이름**을 적고, **질문 문장에도 그 이름을 쓴다.**
+- 왕상 1:5 → `"아도니야"` · 삿 9:29 → `"아비멜렉"` · 왕상 3:9 → `"솔로몬"` · 시 41:9 → `"다윗"`
+
+**이름이 없는 관주면 빈 문자열을 적어라.** 지어내지 마라. 롬 16:18('부드러운 말로 순진한 자의 마음을
+미혹하느니라')처럼 인물이 안 나오는 구절이 있다 — 그런 날은 빈 값이 정답이다. 빈 값이라고 탈락하진
+않지만, 이름 있는 관주가 있으면 그쪽이 먼저 뽑힌다.
 
 ## 출력
-`{"candidates": [{"question","topic","verse","anchor"}]}` — 1~3개. `topic`은 1~4단어 소재 라벨."""
+`{"candidates": [{"question","topic","verse","anchor","hook","이름"}]}` — 1~3개. `topic`은 1~4단어 소재 라벨."""
+
+
+# 뭉개기 표현 — 관주 재료의 이름을 감추는 말들. 프롬프트로만 막으니 안 지켜졌다
+# (0804 실측: 관주 10개 중 4개가 이 형태. 같은 날 8/03만 아도니야·아비멜렉을 제대로 넣었다).
+# 주의: '비슷한 사건이 성경에 또 있나요?'처럼 궁금증이 남는 표현은 걸리지 않게 좁게 잡는다.
+_VAGUE_REF = re.compile(
+    r"다른\s*성경\s*(구절|사건|이야기)"
+    r"|성경적\s*배경"
+    r"|성경의\s*다른"
+    r"|성경에서\s*(어느|어떤)"
+    r"|어떤\s*성경\s*구절"
+    r"|다른\s*구절과\s*(어떻게|어떤)")
 
 
 def _gwanju_schema():
     return {"type": "object", "properties": {
         "candidates": {"type": "array", "maxItems": 3, "items": {"type": "object", "properties": {
             "question": {"type": "string"}, "topic": {"type": "string"},
-            "verse": {"type": "integer"}, "anchor": {"type": "string"}},
-            "required": ["question", "topic", "verse", "anchor"], "additionalProperties": False}}},
+            "verse": {"type": "integer"}, "anchor": {"type": "string"},
+            "hook": {"type": "string"}, "이름": {"type": "string"}},
+            "required": ["question", "topic", "verse", "anchor", "hook", "이름"],
+            "additionalProperties": False}}},
         "required": ["candidates"], "additionalProperties": False}
+
+
+_HOOK_RUN = 4      # 질문과 본문이 이만큼 이어져 겹치면 '본문에서 출발한 질문'으로 본다
+
+
+def _hook_ok(c, vmap, body_all):
+    """오늘 본문의 구체 표현이 질문 안에 실제로 들어갔는가 — 코드가 대조한다.
+
+    관주가 교리 구절(히 9:27 '한번 죽는 것은 사람에게 정해진 것')이면 질문에 넣을
+    인물·사건 이름이 없어서 '어떤 교훈을 주나요'로 흘렀다(0804 실측). 오늘 본문
+    낱말을 질문에 박게 하면 그 미끄러짐이 막힌다 — 책 종류로 관주를 거르는 것보다
+    정확하다(시편 41:9는 교리서가 아닌데도 아히도벨과 직결되는 좋은 재료였다).
+
+    검사는 두 단계다.
+    1) `hook`이 그 절 본문에 글자 그대로 있는가 — 지어낸 소재를 막는다.
+    2) 질문이 본문과 4글자 이상 이어져 겹치는가 — hook 자체를 질문에서 찾지는
+       않는다. 한국어는 어미가 붙어서('재판관이 되고' → '재판관이 되겠다고')
+       통째 대조하면 멀쩡한 질문이 죽는다. 0804 실측: 아도니야·아비멜렉·시편41편
+       질문이 전부 이 이유로 탈락했다."""
+    hk = fp._norm(c.get("hook", ""))
+    if len(hk) < 2 or hk not in (vmap.get(c.get("verse")) or ""):
+        return False
+    q = fp._norm(c.get("question", ""))
+    return any(q[i:i + _HOOK_RUN] in body_all for i in range(len(q) - _HOOK_RUN + 1))
 
 
 def _gen_gwanju(chat, qt, history, total_cost, log=None):
@@ -697,6 +844,8 @@ def _gen_gwanju(chat, qt, history, total_cost, log=None):
             log(f"  [관주형] 생성 실패 — 건너뜀: {str(e)[:70]}", "WARN")
         return []
     xmap = _xref_map(qt)
+    vmap = {v["number"]: fp._norm(v["text"]) for v in qt.get("verses", [])}
+    body_all = "".join(vmap.values())
     out = []
     for c in (data.get("candidates") or [])[:3]:
         c["anchor_type"] = "관주"
@@ -706,9 +855,24 @@ def _gen_gwanju(chat, qt, history, total_cost, log=None):
             if log:
                 log(f"  [관주형] 관주 목록에 없어 버림: {c.get('verse')}절 '{c.get('anchor','')}'", "WARN")
             continue
+        if _VAGUE_REF.search(c["question"]):
+            if log:
+                log(f"  [관주형] 뭉개기 표현으로 버림: '{c['question'][:44]}'", "WARN")
+            continue
+        nm = (c.get("이름") or "").strip()
+        # 이름은 탈락 조건이 아니라 순위 재료다 — 이름 없는 관주(롬 16:18 같은 교리 구절)도
+        # 그날 재료가 그것뿐이면 써야 한다. 다만 이름 있는 쪽이 먼저 뽑힌다.
+        c["named"] = bool(nm and fp._norm(nm) in fp._norm(c.get("question", "")))
+        if not _hook_ok(c, vmap, body_all):
+            if log:
+                log(f"  [관주형] 본문 표현이 질문에 없어 버림: '{c.get('hook','')}' "
+                    f"← '{c['question'][:38]}'", "WARN")
+            continue
         out.append(c)
     if log:
-        log(f"  [관주형] {len(out)}개 확보" + ("".join(f" · {c['verse']}절↔{c['anchor']}" for c in out)
+        log(f"  [관주형] {len(out)}개 확보" + ("".join(
+            f" · {c['verse']}절↔{c['anchor']}" + (f"({c['이름']})" if c.get("named") else "(이름없음)")
+            for c in out)
                                             if out else " (쓸 만한 관주 없음)"), "INFO")
     return out
 
@@ -743,6 +907,41 @@ _PREVDAY_WRAPPER = """# 떠오르는 질문 — 전날형(앞 문맥형) 전용 
 `category`는 항상 `"전날"`, `topic`은 1~4단어 소재 라벨, `link`는 답이 가리키는 앞 본문의 참조."""
 
 
+_REF_RE = re.compile(r"^\s*(\D*?)\s*(\d+)\s*:\s*(\d+)\s*(?:[-~]\s*(\d+))?\s*$")
+
+
+def _ref_parts(s):
+    """'사무엘하 14:1-11' → ('사무엘하', 14, 1, 11). 못 읽으면 None."""
+    m = _REF_RE.match(s or "")
+    if not m:
+        return None
+    book, chap, v1, v2 = m.group(1).strip(), int(m.group(2)), int(m.group(3)), m.group(4)
+    return book, chap, v1, int(v2) if v2 else v1
+
+
+def _link_in_recent(link, recent_refs):
+    """모델이 댄 앞 본문 참조가 최근 본문 '안에' 들어가는가.
+
+    예전엔 글자가 똑같아야만 인정했다. 그래서 모델이 '사무엘하 14:3'처럼 절 단위로
+    정확히 짚으면 목록의 '사무엘하 14:1-11'과 글자가 달라 버려졌다(0801·0803 실측 —
+    맞는 답인데 형식 때문에 전날형이 0개가 됐다). 이제 장이 같고 절 구간이 겹치면
+    인정한다. 책 이름을 생략해도('14:3') 장·절이 맞으면 통과시킨다."""
+    lp = _ref_parts(link)
+    if not lp:
+        return fp._norm(link or "") in {fp._norm(r) for r in recent_refs}
+    lb, lc, l1, l2 = lp
+    for r in recent_refs:
+        rp = _ref_parts(r)
+        if not rp:
+            continue
+        rb, rc, r1, r2 = rp
+        if lc != rc or (lb and rb and fp._norm(lb) != fp._norm(rb)):
+            continue
+        if l1 <= r2 and r1 <= l2:      # 절 구간이 겹치면 같은 대목을 가리킨 것
+            return True
+    return False
+
+
 def _prevday_schema():
     return {"type": "object", "properties": {
         "candidates": {"type": "array", "maxItems": 1, "items": {"type": "object", "properties": {
@@ -770,19 +969,17 @@ def _gen_prevday(chat, qt, recent, history, total_cost, log=None):
         if log:
             log(f"  [전날형] 생성 실패 — 건너뜀: {str(e)[:70]}", "WARN")
         return []
-    vmap = {v["number"]: fp._norm(v["text"]) for v in qt.get("verses", [])}
-    links = {fp._norm(r.get("본문_참조", "")) for r in recent}
+    verses = [(v["number"], v["text"]) for v in qt.get("verses", [])]
+    links = [r.get("본문_참조", "") for r in recent]
     out = []
     for c in (data.get("candidates") or [])[:1]:
         c["anchor_type"] = "전날"
         c["question"] = re.sub(r"\*+", "", c.get("question", "")).strip()
-        if not _anchor_ok(c.get("verse"), c.get("anchor", ""), vmap, "전날"):
-            if log:
-                log(f"  [전날형] 출처 검증 실패로 버림: {c.get('verse')}절 '{c.get('anchor','')[:18]}'", "WARN")
+        if not _repair_anchor(c, verses, log=log, tag="전날형"):
             continue
         # link 검사 = '답이 정말 앞 본문을 필요로 하는가'를 코드가 확인하는 자리.
         # 이게 없으면 모델이 오늘 본문만으로 답이 끝나는 질문을 전날형이라 우긴다(0804 실측).
-        if fp._norm(c.get("link", "")) not in links:
+        if not _link_in_recent(c.get("link", ""), links):
             if log:
                 log(f"  [전날형] 앞 본문 참조가 목록에 없어 버림: '{c.get('link','')}'", "WARN")
             continue
@@ -797,7 +994,10 @@ def _gen_candidates(chat, qt, kb, deep5, history, total_cost, log=None, recent=N
                "오륜_질문": qt.get("oryun_questions", []), "지식": _kb_numbered(kb),
                "관주_연결": _xref_text(qt, log=log),
                "최근_본문": recent or [],          # 전날형(앞 문맥형) 재료 — 최근 며칠 본문
-               "같은_책_기존_STEP2_질문": history, "이미_다룬_5단": deep5}
+               # 답변까지 실으면 입력이 4.4만 토큰 늘어난다(하루 +190원). 답변은 중복 검사(임베딩)
+               # 에만 쓰고, 프롬프트에는 질문만 보낸다.
+               "같은_책_기존_STEP2_질문": [h.get("question", "") for h in history],
+               "이미_다룬_5단": deep5}
     # 응답이 max_tokens에 잘려 JSON이 깨지는 일이 있어(16개 생성) 재시도한다.
     last_err = None
     for attempt in range(3):
@@ -840,11 +1040,15 @@ def _judge(chat, qt, deep5, branches, total_cost, log=None):
     cand = []
     for b in branches:
         i = b["idx"]
-        cand.append({"id": f"b{i}_m", "종류": "메인", "question": b["main"].get("question", "")})
+        cand.append({"id": f"b{i}_m", "종류": "메인", "question": b["main"].get("question", ""),
+                     "갈래": b["main"].get("anchor_type", "본문"),
+                     "근거": b["main"].get("anchor", "")})
         for j, t in enumerate(b["tails"]):
             cand.append({"id": f"b{i}_t{j}", "종류": "꼬리",
                          "이_꼬리의_메인_질문": b["main"].get("question", ""),
-                         "question": t.get("question", "")})
+                         "question": t.get("question", ""),
+                         "갈래": t.get("anchor_type", "본문"),
+                         "근거": t.get("anchor", "")})
     payload = {"본문_내용": fp._body_text(qt), "이미_다룬_5단": deep5, "후보_질문": cand}
     try:
         data, cost = chat(JUDGE_MODEL, _judge_system(), payload, "followup_judge",
@@ -998,6 +1202,8 @@ def _pick_diverse(pool, n, *, used_clusters=None, prefer_main=False, avoid_cats=
         n_safe = sum(cats[k] for k in _CAT_SAFE)
         need_safe = n_safe < _SAFE_MIN
         c = min(elig, key=lambda c: (0 if c["anchor_ok"] else 1,   # 검증된 근거가 언제나 먼저
+                                     1 if c.get("gwanju_weak") else 0,  # 뭉갠 관주는 맨 뒤로
+                                     0 if (c.get("anchor_type") != "관주" or c.get("named")) else 1,
                                      0 if (need_safe and c["cat"] in _CAT_SAFE) else 1,
                                      verse_counts[_vslot(c)], cats[c["cat"]],
                                      c["cat"] in avoid_cats,
@@ -1012,6 +1218,23 @@ def _pick_diverse(pool, n, *, used_clusters=None, prefer_main=False, avoid_cats=
     return picked
 
 
+_CHAP_VERSE_RE = re.compile(r"\d+\s*:\s*\d+")     # 질문에 노출된 장절 번호 — 초신자는 못 읽는다
+
+
+def _gwanju_weak(question, atype, vmap):
+    """관주 질문인데 ①뭉갰거나 ②장절 번호를 그대로 썼거나 ③오늘 본문 표현이 하나도
+    없으면 약한 관주로 본다. 셋 다 관주 전용 생성기에서는 이미 걸러내는 것들인데,
+    본문·해석형에서 나온 관주는 그 검사를 안 받아 그냥 통과했다
+    (0804 실측: "잠언 29:5가 다윗과 압살롬의 관계에 어떻게 적용될 수 있나요?")."""
+    if atype != "관주":
+        return False
+    if _VAGUE_REF.search(question) or _CHAP_VERSE_RE.search(question):
+        return True
+    body = "".join((vmap or {}).values())
+    q = fp._norm(question)
+    return not any(q[i:i + _HOOK_RUN] in body for i in range(len(q) - _HOOK_RUN + 1))
+
+
 def _pool_item(d, cid, verdicts, clusters, was_main, vmap, xmap, gists=None, kbmap=None):
     verse, anchor = d.get("verse"), d.get("anchor", "")
     atype = d.get("anchor_type", "본문")
@@ -1020,6 +1243,15 @@ def _pool_item(d, cid, verdicts, clusters, was_main, vmap, xmap, gists=None, kbm
             "cluster": clusters.get(cid, cid), "was_main": was_main, "sel": False,
             "verse": verse, "anchor": anchor, "anchor_type": atype,
             "anchor_ok": _anchor_ok(verse, anchor, vmap, atype, xmap, kbmap),
+            # link = 전날형이 '답이 어디로 가야 하는지' 적어 둔 앞 본문 참조. 검증에만 쓰고
+            # 버렸더니 답변 단계가 어디를 볼지 몰라 오늘 본문 안에서만 맴돌았다(0804 실측).
+            "link": d.get("link", ""),
+            # 관주 전용 생성기가 거르는 잣대를 본문·해석형에서 나온 관주도 받게 한다.
+            # 다만 버리지 않고 순위만 뒤로 민다 — 본문·해석형은 그날 후보의 절반 이상이라
+            # 여기서 통째로 버리면 재료가 얇은 날 최종 개수가 무너진다(0805 판단).
+            "gwanju_weak": _gwanju_weak(d.get("question", ""), atype, vmap),
+            # 관주 구절의 인물·장소 이름이 질문에 들어갔나 — 들어간 쪽이 훨씬 구체적이다.
+            "named": bool(d.get("named")),
             "gist": (gists or {}).get(cid, ""), "from_qfix": False}
 
 
@@ -1119,7 +1351,15 @@ def _assemble_diverse(pool, history, log=None):
     # 겹치는 후보를 여기서 '삭제'하지 않는다 — 겹침은 _gate_clusters가 이미 같은 묶음으로
     # 합쳐놨고, 선택 단계가 묶음당 하나만 뽑는다. 삭제하면 그 묶음의 유일한 후보까지 날아가
     # 고를 수 있는 소재 수가 오히려 줄어든다(2026-07-14 실측: 묶음 9개 → 8개).
-    clean = [c for c in pool if c["verdict"] == _GOOD and not c.get("hist_dup")]
+    # 관주·전날은 판정 결과가 나빠도 '본문재진술'만 아니면 살린다. 판정기는 오늘 본문·5단만
+    # 보고 판단하는데 이 두 갈래는 답이 본문 밖(다른 성경 구절·앞 며칠 본문)에 있어서
+    # 구조적으로 불리하다(0805 실측 8/02: 관주 2·전날 1이 전부 '얕음'·'5단재진술'로 빠져
+    # 예약이 통째로 해제됐다). 판정 프롬프트에도 예외를 넣었지만 코드로 한 겹 더 받친다.
+    _RESCUE = ("관주", "전날")
+    clean = [c for c in pool
+             if not c.get("hist_dup")
+             and (c["verdict"] == _GOOD
+                  or (c.get("anchor_type") in _RESCUE and c["verdict"] != "본문재진술"))]
     if len(clean) < 9:  # 깨끗한 게 모자라면 플래그된 것 중 덜 나쁜 걸 보충(드문 경우)
         clean = clean + [c for c in pool if c not in clean][: 9 - len(clean)]
 
@@ -1134,20 +1374,25 @@ def _assemble_diverse(pool, history, log=None):
     # 관주형과 전날형은 '오늘 본문 밖'을 근거로 삼아 나머지 질문과 소재가 구조적으로 안 겹친다.
     # 그래서 이 둘을 메인 자리에 먼저 앉힌다(사장님 방침 0804: "확정적으로 중복이 안 나오는
     # 고퀄리티 질문을 우선 선별"). 그날 재료가 없으면 각각 자동 해제한다 — 억지로 채우면 지어낸다.
+    # 관주를 2개까지 예약한다 — 1개만 잡아 두니 확보한 3개 중 '제일 약한 것'이 뽑히는 일이
+    # 벌어졌다(0804 실측 8/03: 아도니야·아비멜렉·롬16:18 중 롬16:18만 최종에 들어감).
+    # 뽑는 잣대(_pick_diverse)는 절·묶음·카테고리만 보고 질문 품질은 안 보기 때문이다.
+    # 자리를 2개 주면 셋 중 둘이 들어가 '약한 것만 남는' 경우가 사라진다.
     reserved = []
-    for atype, label in (("관주", "관주(배경지식)"), ("전날", "전날(앞 문맥)")):
+    for atype, want, label in (("관주", 2, "관주"), ("전날", 1, "전날(앞 문맥)")):
         pick = _pick_diverse([c for c in clean if c.get("anchor_type") == atype and c["anchor_ok"]
                               and c not in reserved],
-                             1, prefer_main=True, verse_counts=verse_counts,
+                             want, prefer_main=True, verse_counts=verse_counts,
                              used_anchors=used_anchors, cats=cat_counts)
-        if pick:
-            reserved.append(pick[0])
+        for p in pick:
+            reserved.append(p)
             if log:
-                log(f"  [simple] {label} 메인 예약: '{pick[0]['q'][:28]}' "
-                    f"({pick[0]['verse']}절↔{pick[0]['anchor']})", "INFO")
-        elif log:
+                log(f"  [simple] {label} 메인 예약: '{p['q'][:28]}' "
+                    f"({p['verse']}절↔{p['anchor']})", "INFO")
+        if not pick and log:
             log(f"  [simple] {label} 예약 해제 — 검증된 후보 없음(정상)", "INFO")
     if reserved:
+        reserved = reserved[:3]                  # 메인은 3자리뿐 — 넘치면 앞의 것부터
         others = _pick_diverse([c for c in clean if c not in reserved], 3 - len(reserved),
                                prefer_main=True, verse_counts=verse_counts,
                                used_anchors=used_anchors, cats=cat_counts)
@@ -1188,11 +1433,12 @@ def _assemble_diverse(pool, history, log=None):
     for mi, m in enumerate(mains):
         m["sel"] = True
         node = {"role_id": next(rid), "question": m["q"], "category": m["cat"],
-                "topic": m["topic"], "follow_ups": []}
+                "topic": m["topic"], "link": m.get("link", ""), "follow_ups": []}
         for t in assign[mi]:
             t["sel"] = True
             node["follow_ups"].append({"role_id": next(rid), "question": t["q"],
-                                       "category": t["cat"], "topic": t["topic"]})
+                                       "category": t["cat"], "topic": t["topic"],
+                                       "link": t.get("link", "")})
         tree.append(node)
     picked_all = mains + [t for row in assign for t in row]
     if log:
@@ -1386,26 +1632,26 @@ def _usable_kb(kb):
 
 # ===== 오케스트레이션 =====
 def run_simple(chat, qt, kb, deep5, *, history=None, mode="none", log=None, recent=None,
-               embed=None, today=""):
+               embed=None, today="", recent_qs=None):
     history = history or []
     today = today or qt.get("date", "")
     total_cost = dict(_ZERO_COST)
     kb_use = _usable_kb(kb)
 
     # ① 후보 생성
+    # 카테고리 4갈래를 각각 전용 호출로 뽑는다 — 본체 하나에 다 맡기면 '왜 그랬나'(해석형)로
+    # 쏠려서 나머지 갈래가 0개가 된다. 배경지식형은 0804에 함수만 만들고 여기 배선을 빠뜨려
+    # 4일 내내 한 번도 안 돌았다(그날 후보가 9개뿐이었던 주된 이유).
     branches = _gen_candidates(chat, qt, kb_use, deep5, history, total_cost, log=log, recent=recent)
     gwan = _gen_gwanju(chat, qt, history, total_cost, log=log)
     prev = _gen_prevday(chat, qt, recent, history, total_cost, log=log)
-    if gwan:
+    back = _gen_background(chat, qt, kb_use, history, total_cost, log=log) if kb_use else []
+    calls = 2 + (1 if recent else 0) + (1 if kb_use else 0)
+    for extra in (gwan, prev, back):
+        if not extra:
+            continue
         base = max((bb["idx"] for bb in branches), default=-1) + 1
-        branches = branches + [{"idx": base + i, "main": c, "tails": []} for i, c in enumerate(gwan)]
-    if prev:
-        calls_extra = 1
-        base = max((b["idx"] for b in branches), default=-1) + 1
-        branches = branches + [{"idx": base + i, "main": c, "tails": []} for i, c in enumerate(prev)]
-    else:
-        calls_extra = 1 if recent else 0
-    calls = 1 + calls_extra
+        branches = branches + [{"idx": base + i, "main": c, "tails": []} for i, c in enumerate(extra)]
     # ② 판정 (본문·5단 재진술 + 메인포함) + 답 겹치는 지식묶음 그룹핑
     verdicts, clusters, gists = _judge(chat, qt, deep5, branches, total_cost, log=log)
     calls += 1
@@ -1414,6 +1660,13 @@ def run_simple(chat, qt, kb, deep5, *, history=None, mode="none", log=None, rece
         log(f"  [simple/{mode}] 후보 {len(branches)}개 판정: {dict(vc)} · 답겹침 묶음 {len(set(clusters.values()))}개", "INFO")
     # ③ 묶음 해체 → 자리(절·anchor) + 답 겹침 + 카테고리 다양하게 메인3·꼬리6 선택
     vmap, xmap, kbmap = _verse_map(qt), _xref_map(qt), _kb_map(kb_use)
+    # 본문에 근거를 둔 후보는 판정 전에 근거를 본문 글자로 맞춰 둔다 — 어긋났다고 버리면
+    # '옮겨 적다 한 글자 틀린' 멀쩡한 질문이 후순위로 밀린다(0804: 하루 1~6건).
+    _verses = [(v["number"], v["text"]) for v in qt.get("verses", [])]
+    for _b in branches:
+        for _c in [_b["main"]] + list(_b.get("tails") or []):
+            if _c.get("anchor_type", "본문") in ("본문", "전날"):
+                _repair_anchor(_c, _verses)
     pool = _flatten_pool(branches, verdicts, clusters, vmap, xmap, gists, kbmap)
     bad = [c for c in pool if not c["anchor_ok"]]
     if log and bad:
@@ -1481,7 +1734,8 @@ def run_simple(chat, qt, kb, deep5, *, history=None, mode="none", log=None, rece
         log(f"  [simple/{mode}] 최종 미해결 {len(residual)}건(원본 유지): {list(residual)}", "ERR")
 
     # ④ 답변 1회 (4o, 검증+재시도)
-    answers = fp.write_answers(chat, qt, kb_use, deep5, tree, total_cost)
+    answers = fp.write_answers(chat, qt, kb_use, deep5, tree, total_cost,
+                               recent=recent, recent_qs=recent_qs)
     fp._apply_answers(tree, answers)
     calls += 1
 
@@ -1568,6 +1822,30 @@ def _overlap_score(items, embed):
 _GATE_KEEP_GWANJU_FIRST = True   # 한 그룹에서 살릴 하나를 고를 때 검증된 관주형을 우선한다
 
 
+def _greedy_keep(vecs, order, thr):
+    """'이미 살아남은 것'과만 비교해 자른다 — 연쇄 병합을 없앤 방식.
+
+    union-find(단일 연결)는 A~B가 겹치고 B~C가 겹치면 A와 C가 안 겹쳐도 셋을 한 덩어리로
+    묶는다. 0803에 그 때문에 8개가 한 덩어리가 되어 질문이 9개→2개로 무너졌고, 그래서
+    자르기를 통째로 꺼 뒀다. 순차 방식은 그 일이 구조적으로 일어나지 않는다
+    (기록된 겹침으로 모의: union-find 5·5·8·8개 → 순차 5·6·8·8개).
+
+    order = 살릴 우선순위(관주형 → 메인 → 먼저 나온 것). 반환: (남길 인덱스, {버릴것: (대신남긴것, 유사도)})
+    """
+    keep, dropped = [], {}
+    for k in order:
+        hit = None
+        for w in keep:
+            sim = _cosine(vecs[k], vecs[w])
+            if sim >= thr and (hit is None or sim > hit[1]):
+                hit = (w, sim)
+        if hit is None:
+            keep.append(k)
+        else:
+            dropped[k] = hit
+    return keep, dropped
+
+
 def _uf_groups(pairs, n):
     """겹침 쌍을 union-find로 묶어 그룹 목록(각 그룹=인덱스 오름차순)으로 반환."""
     parent = list(range(n))
@@ -1608,7 +1886,7 @@ def _flat_nodes(items):
 # 그래서 자르는 동작만 끄고 판정 결과는 meta['embed_gate']에 그대로 남긴다 —
 # 무엇이 왜 겹쳤는지 계속 볼 수 있어야 연쇄 병합을 고칠 때 근거가 된다.
 # 중복 제거는 그 앞 단계(판정기의 answer_groups)가 이미 맡고 있다.
-GATE_CUT = False
+GATE_CUT = True
 
 
 def apply_embed_gate(items, meta, embed, *, log=None):
@@ -1646,21 +1924,15 @@ def apply_embed_gate(items, meta, embed, *, log=None):
             if s >= _SIM_THRESHOLD:
                 flagged.append((a, b, round(s, 4)))
 
-    keep = set()
-    dropped = []
-    for group in _uf_groups([(a, b) for a, b, _s in flagged], len(nodes)):
-        if len(group) == 1:
-            keep.add(group[0])
-            continue
-        # ①관주 ②메인(꼬리idx==-1) ③먼저 나온 것 — 튜플이 작을수록 우선
-        winner = min(group, key=lambda k: (not (_GATE_KEEP_GWANJU_FIRST and is_gwanju[k]),
-                                           nodes[k][1] != -1, k))
-        keep.add(winner)
-        for k in group:
-            if k != winner:
-                sim = max((s for a, b, s in flagged if winner in (a, b) and k in (a, b)), default=None)
-                dropped.append({"question": nodes[k][2], "kept_instead": nodes[winner][2],
-                                "sim": sim, "was_main": nodes[k][1] == -1})
+    # 살릴 우선순위: ①검증된 관주형 ②메인(꼬리idx==-1) ③먼저 나온 것
+    order = sorted(range(len(nodes)),
+                   key=lambda k: (not (_GATE_KEEP_GWANJU_FIRST and is_gwanju[k]),
+                                  nodes[k][1] != -1, k))
+    keep_list, drop_map = _greedy_keep(vecs, order, _SIM_THRESHOLD)
+    keep = set(keep_list)
+    dropped = [{"question": nodes[k][2], "kept_instead": nodes[w][2],
+                "sim": round(sim, 4), "was_main": nodes[k][1] == -1}
+               for k, (w, sim) in drop_map.items()]
 
     if not GATE_CUT:
         # 기록만 하고 원본을 그대로 돌려준다 — 연쇄 병합 때문에 과하게 잘린다(위 주석 참고).
@@ -1754,7 +2026,7 @@ def _priority_kinds(items, meta):
 
 
 def run_best_of_n(chat, qt, kb, deep5, *, history=None, mode="none", log=None,
-                  n=3, embed=None, target=1, recent=None):
+                  n=3, embed=None, target=1, recent=None, recent_qs=None):
     """run_simple을 최대 n번 실행해 '답변 임베딩 겹침'이 제일 적은 세트를 고른다.
     - embed: 문장 리스트→벡터 리스트 함수(주입). None이면 best-of-N 끄고 run_simple 1회(기존 동작).
     - target: 겹침쌍이 이 값 이하인 세트가 나오면 조기 종료(비용 절약). 기본 1 — 관문이 생긴
@@ -1767,10 +2039,10 @@ def run_best_of_n(chat, qt, kb, deep5, *, history=None, mode="none", log=None,
     반환: (items, 누적_cost, meta) — run_simple과 동일 시그니처. meta['best_of_n']에 선택 기록.
     """
     if embed is None:   # 임베딩이 없으면 판 고르기도 관문도 못 한다 → 옛 단발 동작 그대로
-        return run_simple(chat, qt, kb, deep5, history=history, mode=mode, log=log, recent=recent,
+        return run_simple(chat, qt, kb, deep5, history=history, mode=mode, log=log, recent=recent, recent_qs=recent_qs,
                           embed=embed, today=qt.get('date', ''))
     if n <= 1:          # 판 고르기만 끄고 관문은 살린다
-        items, cost, meta = run_simple(chat, qt, kb, deep5, history=history, mode=mode, log=log, recent=recent,
+        items, cost, meta = run_simple(chat, qt, kb, deep5, history=history, mode=mode, log=log, recent=recent, recent_qs=recent_qs,
                           embed=embed, today=qt.get('date', ''))
         items, meta = apply_embed_gate(items, meta, embed, log=log)
         return items, cost, meta
@@ -1783,7 +2055,7 @@ def run_best_of_n(chat, qt, kb, deep5, *, history=None, mode="none", log=None,
     possible_kinds = (1 if _xref_text(qt) else 0) + (1 if recent else 0)
     for r in range(1, n + 1):
         try:
-            items, cost, meta = run_simple(chat, qt, kb, deep5, history=history, mode=mode, log=log, recent=recent,
+            items, cost, meta = run_simple(chat, qt, kb, deep5, history=history, mode=mode, log=log, recent=recent, recent_qs=recent_qs,
                           embed=embed, today=qt.get('date', ''))
         except Exception as e:
             last_err = e

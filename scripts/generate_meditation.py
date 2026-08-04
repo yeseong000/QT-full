@@ -53,6 +53,7 @@ from pathlib import Path
 
 import followup_pool as fup     # 떠오르는 질문 공용 유틸(답변 생성·중복 판정·KB 커버리지) — 단순 파이프라인이 재사용
 import followup_simple as fs    # 떠오르는 질문 (단순화 파이프라인) — 생성 4o · 판정/교체 mini · 답겹침 코드 하드게이트
+import summary_gate as sg       # 핵심 요약 5줄 저장 전 게이트 (본문 이름·사물이 살아남았나)
 # followup_verify.py(2차 검증·가드, v2)는 이 v3로 대체되어 더 이상 여기서 import하지 않는다.
 # 파일은 참고용으로 남겨뒀다(모듈 docstring에 DEPRECATED 표기).
 
@@ -62,6 +63,7 @@ KST = timezone(timedelta(hours=9))
 PROJECT_ROOT = Path(__file__).parent.parent
 QT_DIR = PROJECT_ROOT / "data" / "qt"
 DEEP_DIVE_DIR = PROJECT_ROOT / "data" / "deep_dive"
+SUMMARY_DIR = PROJECT_ROOT / "data" / "summary"   # 그날 핵심 5줄 — 뒷날 큐티가 앞 흐름을 되짚는 기록
 REF_DIR = PROJECT_ROOT / "data" / "reference"
 PROMPT_DIR = PROJECT_ROOT / "prompts" / "breath_5step"
 SYSTEM_PROMPT_PATH = PROMPT_DIR / "_final_system.md"
@@ -250,13 +252,165 @@ def load_recent_passages(qt_data: dict, *, days: int = RECENT_PASSAGE_DAYS) -> l
             continue
         if (data.get("book_name") or _book_from_ref(data.get("scripture_ref", ""))) != current_book:
             continue
-        out.append({
+        row = {
             "날짜": date,
             "며칠_전": gap,
             "본문_참조": data.get("scripture_ref", ""),
             "본문_내용": "\n".join(f"{v['number']} {v['text']}" for v in data.get("verses", [])),
-        })
+        }
+        summary = load_daily_summary(date)
+        if summary:
+            row["핵심요약"] = summary
+        out.append(row)
     return out
+
+
+def recent_followup_questions(qt_data: dict, days: int = RECENT_PASSAGE_DAYS) -> list[str]:
+    """최근 며칠에 이미 내보낸 '떠오르는 질문' 문장들. 같은 걸 또 설명하지 않게 하려고 넘긴다."""
+    out = []
+    for r in load_recent_passages(qt_data, days=days):
+        path = DEEP_DIVE_DIR / f"{r.get('날짜', '')}.json"
+        if not path.exists():
+            continue
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except Exception:
+            continue
+        for m in data.get("follow_up_questions") or []:
+            for node in [m] + list(m.get("follow_ups") or []):
+                q = (node.get("question") or "").strip()
+                if q:
+                    out.append(q)
+    return out
+
+
+def load_daily_summary(date: str) -> list[str]:
+    """그날 저장해 둔 핵심 요약 5줄. 없으면 빈 목록.
+
+    deep_dive가 아니라 별도 폴더에 두는 이유: deep_dive는 --force 재생성 때 통째로
+    덮어써져서 요약이 날아간다. 요약은 '뒷날이 참고할 기록'이라 한 번 만들면 남아야 한다.
+    """
+    path = SUMMARY_DIR / f"{date}.json"
+    if not path.exists():
+        return []
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return []
+    return [s for s in (data.get("lines") or []) if isinstance(s, str) and s.strip()]
+
+
+def save_daily_summary(date: str, qt_data: dict, lines: list[str]) -> None:
+    SUMMARY_DIR.mkdir(parents=True, exist_ok=True)
+    (SUMMARY_DIR / f"{date}.json").write_text(json.dumps({
+        "date": date,
+        "scripture_ref": qt_data.get("scripture_ref", ""),
+        "lines": lines,
+    }, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+SUMMARY_MODEL = "gpt-4o"
+
+_SUMMARY_WRAPPER = """# 그날 핵심 요약 5줄
+
+오늘 큐티에서 **무슨 일이 있었고 왜 그랬는지**를 5줄로 남긴다. 며칠 뒤의 큐티가 '앞에서 무슨 일이
+있었나'를 알아보려고 이 5줄만 읽는다. 며칠 거른 독자에게 흐름을 되짚어 주는 것이 목적이다.
+
+## 재료를 다 써라
+`오늘_본문`(중심) · `지식`(KB) · `최근_본문`(앞 며칠) · `최근_떠오른_질문`(앞 며칠에 이미 설명한 것).
+넷을 종합해 오늘 다섯 줄을 쓴다. **다섯 줄은 `오늘_본문`에서 나와야 한다.**
+
+- `최근_본문`·`최근_떠오른_질문`은 **오늘 일을 앞과 이어 붙이는 데만** 쓴다. 앞날 이야기를 요약하지 마라.
+- `지식`에 그 대목의 배경(지명·관습·인물)이 있으면 **한 줄 안에 짧게** 녹인다. 없으면 넣지 마라.
+
+## 반드시 지킬 것
+1. **본문의 낱말을 그대로 살려라.** 뒷날 답변이 이 5줄을 근거로 인용한다. 뭉뚱그리면 못 쓴다.
+   - ✗ "압살롬이 성문에서 민심을 얻었다" (무엇을 어떻게 했는지가 사라졌다)
+   - ✓ "압살롬이 성문 길 곁에 서서 재판하러 오는 사람마다 '너는 어느 성읍 사람이냐'고 물었다"
+   - 바꿔 부르지 마라: 본문이 '팔에 있는 고리'면 '팔찌'가 아니라 '고리'다.
+2. **사실만 적는다.** 교훈·적용·평가를 넣지 마라. 일어난 일과 본문이 밝힌 이유까지다.
+3. **사람·장소·물건의 이름을 빼지 마라** — 아히도벨·헤브론·병거와 오십 명처럼 뒷날 이어질 실마리다.
+4. **본문에 일어난 차례대로 적어라.** 앞뒤를 바꾸면 뒷날이 흐름을 잘못 되짚는다.
+   (예: 애도가 11~12절이고 처형이 15절이면, 애도를 먼저 적는다.)
+5. 한 줄은 한 문장, 40~80자. 본문에 없는 것을 덧붙이지 마라.
+6. 어미는 '~했다' 체로 짧게. 마크다운 금지.
+
+## 출력
+`{"lines": ["...", "...", "...", "...", "..."]}` — 정확히 5줄."""
+
+
+def _summary_schema() -> dict:
+    return {
+        "type": "object",
+        "properties": {
+            "lines": {"type": "array", "minItems": 5, "maxItems": 5, "items": {"type": "string"}}
+        },
+        "required": ["lines"],
+        "additionalProperties": False,
+    }
+
+
+def generate_daily_summary(qt_data: dict, deep5: dict | None = None, kb: dict | None = None,
+                           recent: list[dict] | None = None, recent_qs: list[str] | None = None,
+                           total_cost: dict | None = None) -> list[str]:
+    """뒷날 큐티가 참고할 '그날 핵심 5줄'을 만든다.
+
+    5단 묵상의 장면·맥락으로 대신하지 않는 이유: 그쪽은 묵상용이라 본문 낱말이 뭉개져
+    있다(0803 '성문 곁에 나가 송사를 들어주겠다고 했다' — 정작 '너는 어느 성읍 사람이냐'가
+    빠졌고, 그게 이튿날 '모든 지파에 전령을 보냈다'의 답이었다). 사장님 결정 0805.
+
+    재료는 네 갈래다 — 오늘 본문(중심)·KB·최근 본문·최근 떠오른 질문.
+
+    5단 호흡(deep5)을 재료에서 뺀 이유(0805 A/B 실측): 넣으면 모델이 본문 대신 그 다듬어진
+    문장을 옮겨 쓴다. 34일 요약의 64%가 본문보다 5단 호흡에 더 가까웠고, 7/01은 5줄 전부가
+    그랬다 — '아말렉'도 '왕관과 팔에 있는 고리'도 통째로 사라졌다. 빼고 돌리니 같은 날 5줄에
+    아말렉·왕관이 살아났다. deep5 인자는 호출부 호환을 위해 남겨두되 payload에 넣지 않는다.
+    (뺄 때 잃는 '사건 차례' 감각은 프롬프트 규칙 4로 대신 잡는다.)
+    """
+    payload = {
+        "본문_참조": qt_data.get("scripture_ref", ""),
+        "오늘_본문": "\n".join(f"{v['number']} {v['text']}" for v in qt_data.get("verses", [])),
+        "지식": fs._usable_kb(kb),
+        "최근_본문": [{"본문_참조": r.get("본문_참조", ""), "본문_내용": r.get("본문_내용", "")}
+                   for r in (recent or [])],
+        "최근_떠오른_질문": recent_qs or [],
+    }
+    def _once(extra: str = ""):
+        data, cost = _fu_chat_v2(SUMMARY_MODEL, _SUMMARY_WRAPPER + extra, payload,
+                                 "daily_summary", _summary_schema(), 0.3, 700)
+        if total_cost is not None:
+            for k in ("input_tokens", "output_tokens", "total_tokens"):
+                total_cost[k] = total_cost.get(k, 0) + cost.get(k, 0)
+            for k in ("cost_usd", "cost_krw"):
+                total_cost[k] = round(total_cost.get(k, 0) + cost.get(k, 0), 6)
+        return [s.strip() for s in (data.get("lines") or []) if s and s.strip()]
+
+    try:
+        lines = _once()
+    except Exception as e:
+        log(f"핵심 요약 생성 실패 — 건너뜀: {str(e)[:70]}", "WARN")
+        return []
+
+    # 저장 전 게이트 — 본문의 이름·사물이 빠졌거나 바꿔 불렸는지 mini가 보고, 걸리면 한 번 다시 쓴다.
+    # 프롬프트에 "이름을 빼지 마라"라고 적어도 매번 지켜지지 않아서 코드로 확인한다(0805).
+    try:
+        terms = sg.key_terms(_fu_chat_v2, qt_data, total_cost)
+        miss = sg.check(lines, terms)
+        if miss:
+            log(f"요약 게이트: 실마리 {len(terms) - len(miss)}/{len(terms)} — 빠짐 {', '.join(miss)} → 다시 부름", "WARN")
+            retry = _once(sg.hint(miss))
+            miss2 = sg.check(retry, terms)
+            if len(miss2) < len(miss):
+                log(f"요약 게이트: 다시 쓴 게 나음 (빠짐 {len(miss)}개 → {len(miss2)}개)", "OK")
+                lines = retry
+            else:
+                log(f"요약 게이트: 나아지지 않아 첫 결과 유지 (빠짐 {len(miss)}개 vs {len(miss2)}개)", "INFO")
+        elif terms:
+            log(f"요약 게이트: 통과 (실마리 {len(terms)}개 모두 살아 있음)", "OK")
+    except Exception as e:
+        log(f"요약 게이트 건너뜀: {str(e)[:70]}", "WARN")
+
+    return lines
 
 
 def load_kb(book_name: str) -> dict | None:
@@ -1339,6 +1493,22 @@ def main() -> int:
     except Exception as e:
         log(f"더 깊이 묻기 파이프라인 실패 — 건너뜀 (5단 호흡은 정상 저장됨): {e}", "WARN")
         follow_up_items = follow_up_cost = followup_meta = None
+
+    # 4-2. 그날 핵심 요약 5줄 — 오늘 쓰는 게 아니라 '며칠 뒤가 되짚어 볼' 기록이다.
+    #      전날형 질문·답변이 이걸 근거로 앞 흐름을 이어 붙인다.
+    try:
+        recent_for_sum = load_recent_passages(qt_data)
+        daily_summary = generate_daily_summary(
+            qt_data, variants[0], kb, recent=recent_for_sum,
+            recent_qs=recent_followup_questions(qt_data, len(recent_for_sum)),
+            total_cost=total_cost,
+        )
+        if daily_summary and not args.dry_run:
+            save_daily_summary(date_str, qt_data, daily_summary)
+            log(f"핵심 요약 {len(daily_summary)}줄 저장 → data/summary/{date_str}.json", "OK")
+    except Exception as e:
+        log(f"핵심 요약 생성 실패 — 건너뜀: {str(e)[:70]}", "WARN")
+        daily_summary = []
 
     # 5. 메타데이터 조립 — 최상위 5키 = variants[0] (하위 호환)
     result = {

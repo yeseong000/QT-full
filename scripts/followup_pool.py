@@ -382,30 +382,26 @@ def build_answer_system_prompt() -> str:
 def _flatten_tree(tree):
     out = []
     for m in tree:
-        out.append((m["role_id"], m["question"], m["category"]))
+        out.append((m["role_id"], m["question"], m["category"], m.get("link", "")))
         for t in m["follow_ups"]:
-            out.append((t["role_id"], t["question"], t["category"]))
+            out.append((t["role_id"], t["question"], t["category"], t.get("link", "")))
     return out
 
 
 def _answer_schema(role_ids):
+    """질문 하나당 칸 하나를 만들고 그 칸을 전부 필수로 둔다.
+
+    예전엔 배열로 받았는데, 스키마가 '각 항목의 role_id는 이 목록 중 하나'라고만 말하고
+    '몇 개를 보내라'를 말하지 않았다. 그래서 모델이 몇 개를 빠뜨려도 규칙 위반이 아니었고,
+    같은 role_id가 두 번 오면 사전으로 모으는 과정에서 하나로 합쳐지기까지 했다.
+    개수가 안 맞으면 그날 답변을 통째로 버리고 같은 요청을 3번 반복 — 같은 결과가 왔다
+    (0804·0805 실측 3회: 9개 중 8개·5개·7개만 도착해 그날 큐티가 통째로 비었다).
+
+    칸 수는 그날 고른 질문 수만큼이다 — 9개 고정이 아니다. 7개를 골랐으면 7칸을 요구한다."""
     return {
         "type": "object",
-        "properties": {
-            "answers": {
-                "type": "array",
-                "items": {
-                    "type": "object",
-                    "properties": {
-                        "role_id": {"type": "string", "enum": role_ids},
-                        "answer": {"type": "string"},
-                    },
-                    "required": ["role_id", "answer"],
-                    "additionalProperties": False,
-                },
-            }
-        },
-        "required": ["answers"],
+        "properties": {rid: {"type": "string"} for rid in role_ids},
+        "required": list(role_ids),
         "additionalProperties": False,
     }
 
@@ -420,14 +416,23 @@ def _validate_answers(answers, expected_ids):
             raise ValueError(f"{rid} 답변 길이 이상함: {len(ans)}자")
 
 
-def write_answers(chat, qt, kb, deep5, tree, total_cost, *, only_role_ids=None):
+def write_answers(chat, qt, kb, deep5, tree, total_cost, *, only_role_ids=None,
+                  recent=None, recent_qs=None):
+    """recent = 최근 며칠 본문·핵심요약. 이걸 안 넘기면 전날형 답변이 앞 내용을 못 쓴다 —
+    질문은 '어제로 가라'고 열어 놓고 답변 단계엔 어제 자료가 없어서 오늘 본문 안에서만
+    맴돌았다(0804 실측: '모든 지파에 전령을 보낸 이유'를 '계획을 세웠으니까'로 답함)."""
     targets = [t for t in _flatten_tree(tree) if only_role_ids is None or t[0] in only_role_ids]
     role_ids = [t[0] for t in targets]
     system = build_answer_system_prompt()
     payload = {
         "본문_참조": qt.get("scripture_ref", ""), "본문_내용": _body_text(qt),
         "지식": kb, "이미_다룬_5단": deep5,
-        "질문_목록": [{"role_id": r, "question": q, "카테고리": c} for r, q, c in targets],
+        "최근_본문": [{"본문_참조": r.get("본문_참조", ""), "며칠_전": r.get("며칠_전"),
+                    "핵심요약": r.get("핵심요약") or [], "본문_내용": r.get("본문_내용", "")}
+                   for r in (recent or [])],
+        "최근_떠오른_질문": recent_qs or [],
+        "질문_목록": [{"role_id": r, "question": q, "카테고리": c,
+                    **({"참고할_앞본문": lk} if lk else {})} for r, q, c, lk in targets],
     }
     last_err = None
     for _ in range(MAX_ANSWER_ATTEMPTS):
@@ -435,7 +440,7 @@ def write_answers(chat, qt, kb, deep5, tree, total_cost, *, only_role_ids=None):
             data, cost = chat(ANSWER_MODEL, system, payload, "followup_answers",
                                _answer_schema(role_ids), 0.5, 6000)
             _add_cost(total_cost, cost)
-            answers = {a.get("role_id"): a.get("answer") for a in data.get("answers", []) if isinstance(a, dict)}
+            answers = {rid: data[rid] for rid in role_ids if isinstance(data.get(rid), str)}
             _validate_answers(answers, role_ids)
             return answers
         except Exception as e:  # JSON 파싱 실패(응답 잘림 등) 포함 — 재시도로 넘긴다
