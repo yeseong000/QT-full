@@ -1656,13 +1656,42 @@
       if (ahead <= todayISO && ahead >= DIGEST_MIN_DATE) loadDigestDay(ahead);
     }
 
+    // 볼 게 있는 가장 최근 날을 찾는다 — 오늘 새벽 생성이 아직 안 돌았으면 오늘 자료가 없어서,
+    // 빈 안내 대신 어제(마지막으로 만들어진 날)를 펼쳐 준다. 하루씩 뒤로 최대 일주일까지만 본다.
+    async function findLatestDigestDate(maxBack = 7) {
+      let date = todayISO;
+      for (let i = 0; i <= maxBack; i++) {
+        const { summary, scenes } = await loadDigestDay(date);
+        const hasLines = Array.isArray(summary?.lines)
+          && summary.lines.some(s => s && String(s).trim());
+        if (hasLines || (scenes && scenes.length)) return date;
+        const prev = shiftISO(date, -1);
+        if (prev < DIGEST_MIN_DATE) break;
+        date = prev;
+      }
+      return todayISO;                 // 일주일 내내 없으면 오늘을 그대로 (빈 안내)
+    }
+
     function openDigestSheet() {
       const sheet = document.getElementById('digestSheet');
       sheet.classList.add('is-open');
       sheet.setAttribute('aria-hidden', 'false');
       document.body.style.overflow = 'hidden';
-      renderDigest(todayISO);          // 언제 열어도 오늘이 기준
-      loadDigestDay(shiftISO(todayISO, -1));
+
+      // 날짜를 찾는 동안엔 스켈레톤만 — 오늘을 먼저 그렸다가 어제로 튀면 깜빡여 보인다
+      document.getElementById('digestDate').textContent = '—';
+      document.getElementById('digestRef').textContent = '';
+      document.getElementById('digestLines').innerHTML = '';
+      document.getElementById('digestNote').hidden = true;
+      document.getElementById('digestSkeleton').hidden = false;
+      document.getElementById('digestPrevBtn').disabled = true;
+      document.getElementById('digestNextBtn').disabled = true;
+      setDigestScenes([]);
+
+      findLatestDigestDate().then((date) => {
+        renderDigest(date);
+        loadDigestDay(shiftISO(date, -1));
+      });
     }
 
     function closeDigestSheet() {
