@@ -51,7 +51,9 @@ def key_terms(chat, qt: dict, total_cost: dict | None = None) -> list[str]:
     모델에게 판정까지 맡겼더니 요약에 멀쩡히 있는 '사울·다말'까지 빠졌다고 집어서
     매번 헛되이 다시 부르게 됐다(0805 실측).
     """
-    body = "\n".join(f"{v['number']} {v['text']}" for v in qt.get("verses", []))
+    # 절 번호를 떼고 넘긴다. 번호를 붙이면 mini가 '7 사 년 만에'처럼 번호까지 실마리로 집는데,
+    # 요약문에 절 번호가 들어갈 리 없으니 그 실마리는 영영 못 채운다 → 매일 헛되이 다시 부름(0805).
+    body = "\n".join(v.get("text", "") for v in qt.get("verses", []))
     try:
         data, cost = chat(GATE_MODEL, _SYSTEM, {"본문": body}, "summary_clues", _schema(), 0.0, 200)
     except Exception:
