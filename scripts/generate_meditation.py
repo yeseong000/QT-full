@@ -295,18 +295,39 @@ def build_messages(system_prompt: str, fewshot: list, payload: dict) -> list:
 
 
 # ===== API 호출 =====
-def calc_cost(usage) -> dict:
+# OpenAI는 같은 앞부분(≥1024토큰)을 재사용하면 그 입력 토큰을 '캐시 적중'으로 보고 **반값**만
+# 청구한다(자동, 코드 설정 불필요). best-of-N은 같은 프롬프트를 몇 초 간격으로 여러 번 보내므로
+# 2판부터는 입력의 대부분이 캐시에 걸린다(2026-08-04 실측: 2회차 2731 중 2688 적중 = 98%).
+# 캐시된 몫을 정가로 계산하면 장부가 실제보다 비싸게 찍혀 "무엇이 비싼가" 판단이 어긋난다.
+CACHED_INPUT_DISCOUNT = 0.5   # 캐시 적중 입력 토큰의 단가 배수
+
+
+def _cached_tokens(usage) -> int:
+    """usage.prompt_tokens_details.cached_tokens — 없는 모델·구버전 SDK면 0."""
+    d = getattr(usage, "prompt_tokens_details", None)
+    return getattr(d, "cached_tokens", 0) or 0
+
+
+def _cost_fields(usage, price_in: float, price_out: float) -> dict:
+    cached = min(_cached_tokens(usage), usage.prompt_tokens)
+    fresh = usage.prompt_tokens - cached
     cost_usd = (
-        usage.prompt_tokens / 1_000_000 * PRICE_INPUT_PER_1M
-        + usage.completion_tokens / 1_000_000 * PRICE_OUTPUT_PER_1M
+        fresh / 1_000_000 * price_in
+        + cached / 1_000_000 * price_in * CACHED_INPUT_DISCOUNT
+        + usage.completion_tokens / 1_000_000 * price_out
     )
     return {
         "input_tokens": usage.prompt_tokens,
+        "cached_input_tokens": cached,      # 관측용 — 캐시 적중률을 나중에 볼 수 있게
         "output_tokens": usage.completion_tokens,
         "total_tokens": usage.total_tokens,
         "cost_usd": round(cost_usd, 6),
         "cost_krw": round(cost_usd * USD_TO_KRW, 2),
     }
+
+
+def calc_cost(usage) -> dict:
+    return _cost_fields(usage, PRICE_INPUT_PER_1M, PRICE_OUTPUT_PER_1M)
 
 
 def call_openai(messages: list, max_retries: int = 1, *, temperature: float = TEMPERATURE, max_tokens: int = MAX_TOKENS, response_format: dict | None = None, model: str | None = None):
@@ -405,14 +426,7 @@ _MODEL_PRICING = {
 
 def _calc_cost_for_model(usage, model: str) -> dict:
     price_in, price_out = _MODEL_PRICING.get(model, (PRICE_INPUT_PER_1M, PRICE_OUTPUT_PER_1M))
-    cost_usd = usage.prompt_tokens / 1_000_000 * price_in + usage.completion_tokens / 1_000_000 * price_out
-    return {
-        "input_tokens": usage.prompt_tokens,
-        "output_tokens": usage.completion_tokens,
-        "total_tokens": usage.total_tokens,
-        "cost_usd": round(cost_usd, 6),
-        "cost_krw": round(cost_usd * USD_TO_KRW, 2),
-    }
+    return _cost_fields(usage, price_in, price_out)   # 캐시 적중분은 반값으로 계산
 
 
 def _fu_chat_v2(model, system, payload, schema_name, schema, temperature, max_tokens):
@@ -611,7 +625,7 @@ PASSAGE_SPLIT_SYSTEM = """당신은 성경 본문을 묵상 단위로 나누는 
 """
 
 
-_ZERO_COST = {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0, "cost_usd": 0.0, "cost_krw": 0.0}
+_ZERO_COST = {"input_tokens": 0, "cached_input_tokens": 0, "output_tokens": 0, "total_tokens": 0, "cost_usd": 0.0, "cost_krw": 0.0}
 
 
 def _make_segment(verses: list, i0: int, i1: int, 소주제: str = "", 교훈축: str = "") -> dict:
@@ -896,7 +910,7 @@ def review_and_fix(review_prompt: str, deep_dive: dict, payload: dict) -> tuple[
     어떤 단계에서든 실패하면 원본 초안을 그대로 돌려 본 생성은 살린다.
     반환: (교정된 5키 dict, cost dict)
     """
-    zero_cost = {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0, "cost_usd": 0.0, "cost_krw": 0.0}
+    zero_cost = {"input_tokens": 0, "cached_input_tokens": 0, "output_tokens": 0, "total_tokens": 0, "cost_usd": 0.0, "cost_krw": 0.0}
     review_input = {
         "원본_입력": {
             "본문_제목": payload.get("본문_제목", ""),
@@ -950,7 +964,7 @@ def enforce_modern_korean(deep_dive: dict) -> tuple[dict, dict]:
     옛문체가 없으면 무비용으로 즉시 통과. 검출되면 현대어로 강제 교정한다.
     반환: (정제된 deep_dive, cost dict)
     """
-    zero = {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0, "cost_usd": 0.0, "cost_krw": 0.0}
+    zero = {"input_tokens": 0, "cached_input_tokens": 0, "output_tokens": 0, "total_tokens": 0, "cost_usd": 0.0, "cost_krw": 0.0}
     hits = find_archaic(deep_dive)
     if not hits:
         return deep_dive, zero
@@ -1144,7 +1158,7 @@ def main() -> int:
     # 2. 생성 모드 결정
     oryun_questions = qt_data.get("oryun_questions", []) or []
     variants: list[dict] = []
-    total_cost = {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0, "cost_usd": 0.0, "cost_krw": 0.0}
+    total_cost = {"input_tokens": 0, "cached_input_tokens": 0, "output_tokens": 0, "total_tokens": 0, "cost_usd": 0.0, "cost_krw": 0.0}
 
     if args.passage:
         # === 본문 순서(앞/뒤) 분할 모드 ===

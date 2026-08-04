@@ -57,7 +57,8 @@ CANDIDATE_MODEL = "gpt-4o-mini"
 ANSWER_MODEL = "gpt-4o"
 GROUNDING_MODEL = "gpt-4o"
 
-_ZERO_COST = {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0, "cost_usd": 0.0, "cost_krw": 0.0}
+_ZERO_COST = {"input_tokens": 0, "cached_input_tokens": 0, "output_tokens": 0,
+              "total_tokens": 0, "cost_usd": 0.0, "cost_krw": 0.0}
 _ROLE_IDS = ["m1", "t1a", "t1b", "m2", "t2a", "t2b", "m3", "t3a", "t3b"]
 
 
