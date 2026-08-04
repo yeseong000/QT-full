@@ -207,6 +207,47 @@ def load_same_book_followup_history(qt_data: dict, *, limit: int = 240) -> list[
     return history
 
 
+RECENT_PASSAGE_DAYS = 3      # 전날형(앞 문맥형)이 되짚을 범위. 더 늘리면 오늘 본문이 얇아진다.
+
+
+def load_recent_passages(qt_data: dict, *, days: int = RECENT_PASSAGE_DAYS) -> list[dict]:
+    """최근 며칠치 '본문 그 자체'를 재료로 모은다 — 전날형 질문을 만들려면 지난 질문 목록이
+    아니라 지난 본문이 있어야 한다. 같은 성경책만, 오늘 이전만, 가까운 날부터."""
+    current_date = qt_data.get("date") or ""
+    current_book = qt_data.get("book_name") or _book_from_ref(qt_data.get("scripture_ref", ""))
+    if not current_book or not current_date or not QT_DIR.exists():
+        return []
+    try:
+        today = datetime.fromisoformat(current_date[:10]).date()
+    except Exception:
+        return []
+
+    out = []
+    for path in sorted(QT_DIR.glob("*.json"), reverse=True):
+        date = path.stem
+        if "." in date or date >= current_date:
+            continue
+        try:
+            gap = (today - datetime.fromisoformat(date).date()).days
+        except Exception:
+            continue
+        if gap > days:
+            break            # 파일명이 날짜순이라 더 볼 것 없다
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except Exception:
+            continue
+        if (data.get("book_name") or _book_from_ref(data.get("scripture_ref", ""))) != current_book:
+            continue
+        out.append({
+            "날짜": date,
+            "며칠_전": gap,
+            "본문_참조": data.get("scripture_ref", ""),
+            "본문_내용": "\n".join(f"{v['number']} {v['text']}" for v in data.get("verses", [])),
+        })
+    return out
+
+
 def load_kb(book_name: str) -> dict | None:
     """data/reference/{book}.json이 있을 때만 로드. 없으면 None."""
     if not book_name:
@@ -1271,6 +1312,7 @@ def main() -> int:
         follow_up_items, follow_up_cost, followup_meta = fs.run_best_of_n(
             _fu_chat_v2, qt_data, kb, variants[0], history=follow_up_history, log=log,
             n=FOLLOW_UP_BEST_OF_N, embed=_embed_texts,
+            recent=load_recent_passages(qt_data),
         )
         log(
             f"더 깊이 묻기 OK · 카테고리 {len(followup_meta['covered_categories'])}종 · "

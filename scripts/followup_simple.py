@@ -55,12 +55,16 @@ _JUDGE_VERDICTS = [_GOOD, "본문재진술", "5단재진술", "메인에포함",
 # ===== 프롬프트 =====
 _Q_WRAPPER = """# 떠오르는 질문 — 질문 후보 생성기 (질문만, 답변 없음)
 
-오늘 본문·`지식`·`관주_연결`에 근거해 **질문 후보를 최대 {N}개**까지 만든다. **답변은 만들지 않는다** — 질문 문장만. 후보는 전부 대등하다(메인·꼬리를 나누지 마라 — 화면 배치는 코드가 알아서 한다).
+오늘 본문·`지식`·`관주_연결`·`최근_본문`에 근거해 **질문 후보를 최대 {N}개**까지 만든다. **답변은 만들지 않는다** — 질문 문장만. 후보는 전부 대등하다(메인·꼬리를 나누지 마라 — 화면 배치는 코드가 알아서 한다).
+
+## 먼저 확보할 것
+`관주_연결`이 비어 있지 않으면 **관주형 1~2개를 맨 앞에** 만든다. 오늘 본문 밖을 근거로 삼아 나머지와 답이 구조적으로 안 겹치는 자리라, 빠지면 그날 9개가 서로 닮아진다.
+(전날형은 별도 생성기가 맡으니 여기서는 만들지 않는다.)
 
 **개수보다 '서로 다름'이 먼저다.** 서로 다른 질문거리가 {N}개보다 적으면 **거기서 멈춰라 — 적게 내도 된다.** 같은 질문을 문장만 바꾸거나 그대로 복사해서 개수를 채우는 건 **가장 나쁜 결과**다(코드가 잡아내 통째로 버린다). 재료가 얇은 날엔 12개만 나와도 정상이다.
 
 ## 가장 중요 — 질문 하나당 서로 다른 '자리' 하나
-질문마다 그 질문이 걸린 자리를 함께 밝힌다. **코드가 원자료와 대조해 검사하고, 틀리면 그 질문은 버려진다.** 자리는 두 종류다.
+질문마다 그 질문이 걸린 자리를 함께 밝힌다. **코드가 원자료와 대조해 검사하고, 틀리면 그 질문은 버려진다.** 자리는 **세 종류**다.
 
 **① 본문형** (`anchor_type: "본문"`) — 오늘 본문 절을 파고드는 질문
 - `verse` 절 번호(정수) · `anchor` **그 절에서 글자 그대로 복사한 2~15자 표현**(요약·바꿔쓰기 금지)
@@ -191,7 +195,7 @@ def _q_leaf():
     anchor는 '그 절에 실제로 있는 문자열'이라 코드가 검증한다."""
     return ({"question": {"type": "string"}, "category": {"type": "string"}, "topic": {"type": "string"},
              "verse": {"type": "integer"}, "anchor": {"type": "string"},
-             "anchor_type": {"type": "string", "enum": ["본문", "관주", "KB"]}},
+             "anchor_type": {"type": "string", "enum": ["본문", "관주", "KB", "전날"]}},
             ["question", "category", "topic", "verse", "anchor", "anchor_type"])
 
 
@@ -230,7 +234,7 @@ def _qfix_schema(role_ids):
                                    "question": {"type": "string"},
                                    "category": {"type": "string"}, "topic": {"type": "string"},
                                    "verse": {"type": "integer"}, "anchor": {"type": "string"},
-                                   "anchor_type": {"type": "string", "enum": ["본문", "관주", "KB"]}},
+                                   "anchor_type": {"type": "string", "enum": ["본문", "관주", "KB", "전날"]}},
                     "required": ["role_id", "question", "category", "topic",
                                  "verse", "anchor", "anchor_type"],
                     "additionalProperties": False}}},
@@ -380,6 +384,8 @@ def _anchor_ok(verse, anchor, vmap, atype="본문", xmap=None, kbmap=None):
         refs = (xmap or {}).get(verse) or set()
         # '시편 8:4'처럼 정확히 일치하거나, 관주 표기에 포함되면(범위 표기 등) 인정한다.
         return any(na == r or na in r or r in na for r in refs if r)
+    # 전날형도 출발점은 '오늘 본문 글자'다 — 본문형과 같은 검사를 받는다.
+    # (앞 문맥에서 출발하면 어제 큐티를 거른 독자가 질문을 이해하지 못한다.)
     body = vmap.get(verse)
     return bool(body) and na in body
 
@@ -450,10 +456,90 @@ def _xref_text(qt, log=None):
         return None
 
 
-def _gen_candidates(chat, qt, kb, deep5, history, total_cost, log=None):
+_PREVDAY_WRAPPER = """# 떠오르는 질문 — 전날형(앞 문맥형) 전용 생성기
+
+오늘 본문의 한 대목이 **바로 앞 며칠 본문에서 이어져 온 것**임을 여는 질문을 **1개만** 만든다. 답변은 만들지 않는다.
+
+## 이 질문의 조건 (넷 다 지켜야 한다)
+1. **출발점이 오늘 본문 문장이다.** `anchor`는 오늘 본문 절에서 **글자 그대로 복사한 2~15자**. 코드가 대조해 검사하고 틀리면 버려진다.
+2. **어제 큐티를 거른 사람도 오늘 본문만 읽고 질문이 이해돼야 한다.** 앞 내용을 질문에 담지 마라 — 답에서 밝힌다.
+3. **답이 실제로 `최근_본문`을 필요로 해야 한다.** 오늘 본문만으로 답이 끝나면 실패다.
+   → 이걸 스스로 증명해라: `link`에 **답이 가리키는 `최근_본문`의 `본문_참조`를 그대로** 적는다(예: `"사무엘하 15:1-6"`). 목록에 없는 걸 적으면 탈락한다. 가리킬 데가 없으면 그 질문은 만들지 마라.
+4. `같은_책_기존_STEP2_질문`에 있는 소재는 피한다.
+5. **마크다운을 쓰지 마라.** `**굵게**`·따옴표 강조 금지 — 질문은 맨 문장 하나다.
+
+## 예시 (이 형태를 그대로 따라라)
+오늘 본문이 삼하 15:7-12이고 어제가 15:1-6(압살롬이 성문에서 민심을 얻음)일 때 —
+- ✗ "압살롬이 **앞서 백성의 마음을 얻은 일**은 오늘의 반역과 어떻게 이어지나요?"
+  → 출발점이 오늘 본문 밖. 어제를 안 읽으면 무슨 말인지 모른다.
+- ✗ "압살롬은 왜 헤브론을 골랐나요?" → 오늘 본문만으로 답이 끝난다(그냥 본문형).
+- ✓ "압살롬에게로 **돌아온 백성**은 그날 갑자기 마음을 바꾼 걸까요?"
+  → `verse: 12, anchor: "돌아오는 백성이 많아지니라"`. 오늘 문장에서 출발하고, 답이 어제 성문 장면으로 이어진다.
+- ✓ "압살롬은 어떻게 **이스라엘 모든 지파**에 전령을 보낼 수 있었을까요?"
+  → `verse: 10, anchor: "이스라엘 모든 지파"`. 연락망이 이미 있었다는 뜻 → 답이 어제로 간다.
+
+## 만들 수 없으면 만들지 마라
+오늘 본문에 '앞에서 이어져 온 흔적'이 없으면(장면 한복판이라 앞뒤가 한 덩어리인 날 등) **빈 목록을 내라.** 억지로 만들면 없는 연결을 지어내게 된다. 이건 실패가 아니다.
+
+## 출력
+`{"candidates": [{"question","category","topic","verse","anchor","link"}]}` — 0개 또는 1개.
+`category`는 항상 `"연결 질문"`, `topic`은 1~4단어 소재 라벨, `link`는 답이 가리키는 앞 본문의 참조."""
+
+
+def _prevday_schema():
+    return {"type": "object", "properties": {
+        "candidates": {"type": "array", "maxItems": 1, "items": {"type": "object", "properties": {
+            "question": {"type": "string"}, "category": {"type": "string"}, "topic": {"type": "string"},
+            "verse": {"type": "integer"}, "anchor": {"type": "string"}, "link": {"type": "string"}},
+            "required": ["question", "category", "topic", "verse", "anchor", "link"],
+            "additionalProperties": False}}},
+        "required": ["candidates"], "additionalProperties": False}
+
+
+def _gen_prevday(chat, qt, recent, history, total_cost, log=None):
+    """전날형은 본체 프롬프트에 규칙만 넣어서는 한 개도 안 나온다(0801·0804 실측 2회 연속 0개).
+    본체 예시가 전부 본문·관주·KB형이라 그쪽으로 쏠린다 — 프로젝트 기록의 '모델은 규칙보다
+    예시를 강하게 따른다'와 같은 현상. 그래서 짧은 전용 호출로 따로 뽑는다."""
+    if not recent:
+        return []
+    payload = {"본문_참조": qt.get("scripture_ref", ""), "본문_내용": fp._body_text(qt),
+               "최근_본문": recent,
+               "같은_책_기존_STEP2_질문": [h.get("question", "") for h in (history or [])[:60]]}
+    try:
+        data, cost = chat(Q_MODEL, _PREVDAY_WRAPPER, payload, "followup_prevday",
+                          _prevday_schema(), 0.6, 1200)
+        fp._add_cost(total_cost, cost)
+    except Exception as e:
+        if log:
+            log(f"  [전날형] 생성 실패 — 건너뜀: {str(e)[:70]}", "WARN")
+        return []
+    vmap = {v["number"]: fp._norm(v["text"]) for v in qt.get("verses", [])}
+    links = {fp._norm(r.get("본문_참조", "")) for r in recent}
+    out = []
+    for c in (data.get("candidates") or [])[:1]:
+        c["anchor_type"] = "전날"
+        c["question"] = re.sub(r"\*+", "", c.get("question", "")).strip()
+        if not _anchor_ok(c.get("verse"), c.get("anchor", ""), vmap, "전날"):
+            if log:
+                log(f"  [전날형] 출처 검증 실패로 버림: {c.get('verse')}절 '{c.get('anchor','')[:18]}'", "WARN")
+            continue
+        # link 검사 = '답이 정말 앞 본문을 필요로 하는가'를 코드가 확인하는 자리.
+        # 이게 없으면 모델이 오늘 본문만으로 답이 끝나는 질문을 전날형이라 우긴다(0804 실측).
+        if fp._norm(c.get("link", "")) not in links:
+            if log:
+                log(f"  [전날형] 앞 본문 참조가 목록에 없어 버림: '{c.get('link','')}'", "WARN")
+            continue
+        out.append(c)
+    if log:
+        log(f"  [전날형] {len(out)}개 확보" + (f" — '{out[0]['question'][:34]}'" if out else " (오늘은 실마리 없음)"), "INFO")
+    return out
+
+
+def _gen_candidates(chat, qt, kb, deep5, history, total_cost, log=None, recent=None):
     payload = {"본문_참조": qt.get("scripture_ref", ""), "본문_내용": fp._body_text(qt),
                "오륜_질문": qt.get("oryun_questions", []), "지식": _kb_numbered(kb),
                "관주_연결": _xref_text(qt, log=log),
+               "최근_본문": recent or [],          # 전날형(앞 문맥형) 재료 — 최근 며칠 본문
                "같은_책_기존_STEP2_질문": history, "이미_다룬_5단": deep5}
     # 응답이 max_tokens에 잘려 JSON이 깨지는 일이 있어(16개 생성) 재시도한다.
     last_err = None
@@ -784,21 +870,32 @@ def _assemble_diverse(pool, history, log=None):
     # STEP2 중복의 상당수(메인3 블록발)를 없앤다. 그날 검증된 관주 후보가 없으면 예약을
     # 자동 해제한다(억지로 만들면 없는 연결을 지어낸다). 예약분을 먼저 자리·카테고리 카운터에
     # 반영한 뒤 나머지 2개를 뽑으므로 _pick_diverse의 자리·묶음·상한과 충돌하지 않는다.
-    _gwanju = [c for c in clean if c.get("anchor_type") == "관주" and c["anchor_ok"]]
-    _res = _pick_diverse(_gwanju, 1, prefer_main=True, verse_counts=verse_counts,
-                         used_anchors=used_anchors, cats=cat_counts)
-    reserved = _res[0] if _res else None
-    if reserved is not None:
-        others = _pick_diverse([c for c in clean if c is not reserved], 2, prefer_main=True,
-                               verse_counts=verse_counts, used_anchors=used_anchors, cats=cat_counts)
-        mains = (others + [reserved])[:3]        # 관주를 메인3(마지막 슬롯)에 고정
-        if log:
-            log(f"  [simple] 관주 메인3 예약: '{reserved['q'][:28]}' ({reserved['verse']}절↔{reserved['anchor']})", "INFO")
+    # 관주형과 전날형은 '오늘 본문 밖'을 근거로 삼아 나머지 질문과 소재가 구조적으로 안 겹친다.
+    # 그래서 이 둘을 메인 자리에 먼저 앉힌다(사장님 방침 0804: "확정적으로 중복이 안 나오는
+    # 고퀄리티 질문을 우선 선별"). 그날 재료가 없으면 각각 자동 해제한다 — 억지로 채우면 지어낸다.
+    reserved = []
+    for atype, label in (("관주", "관주(배경지식)"), ("전날", "전날(앞 문맥)")):
+        pick = _pick_diverse([c for c in clean if c.get("anchor_type") == atype and c["anchor_ok"]
+                              and c not in reserved],
+                             1, prefer_main=True, verse_counts=verse_counts,
+                             used_anchors=used_anchors, cats=cat_counts)
+        if pick:
+            reserved.append(pick[0])
+            if log:
+                log(f"  [simple] {label} 메인 예약: '{pick[0]['q'][:28]}' "
+                    f"({pick[0]['verse']}절↔{pick[0]['anchor']})", "INFO")
+        elif log:
+            log(f"  [simple] {label} 예약 해제 — 검증된 후보 없음(정상)", "INFO")
+    if reserved:
+        others = _pick_diverse([c for c in clean if c not in reserved], 3 - len(reserved),
+                               prefer_main=True, verse_counts=verse_counts,
+                               used_anchors=used_anchors, cats=cat_counts)
+        mains = (others + reserved)[:3]          # 예약분을 메인 뒤쪽 슬롯에 고정
     else:
         mains = _pick_diverse(clean, 3, prefer_main=True, verse_counts=verse_counts,
                               used_anchors=used_anchors, cats=cat_counts)
         if log:
-            log("  [simple] 관주 예약 해제 — 검증된 관주 후보 없음(정상)", "INFO")
+            log("  [simple] 우선 예약 없음 — 관주·전날 후보가 둘 다 없어 일반 선별로 진행", "INFO")
     used_clusters = {m["cluster"] for m in mains}
     rest = [c for c in clean if c not in mains]
     tails = _pick_diverse(rest, 6, used_clusters=used_clusters, avoid_cats={m["cat"] for m in mains},
@@ -1026,14 +1123,21 @@ def _usable_kb(kb):
 
 
 # ===== 오케스트레이션 =====
-def run_simple(chat, qt, kb, deep5, *, history=None, mode="none", log=None):
+def run_simple(chat, qt, kb, deep5, *, history=None, mode="none", log=None, recent=None):
     history = history or []
     total_cost = dict(_ZERO_COST)
     kb_use = _usable_kb(kb)
 
     # ① 후보 생성
-    branches = _gen_candidates(chat, qt, kb_use, deep5, history, total_cost, log=log)
-    calls = 1
+    branches = _gen_candidates(chat, qt, kb_use, deep5, history, total_cost, log=log, recent=recent)
+    prev = _gen_prevday(chat, qt, recent, history, total_cost, log=log)
+    if prev:
+        calls_extra = 1
+        base = max((b["idx"] for b in branches), default=-1) + 1
+        branches = branches + [{"idx": base + i, "main": c, "tails": []} for i, c in enumerate(prev)]
+    else:
+        calls_extra = 1 if recent else 0
+    calls = 1 + calls_extra
     # ② 판정 (본문·5단 재진술 + 메인포함) + 답 겹치는 지식묶음 그룹핑
     verdicts, clusters, gists = _judge(chat, qt, deep5, branches, total_cost, log=log)
     calls += 1
@@ -1305,8 +1409,28 @@ def apply_embed_gate(items, meta, embed, *, log=None):
     return new_items, meta
 
 
+_PRIORITY_TYPES = ("관주", "전날")   # 오늘 본문 밖을 근거로 삼아 소재가 구조적으로 안 겹치는 종류
+_PRIORITY_TARGET = 2                # 이만큼 다 들어온 판이면 더 안 뽑아도 된다
+
+
+def _priority_kinds(items, meta):
+    """최종 9개에 살아남은 우선 질문(관주형·전날형)의 '종류'를 모은다.
+    meta['candidates']에 검증 통과 표시가 있는 것만 인정한다 — 지어낸 근거는 세지 않는다."""
+    ok = {}
+    for c in (meta.get("candidates") or []):
+        if c.get("anchor_type") in _PRIORITY_TYPES and c.get("anchor_ok"):
+            ok[c.get("question", "")] = c["anchor_type"]
+    kinds = set()
+    for m in items or []:
+        for node in [m] + list(m.get("follow_ups") or []):
+            t = ok.get(node.get("question", ""))
+            if t:
+                kinds.add(t)
+    return kinds
+
+
 def run_best_of_n(chat, qt, kb, deep5, *, history=None, mode="none", log=None,
-                  n=3, embed=None, target=1):
+                  n=3, embed=None, target=1, recent=None):
     """run_simple을 최대 n번 실행해 '답변 임베딩 겹침'이 제일 적은 세트를 고른다.
     - embed: 문장 리스트→벡터 리스트 함수(주입). None이면 best-of-N 끄고 run_simple 1회(기존 동작).
     - target: 겹침쌍이 이 값 이하인 세트가 나오면 조기 종료(비용 절약). 기본 1 — 관문이 생긴
@@ -1319,9 +1443,9 @@ def run_best_of_n(chat, qt, kb, deep5, *, history=None, mode="none", log=None,
     반환: (items, 누적_cost, meta) — run_simple과 동일 시그니처. meta['best_of_n']에 선택 기록.
     """
     if embed is None:   # 임베딩이 없으면 판 고르기도 관문도 못 한다 → 옛 단발 동작 그대로
-        return run_simple(chat, qt, kb, deep5, history=history, mode=mode, log=log)
+        return run_simple(chat, qt, kb, deep5, history=history, mode=mode, log=log, recent=recent)
     if n <= 1:          # 판 고르기만 끄고 관문은 살린다
-        items, cost, meta = run_simple(chat, qt, kb, deep5, history=history, mode=mode, log=log)
+        items, cost, meta = run_simple(chat, qt, kb, deep5, history=history, mode=mode, log=log, recent=recent)
         items, meta = apply_embed_gate(items, meta, embed, log=log)
         return items, cost, meta
 
@@ -1329,9 +1453,11 @@ def run_best_of_n(chat, qt, kb, deep5, *, history=None, mode="none", log=None,
     attempts = []
     acc_cost = dict(_ZERO_COST)
     last_err = None
+    # 그날 재료로 만들 수 있는 우선 질문 종류 수 — 관주 자료가 없으면 관주형은 애초에 못 만든다.
+    possible_kinds = (1 if _xref_text(qt) else 0) + (1 if recent else 0)
     for r in range(1, n + 1):
         try:
-            items, cost, meta = run_simple(chat, qt, kb, deep5, history=history, mode=mode, log=log)
+            items, cost, meta = run_simple(chat, qt, kb, deep5, history=history, mode=mode, log=log, recent=recent)
         except Exception as e:
             last_err = e
             if log:
@@ -1340,15 +1466,25 @@ def run_best_of_n(chat, qt, kb, deep5, *, history=None, mode="none", log=None,
         for k in list(acc_cost):
             acc_cost[k] = round(acc_cost.get(k, 0) + cost.get(k, 0), 6)
         flags, mx = _overlap_score(items, embed)
-        attempts.append({"run": r, "flags": flags, "max_sim": mx})
-        score = (flags, mx) if flags is not None else (10 ** 6, r)  # 임베딩 실패면 최후 후보로만
+        # 우선 질문(관주형·전날형)이 몇 종류 살아남았나 — 겹침만 보고 고르면 관주가 든 판이
+        # '겹침 1건 많다'는 이유로 탈락한다(2026-07-30 실측: 최종 관주 0개). 우선 질문은
+        # 소재가 구조적으로 안 겹치는 고급 재료라, 겹침 1~2건과 바꿀 값이 있다.
+        kinds = _priority_kinds(items, meta)
+        attempts.append({"run": r, "flags": flags, "max_sim": mx, "priority_kinds": sorted(kinds)})
+        # 정렬 키: ①우선 질문 종류가 많은 판 먼저 ②그다음 겹침 적은 판 ③그다음 최고유사도
+        score = (-len(kinds), flags, mx) if flags is not None else (0, 10 ** 6, r)
         if log:
-            log(f"  [best-of-{n}] run{r}: 답겹침 {flags if flags is not None else '?'}건 · 최고 {mx if mx is not None else '?'}", "INFO")
+            log(f"  [best-of-{n}] run{r}: 답겹침 {flags if flags is not None else '?'}건 · "
+                f"최고 {mx if mx is not None else '?'} · 우선질문 {sorted(kinds) or '없음'}", "INFO")
         if best is None or score < best[0]:
             best = (score, items, cost, meta, flags, mx, r)
-        if flags is not None and flags <= target:
+        # 조기 종료는 '겹침도 적고 우선 질문도 다 들어온' 판에서만. 겹침만 보고 멈추면
+        # 관주·전날이 빠진 판에 안주하게 된다. 단 '다 들어온'의 기준은 그날 재료로 만들 수
+        # 있는 만큼이다 — 관주가 없는 날까지 2종류를 요구하면 매일 n판을 다 돌려 비용만 3배 된다.
+        want = min(_PRIORITY_TARGET, possible_kinds)
+        if flags is not None and flags <= target and len(kinds) >= want:
             if log:
-                log(f"  [best-of-{n}] run{r} 목표 달성(겹침 ≤{target}) → 조기 종료", "INFO")
+                log(f"  [best-of-{n}] run{r} 목표 달성(겹침 ≤{target} · 우선질문 {sorted(kinds)}) → 조기 종료", "INFO")
             break
 
     if best is None:
