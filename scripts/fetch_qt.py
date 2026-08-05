@@ -27,6 +27,7 @@ import sys
 import time
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
+from urllib.parse import quote
 
 import requests
 from bs4 import BeautifulSoup
@@ -80,6 +81,19 @@ _UA_POOL = [
 # 재시도해도 의미 없는 HTTP 상태 코드 (서버가 명시적으로 거부한 것)
 _NO_RETRY_STATUSES = {400, 401, 403, 404, 405, 410}
 
+# ===== 릴레이(우회) 설정 =====
+# GitHub Actions 러너 IP가 oryun.org에서 간헐적으로 차단된다(2026-07-05, 07-29, 08-02, 08-05).
+# 사이트 자체는 멀쩡한데 러너에서만 TCP 연결이 안 되므로, 직접 접속이 전부 실패하면
+# 공개 릴레이 서버가 대신 가져온 HTML을 받아 쓴다. 평소 성공 경로에는 영향이 없다.
+_RELAYS = [
+    ("allorigins", "https://api.allorigins.win/raw?url={url}"),
+    ("codetabs",   "https://api.codetabs.com/v1/proxy?quest={url}"),
+    ("corsproxy",  "https://corsproxy.io/?url={url}"),
+]
+_RELAY_TIMEOUT   = (15, 60)    # (연결, 읽기) 초
+_RELAY_MIN_BYTES = 20000       # 이보다 작으면 오류 페이지로 보고 다음 릴레이로 넘어감
+_RELAY_MARKER    = "오륜교회"   # 정상 페이지라면 반드시 들어 있는 문자열
+
 
 # ===== 로깅 =====
 def log(msg: str, level: str = "INFO") -> None:
@@ -100,6 +114,41 @@ def _make_session(ua_index: int = 0) -> requests.Session:
     headers["User-Agent"] = _UA_POOL[ua_index % len(_UA_POOL)]
     s.headers.update(headers)
     return s
+
+
+def fetch_via_relay() -> str:
+    """직접 접속이 모두 실패했을 때 공개 릴레이를 통해 HTML을 가져온다.
+
+    릴레이 서버가 우리 대신 oryun.org에 접속해 HTML을 그대로 돌려주므로,
+    러너 IP가 막혀 있어도 우회할 수 있다. 무료 서비스라 언제든 죽을 수 있어
+    여러 곳을 순서대로 시도하고, 오류 페이지를 정상 응답으로 착각하지 않도록
+    크기와 마커 문자열을 함께 검사한다.
+    """
+    target = quote(URL, safe="")
+
+    for name, template in _RELAYS:
+        try:
+            log(f"릴레이 우회 시도: {name}")
+            res = requests.get(
+                template.format(url=target),
+                headers={"User-Agent": _UA_POOL[0]},
+                timeout=_RELAY_TIMEOUT,
+            )
+            res.raise_for_status()
+            res.encoding = "utf-8"
+            html = res.text
+
+            if len(html) < _RELAY_MIN_BYTES or _RELAY_MARKER not in html:
+                log(f"{name} — 정상 페이지가 아님 ({len(html):,} bytes)", "WARN")
+                continue
+
+            log(f"릴레이 성공: {name} ({len(html):,} bytes)", "OK")
+            return html
+
+        except requests.RequestException as e:
+            log(f"{name} 실패 ({type(e).__name__})", "WARN")
+
+    raise RuntimeError("릴레이 우회도 모두 실패")
 
 
 def fetch_page() -> str:
@@ -175,6 +224,13 @@ def fetch_page() -> str:
                 break
             log(f"{wait:.0f}s 대기 후 재시도 (기준 {base:.0f}s, jitter {jitter:+.0f}s)...")
             time.sleep(wait)
+
+    # 직접 접속이 전부 막혔을 때의 마지막 수단 — 러너 IP 차단(간헐적)을 우회한다.
+    log(f"직접 접속 {_MAX_RETRIES}회 모두 실패 — 릴레이 우회로 전환", "WARN")
+    try:
+        return fetch_via_relay()
+    except RuntimeError as relay_err:
+        log(str(relay_err), "WARN")
 
     raise RuntimeError(
         f"QT 페이지 요청 {_MAX_RETRIES}회 모두 실패. "
