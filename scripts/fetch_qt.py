@@ -62,11 +62,12 @@ DEFAULT_OUTPUT_DIR = Path(__file__).parent.parent / "data" / "qt"
 # ===== HTTP 재시도 설정 =====
 _CONNECT_TIMEOUT = 20    # TCP 핸드셰이크 제한 (초) — 연결 자체가 안 되면 빠르게 포기
 _READ_TIMEOUT    = 90    # 응답 본문 수신 제한 (초) — 연결 후 서버가 느릴 수 있음
-_MAX_RETRIES     = 6     # 최대 시도 횟수
-_BACKOFF_BASE    = 10    # 지수 백오프 초기값 (초): 10→20→40→80→120(상한)→120
+_MAX_RETRIES     = 3     # 최대 시도 횟수 — 러너 IP 차단은 몇 번을 더 두드려도 안 풀린다
+                         # (8/5 로그: 6회 내내 같은 TCP 타임아웃). 실패 시 릴레이로 넘기는 게 빠르다.
+_BACKOFF_BASE    = 10    # 지수 백오프 초기값 (초): 10→20
 _BACKOFF_MAX     = 120   # 대기 상한 (초)
 _JITTER_RATIO    = 0.25  # ±25% 랜덤 변동 — Main/Backup 동시 실행 시 thundering herd 방지
-_BUDGET_SECS     = 420   # fetch 전체 허용 시간 (7분) — 워크플로 20분 예산 내 여유 확보
+_BUDGET_SECS     = 150   # fetch 전체 허용 시간 (2.5분) — 차단된 날 릴레이 전환을 앞당긴다
 
 # ConnectTimeout 발생 시 UA를 교체해 세션 재생성 (같은 UA로 재시도하면 서버가 블록할 수 있음)
 _UA_POOL = [
