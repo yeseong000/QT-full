@@ -1433,12 +1433,19 @@ def _assemble_diverse(pool, history, log=None):
     for mi, m in enumerate(mains):
         m["sel"] = True
         node = {"role_id": next(rid), "question": m["q"], "category": m["cat"],
-                "topic": m["topic"], "link": m.get("link", ""), "follow_ups": []}
+                "topic": m["topic"], "link": m.get("link", ""),
+                # anchor를 여기서 버리면 답변 단계가 '이 질문이 어느 관주에서 나왔는지'를
+                # 모른다 — 전날형이 link 없이 오늘 본문 안에서만 맴돌던 것(0804)과 같은
+                # 구멍이 관주형에 남아 있었다. 8/11 실측: 관주 2개 다 구절을 안 밝혔다.
+                "anchor": m.get("anchor", ""), "anchor_type": m.get("anchor_type", "본문"),
+                "follow_ups": []}
         for t in assign[mi]:
             t["sel"] = True
             node["follow_ups"].append({"role_id": next(rid), "question": t["q"],
                                        "category": t["cat"], "topic": t["topic"],
-                                       "link": t.get("link", "")})
+                                       "link": t.get("link", ""),
+                                       "anchor": t.get("anchor", ""),
+                                       "anchor_type": t.get("anchor_type", "본문")})
         tree.append(node)
     picked_all = mains + [t for row in assign for t in row]
     if log:
@@ -1544,6 +1551,8 @@ def _refill_from_pool(tree, pool, problems, history, log=None):
             log(f"  [simple] 재선택 {rid}: '{node['question'][:14]}…' → "
                 f"'{c['q'][:14]}…' ({c['verse']}절·{c['anchor'][:8]})", "INFO")
         node["question"], node["category"], node["topic"] = c["q"], c["cat"], c["topic"]
+        # 질문을 갈아끼웠으면 근거도 같이 간다 — 안 바꾸면 답변이 옛 질문의 관주를 인용한다.
+        node["anchor"], node["anchor_type"] = c.get("anchor", ""), c.get("anchor_type", "본문")
         spares.remove(c)
         cur_v[_vslot(c)] += 1
         cur_cl.add(c["cluster"])
@@ -1616,6 +1625,7 @@ def _qfix(chat, qt, kb, deep5, tree, problems, history, total_cost,
         nodes[rid]["question"] = item["question"]
         nodes[rid]["category"] = _canon_cat(item.get("category", nodes[rid].get("category", "")))
         nodes[rid]["topic"] = item.get("topic", "")
+        nodes[rid]["anchor"], nodes[rid]["anchor_type"] = a, at
         if pool is not None:   # 새 질문도 후보 풀에 남겨 측정·보고에 출처가 보이게 한다
             pool.append({"q": item["question"], "cat": nodes[rid]["category"],
                          "topic": nodes[rid]["topic"], "verdict": _GOOD, "cluster": f"qfix_{rid}",

@@ -382,10 +382,17 @@ def build_answer_system_prompt() -> str:
 def _flatten_tree(tree):
     out = []
     for m in tree:
-        out.append((m["role_id"], m["question"], m["category"], m.get("link", "")))
+        out.append(_target(m))
         for t in m["follow_ups"]:
-            out.append((t["role_id"], t["question"], t["category"], t.get("link", "")))
+            out.append(_target(t))
     return out
+
+
+def _target(node):
+    """답변 단계가 알아야 할 것만 추린다. anchor는 관주형일 때만 의미가 있다 —
+    link가 전날형에게 '답이 어디로 가야 하는지' 알려 주는 것과 같은 자리다."""
+    return (node["role_id"], node["question"], node["category"], node.get("link", ""),
+            node.get("anchor", "") if node.get("anchor_type") == "관주" else "")
 
 
 def _answer_schema(role_ids):
@@ -432,7 +439,8 @@ def write_answers(chat, qt, kb, deep5, tree, total_cost, *, only_role_ids=None,
                    for r in (recent or [])],
         "최근_떠오른_질문": recent_qs or [],
         "질문_목록": [{"role_id": r, "question": q, "카테고리": c,
-                    **({"참고할_앞본문": lk} if lk else {})} for r, q, c, lk in targets],
+                    **({"참고할_앞본문": lk} if lk else {}),
+                    **({"근거_관주구절": an} if an else {})} for r, q, c, lk, an in targets],
     }
     last_err = None
     for _ in range(MAX_ANSWER_ATTEMPTS):
@@ -534,6 +542,9 @@ def _apply_pick(slot, pick, used_questions, log=None):
     slot["question"] = pick["question"]
     slot["category"] = pick["category"]
     slot["topic"] = pick.get("topic")
+    # 근거도 함께 옮긴다 — 안 그러면 답변이 갈아끼우기 전 질문의 관주를 인용한다.
+    slot["anchor"] = pick.get("anchor", "")
+    slot["anchor_type"] = pick.get("anchor_type", "본문")
     slot.pop("answer", None)
     used_questions.append(pick)
 
