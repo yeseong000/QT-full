@@ -32,8 +32,16 @@ SOURCES = {
     "adam-clarke": "Adam Clarke",
     "tyndale": "Tyndale",
 }
-# 절당 어느 주석을 우선 쓸지 — 내용이 충실한 순(테스트 실측 기준)
-PRIORITY = ["Gill", "Keil-Delitzsch", "JFB", "Matthew Henry", "Adam Clarke", "Tyndale"]
+# 절당 어느 주석을 우선 쓸지.
+# 예전엔 '원문이 긴 순'으로 세웠는데, 그러면 가장 오래된 주석이 항상 앞 3자리를 채웠다. 연대·지리·
+# 고대 관습은 20세기 발굴(히타이트 조약·앗수르 에포님 목록 등) 이후 갱신됐는데 1746~1871년 자료엔
+# 그게 없다. 그래서 유일한 현대 자료 Tyndale(2022, NLT Study Bible 노트)을 Gill 바로 뒤로 올린다.
+#   실측(사무엘하 24장, 2026-08-11): Tyndale 전달 192절 → 351절. 프롬프트 총량은 1598로 동일.
+#   대신 JFB -60·Clarke -62·Matthew Henry -37절 — 셋 다 KB 인용 실적이 낮은 쪽이다.
+#   Gill은 695절 전부 그대로 남으므로 옛 주석의 강점(본문 흐름·랍비 문헌)은 잃지 않는다.
+# 길이가 짧은 게 오히려 유리한 이유: 아래 MAX_CHARS로 균등하게 자르기 때문에 Matthew Henry는
+# 절평균 7085자 중 6%만 전달되지만, Tyndale은 절평균 259자라 거의 온전히 들어간다.
+PRIORITY = ["Gill", "Tyndale", "Keil-Delitzsch", "JFB", "Adam Clarke", "Matthew Henry"]
 
 MAX_PER_VERSE = 3     # 한 절에 붙일 주석 종수 상한
 MAX_CHARS = 420       # 주석 하나당 글자 상한 (옛 biblehub 방식과 동일)
