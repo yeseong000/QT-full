@@ -1022,6 +1022,27 @@ html[data-theme="dark"] .modal-sheet {
   overflow-wrap: break-word;
 }
 
+/* 출처 기록 — 관주형 답변이 어느 구절을 근거로 삼았는지 답변 위에 밝힌다.
+   답변 말풍선과 한 덩어리로 보이게 왼쪽 정렬 + 아래 여백만 살짝. */
+.follow-up__src {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+  max-width: 92%;
+  margin: 0 0 var(--space-2) var(--space-3);
+  padding: 3px 10px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-pill);
+  background: var(--accent-sage-soft);
+  color: var(--accent-sage-text);
+  font-size: var(--text-caption);
+  line-height: 1.4;
+  letter-spacing: -0.01em;
+  word-break: keep-all;
+}
+
 .follow-up__answer {
   align-self: flex-start;
   max-width: 92%;

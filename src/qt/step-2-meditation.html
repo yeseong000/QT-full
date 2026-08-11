@@ -915,7 +915,7 @@
       // 분기: deep_dive 있으면 5단 호흡 카드, 없으면 종전 두 카드(말씀 속 장면 + 구절 해설)
       if (deepDive) {
         renderDeepDive(deepDive);
-        renderFollowUp(deepDive.follow_up_questions);
+        renderFollowUp(deepDive.follow_up_questions, deepDive._followup_meta);
       } else if (ai) {
         const _ctxParts = (ai.book_context || '').split('. ');
         const passageIntro = ai.passage_intro ||
@@ -1065,9 +1065,35 @@
     const _followUpSeenMain = new Set();    // 메인 idx 한 번이라도 본 거
     const _followUpSeenFollow = new Set();  // "mainIdx-followIdx" 한 번이라도 본 거
 
-    function renderFollowUp(items) {
+    // 출처 기록 — 관주형 답변이 '오늘 본문 몇 절 ↔ 어느 구절'에서 나왔는지.
+    // 최종 JSON의 질문 노드엔 anchor가 없다(파이프라인이 트리→items 변환에서 버린다).
+    // _followup_meta.candidates에 질문 문자열별로 남아 있으니 거기서 되찾는다.
+    let _followUpAnchors = new Map();
+
+    function buildAnchorMap(meta) {
+      const map = new Map();
+      for (const c of (meta && meta.candidates) || []) {
+        // 원자료 대조를 통과한 관주형만 — 검증 못 한 근거는 안 보여준다.
+        if (c && c.anchor_type === '관주' && c.anchor_ok && c.question && c.anchor) {
+          map.set(c.question, { verse: c.verse, anchor: c.anchor });
+        }
+      }
+      return map;
+    }
+
+    // 답변 말풍선 위에 출처 기록 배지를 얹는다 (관주형이 아니면 배지 없이 답변만).
+    function answerBlockHTML(question, answerHTML) {
+      const src = _followUpAnchors.get(question);
+      const badge = src
+        ? `<div class="follow-up__src">오늘 ${escapeHTML(String(src.verse))}절 <span aria-hidden="true">↔</span> ${escapeHTML(src.anchor)}</div>`
+        : '';
+      return `${badge}<div class="follow-up__answer">${answerHTML}</div>`;
+    }
+
+    function renderFollowUp(items, meta) {
       if (!Array.isArray(items) || items.length === 0) return;
       _followUpItems = items;
+      _followUpAnchors = buildAnchorMap(meta);
       const pillsEl = document.getElementById('followUpPills');
       pillsEl.innerHTML = items.map((it, i) =>
         `<button class="follow-up__pill" data-main="${i}" type="button" role="listitem">${escapeHTML(stripMd(it.question))}</button>`
@@ -1130,7 +1156,7 @@
 
       // 한 번 본 메인 → 즉시 표시
       if (_followUpSeenMain.has(mainIdx)) {
-        slot.innerHTML = `<div class="follow-up__answer">${answerHTML}</div>`;
+        slot.innerHTML = answerBlockHTML(item.question, answerHTML);
         renderFollowChips(mainIdx, item);
         return;
       }
@@ -1144,7 +1170,7 @@
       _followUpLoadingTimer = setTimeout(() => {
         _followUpLoadingTimer = null;
         if (!slot.isConnected) return;
-        slot.innerHTML = `<div class="follow-up__answer">${answerHTML}</div>`;
+        slot.innerHTML = answerBlockHTML(item.question, answerHTML);
         _followUpSeenMain.add(mainIdx);
         renderFollowChips(mainIdx, item);
       }, FOLLOW_UP_LOADING_MS);
@@ -1211,7 +1237,7 @@
       const slot = qa.querySelector('.follow-up__answer-slot');
 
       if (_followUpSeenFollow.has(seenKey)) {
-        slot.innerHTML = `<div class="follow-up__answer">${answerHTML}</div>`;
+        slot.innerHTML = answerBlockHTML(fu.question, answerHTML);
         return;
       }
 
@@ -1223,7 +1249,7 @@
       _followUpLoadingTimer = setTimeout(() => {
         _followUpLoadingTimer = null;
         if (!slot.isConnected) return;
-        slot.innerHTML = `<div class="follow-up__answer">${answerHTML}</div>`;
+        slot.innerHTML = answerBlockHTML(fu.question, answerHTML);
         _followUpSeenFollow.add(seenKey);
       }, FOLLOW_UP_LOADING_MS);
     }
