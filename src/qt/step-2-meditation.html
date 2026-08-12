@@ -475,6 +475,8 @@
       display: block;
       width: 100%;
       height: auto;
+      aspect-ratio: 1536 / 1024;        /* 가로형 이미지 비율 고정 — 모바일/PC 동일 */
+      object-fit: contain;              /* 이미지 왜곡 없이 컨테이너 안에 맞춤 */
     }
     /* 장면 캐러셀 — 가로 스냅 슬라이드 + 도트 인디케이터 */
     .scene-carousel { position: relative; }
@@ -490,6 +492,9 @@
     .scene-carousel__img {
       flex: 0 0 100%;
       width: 100%;
+      height: auto;
+      aspect-ratio: 1536 / 1024;        /* 가로형 이미지 비율 고정 — 모바일/PC 동일 */
+      object-fit: contain;              /* 이미지 왜곡 없이 컨테이너 안에 맞춤 */
       scroll-snap-align: center;
     }
     .scene-dots {
