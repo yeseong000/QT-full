@@ -521,13 +521,25 @@ def main() -> int:
             print("─" * 50)
             continue
 
-        try:
-            log(f"[{label}] 이미지 생성 중 (model={args.model}, quality={args.quality})...", "INFO")
-            generate_image(client, prompt, out_path, quality=args.quality, model=args.model,
-                           extra_refs=extra_refs)
-        except Exception as e:
-            log(f"[{label}] 이미지 생성 실패: {e}", "ERR")
-            return 2
+        # 최대 3회 재시도 (안전 필터, 일시적 에러 대응)
+        max_retries = 3
+        for attempt in range(1, max_retries + 1):
+            try:
+                log(f"[{label}] 이미지 생성 중 (model={args.model}, quality={args.quality})...", "INFO")
+                generate_image(client, prompt, out_path, quality=args.quality, model=args.model,
+                               extra_refs=extra_refs)
+                break  # 성공 시 루프 탈출
+            except Exception as e:
+                err_msg = str(e)
+                is_safety = "moderation_blocked" in err_msg or "safety" in err_msg.lower()
+                if attempt < max_retries and (is_safety or "rate_limit" in err_msg):
+                    wait_sec = 3 * attempt  # 1차 3초, 2차 6초, 3차 9초
+                    log(f"[{label}] 시도 {attempt}/{max_retries} 실패 ({'안전 필터' if is_safety else '일시적 에러'}), "
+                        f"{wait_sec}초 후 재시도...", "WARN")
+                    time.sleep(wait_sec)
+                else:
+                    log(f"[{label}] 이미지 생성 실패 ({attempt}/{max_retries}): {e}", "ERR")
+                    return 2
 
         # 첫 변형을 그린 직후: 그 그림에서 인물 외형(텍스트)을 사전에 보충(신규만) → 이후 변형/다음 날에 재사용
         if vi == 0 and not anchor_path:

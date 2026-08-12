@@ -92,6 +92,20 @@ jobs:
             python scripts/generate_scene_image.py --all-variants
           fi
 
+      - name: Validate scene images 생성 완료
+        id: validate-scenes
+        run: |
+          DATE=$(TZ=Asia/Seoul date '+%Y-%m-%d')
+          if [ -f "data/deep_dive/${DATE}.json" ]; then
+            VARIANTS=$(jq '.variants | length' data/deep_dive/${DATE}.json 2>/dev/null || echo "1")
+            FILES=$(ls src/images/scenes/${DATE}*.png 2>/dev/null | wc -l)
+            echo "required=${VARIANTS}" >> $GITHUB_OUTPUT
+            echo "actual=${FILES}" >> $GITHUB_OUTPUT
+            if [ $FILES -lt $VARIANTS ]; then
+              echo "⚠️  경고: 변형 ${VARIANTS}개 요청 / 이미지 ${FILES}개 생성됨 (미흡)"
+            fi
+          fi
+
       - name: Commit and push changes
         run: |
           git config user.name "QT Bot (yeseong000)"
@@ -124,7 +138,13 @@ jobs:
         continue-on-error: true
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          REQUIRED_SCENES: ${{ steps.validate-scenes.outputs.required }}
+          ACTUAL_SCENES: ${{ steps.validate-scenes.outputs.actual }}
         run: |
           [ -z "${DISCORD_WEBHOOK_URL}" ] && exit 0
           DATE=$(TZ=Asia/Seoul date '+%Y-%m-%d') && export DATE
-          python -c "import json,os,urllib.request as u;url=os.environ['DISCORD_WEBHOOK_URL'].lstrip('﻿').strip();d=os.environ['DATE'];msg='❌ **주만나 QT 자동 생성 실패** ('+d+')\nGitHub Actions 로그를 확인하세요.';data=json.dumps({'content':msg}).encode('utf-8');u.urlopen(u.Request(url,data=data,headers={'Content-Type':'application/json','User-Agent':'Mozilla/5.0 (compatible; QTBot/1.0)'},method='POST'))"
+          SCENE_INFO=""
+          if [ -n "${REQUIRED_SCENES}" ] && [ -n "${ACTUAL_SCENES}" ]; then
+            SCENE_INFO="\n장면 이미지: 요청 ${REQUIRED_SCENES}개 / 생성 ${ACTUAL_SCENES}개"
+          fi
+          python -c "import json,os,urllib.request as u;url=os.environ['DISCORD_WEBHOOK_URL'].lstrip('﻿').strip();d=os.environ['DATE'];si=os.environ.get('SCENE_INFO','');msg='❌ **주만나 QT 자동 생성 실패** ('+d+')'+si+'\n\nGitHub Actions 로그를 확인하세요.';data=json.dumps({'content':msg}).encode('utf-8');u.urlopen(u.Request(url,data=data,headers={'Content-Type':'application/json','User-Agent':'Mozilla/5.0 (compatible; QTBot/1.0)'},method='POST'))"
