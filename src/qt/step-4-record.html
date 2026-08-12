@@ -440,6 +440,13 @@
         }, 800);
       });
 
+      // 디바운스 타이머가 끝나기 전에 다음 화면으로 이동하면 방금 수정한 내용이
+      // 저장되지 않고 사라지므로, 포커스를 벗어나는 순간(버튼 클릭 직전) 즉시 저장한다.
+      textarea.addEventListener('blur', () => {
+        clearTimeout(saveTimer);
+        onSave(textarea.value);
+      });
+
       function autoResize() {
         textarea.style.height = 'auto';
         textarea.style.height = Math.min(textarea.scrollHeight, maxHeight) + 'px';
@@ -581,6 +588,16 @@
       document.getElementById('completeBtn').addEventListener('click', async function () {
         if (this.dataset.saving) return;
         this.dataset.saving = '1';
+
+        // 디바운스/blur 저장이 아직 안 걸렸을 수 있으니 이동 직전 한 번 더 직접 저장
+        Storage.setDailyRecord(TODAY, {
+          reflection: document.getElementById('reflectionInput').value,
+        });
+        const answerInputs = document.querySelectorAll('.question-answer');
+        if (answerInputs.length > 0) {
+          const arr = Array.from(answerInputs).map(t => t.value);
+          Storage.setDailyRecord(TODAY, { questionAnswers: arr });
+        }
 
         const record = Storage.getDailyRecord(TODAY);
         if (!record.completed) {
