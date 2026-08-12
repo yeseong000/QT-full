@@ -513,38 +513,6 @@
       white-space: pre-wrap;   /* 사용자가 입력한 줄바꿈·빈 줄을 그대로 보존 */
       word-break: break-word;
     }
-    .preview-card__reflection-input {
-      width: 100%;
-      min-height: 88px;
-      max-height: 320px;
-      border: 1px solid var(--border-input, rgba(0,0,0,0.12));
-      border-radius: var(--radius-md, 12px);
-      padding: 12px 14px;
-      font-size: 15px;
-      color: var(--text-primary);
-      background: var(--bg-input, rgba(0,0,0,0.03));
-      resize: none;
-      outline: none;
-      line-height: 1.75;
-      transition: border-color var(--duration-base, 0.2s);
-      word-break: keep-all;
-      overflow-wrap: break-word;
-      font-family: inherit;
-      box-sizing: border-box;
-    }
-    .preview-card__reflection-input:focus {
-      border-color: var(--accent-sage, #8FAE8B);
-    }
-    .preview-card__save-indicator {
-      margin-top: 6px;
-      font-size: 12.5px;
-      color: var(--text-secondary);
-      opacity: 0;
-      transition: opacity 0.3s ease;
-    }
-    .preview-card__save-indicator.is-visible {
-      opacity: 1;
-    }
     .preview-card__summary-list {
       margin: 0;
       padding-left: 18px;
@@ -1137,12 +1105,7 @@
       <!-- 느낀 점 -->
       <div class="preview-card__section" id="previewReflectionSection" style="display:none;">
         <div class="preview-card__section-label">느낀 점</div>
-        <textarea
-          class="preview-card__reflection-input"
-          id="previewReflection"
-          placeholder="떠오른 생각이나 느낀 점을 자유롭게 적어보세요"
-        ></textarea>
-        <div class="preview-card__save-indicator" id="previewReflectionSaved">✓ 저장됨</div>
+        <div class="preview-card__section-body" id="previewReflection"></div>
       </div>
 
       <!-- 오늘의 질문 답변 -->
@@ -1915,7 +1878,7 @@
         renderSummary(qt);
         renderEmotions(record);
         renderUnderlines(record);
-        renderReflection(date, record);
+        renderReflection(record);
         renderQuestions(qt, record);
       } else {
         // 기록 없음 + 본문 있음: 본문만 보여주고 시작 버튼
@@ -1981,27 +1944,12 @@
       sec.style.display = '';
     }
 
-    let _reflectionSaveTimer;
-    function renderReflection(date, record) {
+    function renderReflection(record) {
       const sec = document.getElementById('previewReflectionSection');
-      const textarea = document.getElementById('previewReflection');
-      const indicator = document.getElementById('previewReflectionSaved');
-      textarea.value = record.reflection || record.memo || '';
+      const text = (record.reflection || record.memo || '').trim();
+      if (!text) { sec.style.display = 'none'; return; }
+      document.getElementById('previewReflection').textContent = text;
       sec.style.display = '';
-
-      // 이전 리스너 제거 (셀 재선택 시 중복 저장 방지)
-      const freshTextarea = textarea.cloneNode(true);
-      freshTextarea.value = textarea.value;
-      textarea.replaceWith(freshTextarea);
-
-      freshTextarea.addEventListener('input', () => {
-        clearTimeout(_reflectionSaveTimer);
-        _reflectionSaveTimer = setTimeout(() => {
-          Storage.setDailyRecord(date, { reflection: freshTextarea.value });
-          indicator.classList.add('is-visible');
-          setTimeout(() => indicator.classList.remove('is-visible'), 1500);
-        }, 500);
-      });
     }
 
     function renderQuestions(qt, record) {
