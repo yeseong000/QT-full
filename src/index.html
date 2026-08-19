@@ -1179,6 +1179,69 @@
       </section>
 
     </main>
+
+    <!-- 요약 다시보기 시트 (오늘의 장면 + 5줄 요약, 날짜 좌우 이동) — app-container 안에 둬야
+         .app-container[data-time-slot="night"] 시간대 다크 스타일이 적용됨 -->
+    <div class="archive-sheet digest-sheet" id="digestSheet" aria-hidden="true">
+      <div class="archive-sheet__backdrop" id="digestBackdrop"></div>
+      <div class="archive-sheet__panel" role="dialog" aria-modal="true" aria-labelledby="digestSheetTitle">
+        <div class="archive-sheet__handle" aria-hidden="true"></div>
+        <header class="archive-sheet__header">
+          <h2 id="digestSheetTitle" class="archive-sheet__title">요약 다시보기</h2>
+          <button class="archive-sheet__close" id="closeDigestBtn" aria-label="닫기">
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="6" y1="6" x2="18" y2="18"/>
+              <line x1="6" y1="18" x2="18" y2="6"/>
+            </svg>
+          </button>
+        </header>
+
+        <!-- ◀ 날짜 ▶ -->
+        <nav class="digest-nav">
+          <button class="digest-nav__btn" id="digestPrevBtn" aria-label="이전 날">
+            <svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round">
+              <path d="M15.5 5.5 L8 12 L15.5 18.5 Z"/>
+            </svg>
+          </button>
+          <div class="digest-nav__center">
+            <div class="digest-nav__date" id="digestDate" aria-live="polite">—</div>
+            <div class="digest-nav__ref" id="digestRef"></div>
+          </div>
+          <button class="digest-nav__btn" id="digestNextBtn" aria-label="다음 날">
+            <svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round">
+              <path d="M8.5 5.5 L16 12 L8.5 18.5 Z"/>
+            </svg>
+          </button>
+        </nav>
+
+        <div class="archive-sheet__body" id="digestBody">
+          <figure class="digest-scene" id="digestScene" hidden>
+            <img class="digest-scene__img" id="digestSceneImg" alt="오늘의 장면">
+            <button class="digest-scene__badge" id="digestSceneBadge" type="button" hidden aria-label="다음 장면 보기">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="7" y="3" width="14" height="14" rx="2"/>
+                <path d="M3.5 7.5v11a2 2 0 0 0 2 2h11"/>
+              </svg>
+              <span id="digestSceneCount">1 / 1</span>
+            </button>
+          </figure>
+
+          <ol class="digest-lines" id="digestLines"></ol>
+
+          <div class="digest-skeleton" id="digestSkeleton" hidden aria-hidden="true">
+            <div class="digest-skeleton__bar"></div>
+            <div class="digest-skeleton__bar"></div>
+            <div class="digest-skeleton__bar"></div>
+            <div class="digest-skeleton__bar"></div>
+          </div>
+
+          <div class="digest-note" id="digestNote" hidden>
+            <div class="digest-note__emoji" aria-hidden="true">🌿</div>
+            <div id="digestNoteText">이 날은 아직 요약이 없어요</div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- ========== 설정 모달 ========== -->
@@ -1304,68 +1367,6 @@
             <span class="qr-url-text" id="qrUrlText">—</span>
             <button class="qr-copy-btn" id="qrCopyBtn" type="button">복사</button>
           </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ========== 요약 다시보기 시트 (오늘의 장면 + 5줄 요약, 날짜 좌우 이동) ========== -->
-  <div class="archive-sheet digest-sheet" id="digestSheet" aria-hidden="true">
-    <div class="archive-sheet__backdrop" id="digestBackdrop"></div>
-    <div class="archive-sheet__panel" role="dialog" aria-modal="true" aria-labelledby="digestSheetTitle">
-      <div class="archive-sheet__handle" aria-hidden="true"></div>
-      <header class="archive-sheet__header">
-        <h2 id="digestSheetTitle" class="archive-sheet__title">요약 다시보기</h2>
-        <button class="archive-sheet__close" id="closeDigestBtn" aria-label="닫기">
-          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="6" y1="6" x2="18" y2="18"/>
-            <line x1="6" y1="18" x2="18" y2="6"/>
-          </svg>
-        </button>
-      </header>
-
-      <!-- ◀ 날짜 ▶ -->
-      <nav class="digest-nav">
-        <button class="digest-nav__btn" id="digestPrevBtn" aria-label="이전 날">
-          <svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round">
-            <path d="M15.5 5.5 L8 12 L15.5 18.5 Z"/>
-          </svg>
-        </button>
-        <div class="digest-nav__center">
-          <div class="digest-nav__date" id="digestDate" aria-live="polite">—</div>
-          <div class="digest-nav__ref" id="digestRef"></div>
-        </div>
-        <button class="digest-nav__btn" id="digestNextBtn" aria-label="다음 날">
-          <svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round">
-            <path d="M8.5 5.5 L16 12 L8.5 18.5 Z"/>
-          </svg>
-        </button>
-      </nav>
-
-      <div class="archive-sheet__body" id="digestBody">
-        <figure class="digest-scene" id="digestScene" hidden>
-          <img class="digest-scene__img" id="digestSceneImg" alt="오늘의 장면">
-          <button class="digest-scene__badge" id="digestSceneBadge" type="button" hidden aria-label="다음 장면 보기">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <rect x="7" y="3" width="14" height="14" rx="2"/>
-              <path d="M3.5 7.5v11a2 2 0 0 0 2 2h11"/>
-            </svg>
-            <span id="digestSceneCount">1 / 1</span>
-          </button>
-        </figure>
-
-        <ol class="digest-lines" id="digestLines"></ol>
-
-        <div class="digest-skeleton" id="digestSkeleton" hidden aria-hidden="true">
-          <div class="digest-skeleton__bar"></div>
-          <div class="digest-skeleton__bar"></div>
-          <div class="digest-skeleton__bar"></div>
-          <div class="digest-skeleton__bar"></div>
-        </div>
-
-        <div class="digest-note" id="digestNote" hidden>
-          <div class="digest-note__emoji" aria-hidden="true">🌿</div>
-          <div id="digestNoteText">이 날은 아직 요약이 없어요</div>
         </div>
       </div>
     </div>
