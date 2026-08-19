@@ -164,7 +164,15 @@ def make_client():
 # 인물별 외형(신체비율·헤어·얼굴·의상)을 영구 저장해, 같은 인물은 매일·매 장면 똑같이 그리도록 함.
 CHAR_REGISTRY_PATH = PROJECT_ROOT / "data" / "character_appearance.json"
 CHAR_VISION_MODEL = "gpt-4o-mini"  # 멀티모달 — 그림에서 외형을 읽어옴
+# 그림에서 읽어오는 항목. '나이'는 여기 넣지 않는다 —
+# 한 번 어리게 그려진 그림을 읽으면 그 값이 사전에 굳어 매일 재생산되기 때문(므비보셋 사건).
 CHAR_FIELDS = ["신체비율", "헤어스타일", "얼굴", "의상"]
+
+# ===== 인물 나이 사전 =====
+# 나이는 그림이 아니라 '성경 연대'에서 온다. 사람이 손으로 확정한 값이 최우선이고,
+# 사전에 없는 인물만 텍스트 모델이 추정해 채운 뒤 파일에 남긴다(다음부터 재사용).
+CHAR_AGES_PATH = PROJECT_ROOT / "data" / "character_ages.json"
+AGE_MODEL = "gpt-4o-mini"
 
 
 def load_char_registry() -> dict:
@@ -174,6 +182,77 @@ def load_char_registry() -> dict:
 def save_char_registry(reg: dict) -> None:
     CHAR_REGISTRY_PATH.parent.mkdir(parents=True, exist_ok=True)
     CHAR_REGISTRY_PATH.write_text(json.dumps(reg, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def load_ages() -> dict:
+    return load_json(CHAR_AGES_PATH) or {}
+
+
+def save_ages(ages: dict) -> None:
+    CHAR_AGES_PATH.parent.mkdir(parents=True, exist_ok=True)
+    CHAR_AGES_PATH.write_text(json.dumps(ages, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def book_of(scripture_ref: str) -> str:
+    """'사무엘하 19:24-30' → '사무엘하'. 같은 인물도 책(시기)이 다르면 나이가 다르므로 키에 넣는다."""
+    return (scripture_ref or "").split()[0] if scripture_ref else ""
+
+
+def age_key(name: str, book: str) -> str:
+    return f"{name}|{book}" if book else name
+
+
+def lookup_age(ages: dict, name: str, book: str) -> str:
+    """이 인물의 나이 문구. 해당 책의 값이 없으면 다른 책의 값이라도 쓰지 않고 빈 값(→추정 대상)."""
+    entry = ages.get(age_key(name, book))
+    return (entry or {}).get("나이", "") if isinstance(entry, dict) else (entry or "")
+
+
+def estimate_missing_ages(client, names: list[str], scripture_ref: str, date_str: str) -> dict:
+    """사전에 없는 인물의 나이를 성경 연대 근거로 추정해 사전에 채운다(있는 값은 절대 덮지 않음)."""
+    ages = load_ages()
+    book = book_of(scripture_ref)
+    missing = [n for n in names if not lookup_age(ages, n, book)]
+    if not missing:
+        return ages
+
+    ai = load_json(PROJECT_ROOT / "data" / "ai" / f"{date_str}.json") or {}
+    roles = "\n".join(
+        f"- {(c.get('name') or '').strip()}: {(c.get('description') or '').strip()}"
+        for c in (ai.get("characters") or []) if (c.get("name") or "").strip() in missing
+    )
+    system = (
+        "너는 성경 연대기에 밝은 역사 고증가야. 주어진 본문 시점에서 각 인물이 몇 살인지 추정해. "
+        "반드시 성경 본문의 연대 단서(즉위 나이·통치 연수·사건 순서·자녀 유무)를 근거로 삼아. "
+        "무명 인물(백성·군사·여인 등)은 배역에 맞는 상식적인 연령대를 지정해. '알 수 없음'은 금지 — 무조건 값을 내라. "
+        "나이는 '약 40세 전후 (중년 남성)'처럼 숫자와 연령대를 함께 적어. "
+        '오직 JSON만 출력: {"characters":[{"name":"","나이":"","근거":""}]}'
+    )
+    user = f"본문: {scripture_ref}\n나이를 추정할 인물: {', '.join(missing)}"
+    if roles:
+        user += f"\n\n[인물 설명]\n{roles}"
+    resp = client.chat.completions.create(
+        model=AGE_MODEL,
+        messages=[{"role": "system", "content": system}, {"role": "user", "content": user}],
+        temperature=0.2,
+        max_tokens=700,
+        response_format={"type": "json_object"},
+    )
+    try:
+        parsed = json.loads(resp.choices[0].message.content)
+    except json.JSONDecodeError:
+        log("나이 추정 응답을 읽지 못했습니다 — 사전에 있는 값만 사용합니다.", "WARN")
+        return ages
+
+    for c in parsed.get("characters", []):
+        n = (c.get("name") or "").strip()
+        age = (c.get("나이") or "").strip()
+        if not n or not age or lookup_age(ages, n, book):
+            continue
+        ages[age_key(n, book)] = {"나이": age, "근거": (c.get("근거") or "").strip(), "출처": "자동"}
+        log(f"  · 나이 추정: {n} — {age}", "OK")
+    save_ages(ages)
+    return ages
 
 
 def day_character_names(date_str: str) -> list[str]:
@@ -204,8 +283,10 @@ def describe_characters_from_image(client, image_path: Path, names: list[str], h
     system = (
         "너는 동화책 일러스트의 캐릭터 디자이너야. 주어진 그림에서 지정한 인물들의 '외형'만 묘사해. "
         "먼저 아래 '인물 역할/장면' 설명을 보고 그림 속 누가 누구인지 정확히 식별한 뒤, "
-        "각 인물마다 신체비율(체격·키 인상), 헤어스타일(색·길이·모양), 얼굴(나이대·수염·인상), "
+        "각 인물마다 신체비율(체격·키 인상), 헤어스타일(색·길이·모양), 얼굴(수염·이목구비 인상), "
         "의상(색·형태·소품)을 간결한 한국어 명사구로 적어. 그림에 분명히 보이지 않는 인물은 결과에서 빼(상상 금지). "
+        "⚠️ 그 장면에서만 잠깐인 것은 절대 적지 마: 자세(무릎 꿇음·손을 뻗음 등), 표정·감정(슬픈·놀란 등), "
+        "그날 든 물건. 매일 변하지 않는 '고정 외형'만 적어. 나이도 적지 마(나이는 별도 사전이 관리한다). "
         '오직 JSON만 출력: {"characters":[{"name":"","신체비율":"","헤어스타일":"","얼굴":"","의상":""}]}'
     )
     user_text = "묘사할 인물: " + ", ".join(names)
@@ -284,10 +365,20 @@ def appearances_for_scene(context: dict, names: list[str]) -> list[tuple[str, st
     # 실제 '그려질' 인물은 브리프의 인물 설명이 가장 정확(서사 텍스트엔 죽은 인물도 언급됨).
     # 브리프 인물이 있으면 그걸 우선 기준으로, 비어 있으면 장면 텍스트로 폴백.
     haystack = brief_people if brief_people.strip() else scene_text
+    ages = load_ages()
+    book = book_of(context.get("본문_참조", ""))
     picked = []
     for n in names:
-        if n in reg and n in haystack:
-            picked.append((n, appearance_line(reg[n])))
+        # 이름 표기가 흔들려도(예: 사전 '다윗 왕' ↔ 본문 '다윗') 잡히도록 첫 낱말로도 대조한다.
+        aliases = {n, n.split()[0]} if n.split() else {n}
+        if not any(a in haystack for a in aliases):
+            continue
+        age = lookup_age(ages, n, book)
+        desc = appearance_line(reg[n]) if n in reg else ""
+        # 나이를 맨 앞에 둔다 — 외형 문구보다 먼저 읽혀야 연령대가 잡힌다.
+        line = "; ".join(x for x in [f"나이 {age}" if age else "", desc] if x)
+        if line:
+            picked.append((n, line))
     return picked
 
 
@@ -345,7 +436,10 @@ def build_image_prompt(context: dict, brief: dict, appearances: list | None = No
                 "[캐릭터 일관성 — 매우 중요]\n"
                 "아래 인물은 매일·매 장면에서 반드시 동일한 외형(신체비율·헤어·얼굴·의상)으로 그리세요. "
                 "장면이 달라도 같은 사람으로 알아볼 수 있어야 합니다.\n"
-                f"{lines}\n\n"
+                f"{lines}\n"
+                "※ '나이'는 절대 규칙입니다. 적힌 연령대의 얼굴·체격·수염으로만 그리고, "
+                "어느 인물도 실제보다 어리게(특히 성인을 소년·아이로) 그리지 마세요. "
+                "나이와 다른 외형 문구가 충돌하면 나이를 따르세요.\n\n"
             )
 
     return (
@@ -489,6 +583,12 @@ def main() -> int:
         context = build_source_context(date_str, variant_index=vi)
         if not context:
             return 1
+        # 나이 사전 보충 — 오늘 등장인물 중 사전에 없는 사람만 추정해 채운다(기존 값은 불변)
+        try:
+            estimate_missing_ages(client, char_names, context["본문_참조"], date_str)
+        except Exception as e:
+            log(f"나이 추정 건너뜀: {e}", "WARN")
+
         out_path = SCENES_DIR / context["out_name"]
         label = f"변형 {vi + 1}" if vi is not None else "단일"
         log(f"[{label}] 본문: {context['주제']} ({context['본문_참조']}) → {out_path.name}", "OK")
