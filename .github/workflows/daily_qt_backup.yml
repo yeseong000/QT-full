@@ -58,7 +58,17 @@ jobs:
 
       - name: Fetch QT (오륜교회 주만나 크롤링)
         if: steps.check.outputs.skip != 'true'
-        run: python scripts/fetch_qt.py
+        run: |
+          # 본문이 이미 올라와 있으면 크롤링하지 않는다(본진 daily_qt.yml과 동일한 가드).
+          # 위 skip 판정은 qt·ai 파일이 '둘 다' 있어야 참이라, 본문만 올라온 날엔 여기까지 온다.
+          # 그때 크롤링을 다시 돌리면 오륜교회가 Azure 대역을 막아 둬서 통째로 실패하고,
+          # 정작 만들 수 있었던 묵상까지 못 만든다(2026-09-27 확인).
+          DATE=${{ steps.check.outputs.today_kst }}
+          if [ -f "data/qt/${DATE}.json" ]; then
+            echo "✅ ${DATE} 본문 이미 존재 — 크롤링 건너뜀 (묵상부터 이어서 생성)"
+          else
+            python scripts/fetch_qt.py
+          fi
 
       - name: Build KB (② 자동 지식 조사 — 없는 장만)
         if: steps.check.outputs.skip != 'true'

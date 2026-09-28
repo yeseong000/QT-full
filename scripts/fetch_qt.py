@@ -437,6 +437,19 @@ def parse_qt(html: str) -> dict:
         raise ValueError("날짜 레이블을 찾을 수 없습니다. 페이지 구조가 바뀌었을 수 있어요.")
     log(f"날짜 레이블: {date_label}", "OK")
 
+    # 페이지가 아직 오늘로 갱신되지 않았는지 확인한다.
+    # date는 실행 기계의 시계(today_str)에서, date_label은 페이지에서 따로 오기 때문에
+    # 오륜교회가 늦게 갱신하면 전날 내용이 오늘 파일명으로 저장된다.
+    #   실제 사고: 2026-09-09 04:01 크롤링이 09.08 내용을 2026-09-09.json으로 저장해 그대로 게시됨.
+    #   전수 집계(158일): 04시 크롤링 64건 정상 / 1건 오염. 드물지만 조용히 틀린 본문이 올라간다.
+    # 여기서 막으면 그날은 실패로 끝나고 06시·10시 백업이 제대로 된 본문을 받아온다.
+    want_label = datetime.now(KST).strftime("%m.%d")
+    if not date_label.startswith(want_label):
+        raise ValueError(
+            f"페이지가 아직 오늘로 바뀌지 않았습니다 — 페이지 '{date_label}', 오늘 '{want_label}'. "
+            "잘못된 본문을 저장하지 않으려고 중단합니다(뒤 실행이 재시도)."
+        )
+
     if not title_line:
         raise ValueError("제목 라인을 찾을 수 없습니다.")
 
